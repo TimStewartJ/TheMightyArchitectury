@@ -44,22 +44,10 @@ public class SuperByteBuffer {
 	private int r, g, b, a;
 	private float sheetSize;
 
-	public SuperByteBuffer(BufferBuilder buf, BufferBuilder.RenderedBuffer renderedBuffer) {
-		//DrawState state = new BufferBuilder.DrawState(this.format, this.vertices, i, this.mode, vertexformat$indextype, this.indexOnly, flag);
-		ByteBuffer rendered = renderedBuffer.vertexBuffer();
-		// rendered.order(ByteOrder.nativeOrder()); // Vanilla bug, endianness does not carry over into sliced buffers
-		// buf.buffer.clear();
-
+	public SuperByteBuffer(BufferBuilder.RenderedBuffer renderedBuffer) {
 		formatSize = renderedBuffer.drawState().format().getVertexSize();
-		//int size = buf.vertices * formatSize;
-/*
-		template = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
-		template.order(rendered.order());
-		template.limit(rendered.limit());
-		template.put(rendered);
-		template.rewind();*/
 
-		template = rendered;
+		template = renderedBuffer.vertexBuffer();
 
 		transforms = new PoseStack();
 	}

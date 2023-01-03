@@ -85,7 +85,7 @@ public class SuperByteBufferCache {
 				builder, true, random, 42, OverlayTexture.NO_OVERLAY);
 		var renderedBuilder = builder.end();
 
-		return new SuperByteBuffer(builder, renderedBuilder);
+		return new SuperByteBuffer(renderedBuilder);
 	}
 
 	public void invalidate() {

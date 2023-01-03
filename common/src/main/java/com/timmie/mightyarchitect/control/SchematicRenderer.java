@@ -6,9 +6,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.foundation.MatrixStacker;
-import com.timmie.mightyarchitect.foundation.RenderTypes;
 import com.timmie.mightyarchitect.foundation.SuperByteBuffer;
-import dev.architectury.registry.client.rendering.RenderTypeRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -16,8 +14,6 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockAndTintGetter;
-import net.minecraft.world.level.block.AirBlock;
-import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -107,11 +103,6 @@ public class SchematicRenderer {
 				for (RenderType blockRenderLayer : RenderType.chunkBufferLayers()) {
 					if (blockRenderLayer != ItemBlockRenderTypes.getChunkRenderType(state))
 						continue;
-					// TheMightyArchitect.logger.info("Doing something with buffers for " + state.getBlock().toString());
-
-					// RenderTypeRegistry.register(blockRenderLayer, state.getBlock());
-					// RenderTypeRegistry.register(blockRenderLayer);
-					// ForgeHooksClient.setRenderType(blockRenderLayer);
 
 					if (!buffers.containsKey(blockRenderLayer))
 						buffers.put(blockRenderLayer, new BufferBuilder(DefaultVertexFormat.BLOCK.getIntegerSize()));
@@ -122,14 +113,12 @@ public class SchematicRenderer {
 
 					if (state.getRenderShape() == RenderShape.MODEL)
 					{
-						//BlockRenderer.batchRenderBlocks(buffers, blockRenderLayer, state, blockAccess, minecraft.level.random, pos, ms, bufferBuilder, blockRendererDispatcher);
 						blockRendererDispatcher.renderBatched(state, pos, blockAccess, ms,
 								bufferBuilder, true, minecraft.level.random);
 						usedBlockRenderLayers.add(blockRenderLayer);
 					}
 				}
 
-				// ForgeHooksClient.setRenderType(null);
 				ms.popPose();
 			});
 
@@ -139,7 +128,7 @@ public class SchematicRenderer {
 				continue;
 			BufferBuilder buf = buffers.get(layer);
 			var renderedBuffer = buf.end();
-			bufferCache.put(layer, new SuperByteBuffer(buf, renderedBuffer));
+			bufferCache.put(layer, new SuperByteBuffer(renderedBuffer));
 		}
 	}
 
