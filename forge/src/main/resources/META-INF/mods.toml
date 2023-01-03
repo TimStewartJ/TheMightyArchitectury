@@ -1,15 +1,15 @@
 modLoader = "javafml"
 loaderVersion = "[43,)"
-#issueTrackerURL = ""
-license = "Insert License Here"
+issueTrackerURL = "https://github.com/TimStewartJ/TheMightyArchitectury/issues"
+license = "MIT"
 
 [[mods]]
 modId = "mightyarchitect"
 version = "${version}"
 displayName = "The Mighty Architect"
-authors = "Me!"
+authors = "simibubi, timmie"
 description = '''
-This is an example description! Tell everyone what your mod is about!
+1.19.2 Architectury port of The Mighty Architect. Design elaborate buildings within a minute!
 '''
 #logoFile = ""
 

@@ -3,7 +3,6 @@ package com.timmie.mightyarchitect;
 import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.registry.registries.DeferredRegister;
-import dev.architectury.registry.registries.RegistrySupplier;
 import dev.architectury.utils.EnvExecutor;
 import net.fabricmc.api.EnvType;
 import net.minecraft.core.Registry;
@@ -11,8 +10,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.ArrayList;
 
 public class TheMightyArchitect {
 
@@ -35,9 +32,7 @@ public class TheMightyArchitect {
 		ITEMS.register();
 		//BLOCKS.register();
 
-		// confirmed on the right event
 		LifecycleEvent.SETUP.register(AllPackets::registerPackets);
-		// confirmed on the right event
-		ClientLifecycleEvent.CLIENT_SETUP.register((j) -> EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> MightyClient.init()));
+		EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> ClientLifecycleEvent.CLIENT_SETUP.register((c) -> MightyClient.init()));
 	}
 }
