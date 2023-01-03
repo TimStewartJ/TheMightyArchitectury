@@ -27,13 +27,12 @@ public class AllBlocks {
 
 	public static void registerBlocks(DeferredRegister<Block> registry) {
 		registry.register("slice_marker", () -> { SLICE_MARKER = new AllBlocks(new SliceMarkerBlock()); return SLICE_MARKER.get(); });
-		registry.register("slice_marker", () -> { DESIGN_ANCHOR = new AllBlocks(new DesignAnchorBlock()); return DESIGN_ANCHOR.get(); });
+		registry.register("design_anchor", () -> { DESIGN_ANCHOR = new AllBlocks(new DesignAnchorBlock()); return DESIGN_ANCHOR.get(); });
 	}
 
 	public static void registerItemBlocks(DeferredRegister<Item> registry) {
-		AllBlocks block = new AllBlocks(new SliceMarkerBlock());
-		if (block.get() instanceof IJustForRendering)
-			return;
+		registry.register("slice_marker", () -> new BlockItem(SLICE_MARKER.get(), AllItems.standardProperties()));
+		registry.register("design_anchor", () -> new BlockItem(DESIGN_ANCHOR.get(), AllItems.standardProperties()));
 	}
 
 	public Block get() {

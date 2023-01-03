@@ -22,10 +22,8 @@ public class AllItems {
 		return new Properties();
 	}
 
-	public static ArrayList<RegistrySupplier<Item>> registerItems(DeferredRegister<Item> itemRegistry) {
-		var output = new ArrayList<RegistrySupplier<Item>>();
-		output.add(itemRegistry.register("architect_wand", () -> { ARCHITECT_WAND = new AllItems(new ArchitectWandItem(standardProperties())); return ARCHITECT_WAND.get(); }));
-		return output;
+	public static void registerItems(DeferredRegister<Item> itemRegistry) {
+		itemRegistry.register("architect_wand", () -> { ARCHITECT_WAND = new AllItems(new ArchitectWandItem(standardProperties())); return ARCHITECT_WAND.get(); });
 	}
 
 	public Item get() {

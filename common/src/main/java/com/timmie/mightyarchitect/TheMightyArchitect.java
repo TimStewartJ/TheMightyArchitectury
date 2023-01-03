@@ -25,12 +25,13 @@ public class TheMightyArchitect {
 
 	public static void Init()
 	{
+		// TODO: figure out how to not hardcode blocks and items to register again
 		AllItems.registerItems(ITEMS);
 		AllBlocks.registerBlocks(BLOCKS);
-		//AllBlocks.registerItemBlocks(ITEMS);
+		AllBlocks.registerItemBlocks(ITEMS);
 
+		BLOCKS.register();
 		ITEMS.register();
-		//BLOCKS.register();
 
 		LifecycleEvent.SETUP.register(AllPackets::registerPackets);
 		EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> ClientLifecycleEvent.CLIENT_SETUP.register((c) -> MightyClient.init()));
