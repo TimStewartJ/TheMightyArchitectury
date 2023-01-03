@@ -1,0 +1,114 @@
+{
+  "Palette": {
+    "OUTER_THICK": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:andesite_wall"
+    },
+    "OUTER_FLAT": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "powered": "false",
+        "facing": "south",
+        "open": "true"
+      },
+      "Name": "minecraft:jungle_trapdoor"
+    },
+    "INNER_PRIMARY": {
+      "Name": "minecraft:red_nether_bricks"
+    },
+    "HEAVY_POST": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:stone_brick_wall"
+    },
+    "ROOF_PRIMARY": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:acacia_wood"
+    },
+    "INNER_DETAIL": {
+      "Name": "minecraft:smooth_stone"
+    },
+    "ROOF_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:smooth_stone_slab"
+    },
+    "WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:glass_pane"
+    },
+    "Name": "Maroon Manor",
+    "HEAVY_PRIMARY": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:dark_oak_log"
+    },
+    "FLOOR": {
+      "Name": "minecraft:spruce_planks"
+    },
+    "HEAVY_SECONDARY": {
+      "Name": "minecraft:chiseled_stone_bricks"
+    },
+    "ROOF_DETAIL": {
+      "Name": "minecraft:smooth_stone"
+    },
+    "INNER_SECONDARY": {
+      "Name": "minecraft:netherrack"
+    },
+    "OUTER_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:smooth_stone_slab"
+    },
+    "HEAVY_WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:light_gray_stained_glass_pane"
+    },
+    "CLEAR": {
+      "Name": "minecraft:barrier"
+    },
+    "OUTER_THIN": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:spruce_fence"
+    }
+  }
+}

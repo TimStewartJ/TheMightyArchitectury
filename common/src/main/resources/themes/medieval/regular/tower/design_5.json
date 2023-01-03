@@ -1,0 +1,50 @@
+{
+  "Radius": 2,
+  "Size": {
+    "X": 5,
+    "Y": 8,
+    "Z": 5
+  },
+  "Layers": [
+    {
+      "Facing": "AAAAA,AAAAA,AAAAA,AAAAA,AAAAA",
+      "Blocks": "JEEEJ,EQQQE,EQQQE,EQQQE,JEEEJ",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "AAAAA,AAAAA,AAAAA,AAAAA,AAAAA",
+      "Blocks": " FEF ,FQQQF,EQQQE,FQQQF, FEF ",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "AAAAA,AAAAA,AAAAA,AAAAA,AAAAA",
+      "Blocks": " EHE ,EQQQE,HQQQH,EQQQE, EHE ",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "AAAAA,AAAAA,AAAAA,AAAAA,AAAAA",
+      "Blocks": "JEHEJ,EQQQE,HQQQH,EQQQE,JEHEJ",
+      "Trait": "CloneThrice"
+    },
+    {
+      "Facing": "AAAAA,AAAAA,AAAAA,AAAAA,AAAAA",
+      "Blocks": "JEHEJ,EQQQE,HQQQH,EQQQE,JEHEJ",
+      "Trait": "Optional"
+    },
+    {
+      "Facing": "AAAAA,AAAAA,AAAAA,AAAAA,AAAAA",
+      "Blocks": "IFEFI,FQQQF,EQQQE,FQQQF,IFEFI",
+      "Trait": "Optional"
+    },
+    {
+      "Facing": "AAAAA,AAAAA,AAAAA,AAAAA,AAAAA",
+      "Blocks": "JEHEJ,EQQQE,HQQQH,EQQQE,JEHEJ",
+      "Trait": "CloneOnce"
+    },
+    {
+      "Facing": "AAAAA,AAAAA,AAAAA,AAAAA,AAAAA",
+      "Blocks": "IFEFI,FNNNF,ENNNE,FNNNF,IFEFI",
+      "Trait": "Standard"
+    }
+  ]
+}

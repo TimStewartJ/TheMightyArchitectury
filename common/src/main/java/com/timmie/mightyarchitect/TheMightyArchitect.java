@@ -1,0 +1,43 @@
+package com.timmie.mightyarchitect;
+
+import dev.architectury.event.events.client.ClientLifecycleEvent;
+import dev.architectury.event.events.common.LifecycleEvent;
+import dev.architectury.registry.registries.DeferredRegister;
+import dev.architectury.registry.registries.RegistrySupplier;
+import dev.architectury.utils.EnvExecutor;
+import net.fabricmc.api.EnvType;
+import net.minecraft.core.Registry;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.ArrayList;
+
+public class TheMightyArchitect {
+
+	public static final String ID = "mightyarchitect";
+	public static final String NAME = "The Mighty Architect";
+	public static final String VERSION = "0.6";
+
+	public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ID, Registry.ITEM_REGISTRY);
+	public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ID, Registry.BLOCK_REGISTRY);
+
+	public static TheMightyArchitect instance;
+	public static Logger logger = LogManager.getLogger();
+
+	public static void Init()
+	{
+		AllItems.registerItems(ITEMS);
+		AllBlocks.registerBlocks(BLOCKS);
+		//AllBlocks.registerItemBlocks(ITEMS);
+
+		ITEMS.register();
+		//BLOCKS.register();
+
+		// confirmed on the right event
+		LifecycleEvent.SETUP.register(AllPackets::registerPackets);
+		// confirmed on the right event
+		ClientLifecycleEvent.CLIENT_SETUP.register((j) -> EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> MightyClient.init()));
+	}
+}

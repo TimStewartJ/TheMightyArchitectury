@@ -1,0 +1,111 @@
+{
+  "Palette": {
+    "OUTER_THICK": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:mossy_cobblestone_wall"
+    },
+    "OUTER_FLAT": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "powered": "false",
+        "facing": "south",
+        "open": "true"
+      },
+      "Name": "minecraft:spruce_trapdoor"
+    },
+    "INNER_PRIMARY": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:birch_wood"
+    },
+    "HEAVY_POST": {
+      "Properties": {
+        "distance": "7",
+        "persistent": "true"
+      },
+      "Name": "minecraft:oak_leaves"
+    },
+    "ROOF_PRIMARY": {
+      "Name": "minecraft:green_terracotta"
+    },
+    "INNER_DETAIL": {
+      "Name": "minecraft:polished_diorite"
+    },
+    "ROOF_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:dark_prismarine_slab"
+    },
+    "WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:glass_pane"
+    },
+    "Name": "Nobel Birchmen",
+    "HEAVY_PRIMARY": {
+      "Name": "minecraft:stone_bricks"
+    },
+    "FLOOR": {
+      "Properties": {
+        "axis": "x"
+      },
+      "Name": "minecraft:stripped_spruce_log"
+    },
+    "HEAVY_SECONDARY": {
+      "Name": "minecraft:spruce_planks"
+    },
+    "ROOF_DETAIL": {
+      "Name": "minecraft:dark_prismarine"
+    },
+    "INNER_SECONDARY": {
+      "Name": "minecraft:white_wool"
+    },
+    "OUTER_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:spruce_slab"
+    },
+    "HEAVY_WINDOW": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:diorite_wall"
+    },
+    "CLEAR": {
+      "Name": "minecraft:barrier"
+    },
+    "OUTER_THIN": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:spruce_fence"
+    }
+  }
+}

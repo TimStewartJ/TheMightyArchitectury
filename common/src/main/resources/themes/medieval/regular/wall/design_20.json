@@ -1,0 +1,15 @@
+{
+  "Size": {
+    "X": 4,
+    "Y": 1,
+    "Z": 1
+  },
+  "ExpandBehaviour": "MergedRepeat",
+  "Layers": [
+    {
+      "Facing": "AAAA",
+      "Blocks": "FEEF",
+      "Trait": "Standard"
+    }
+  ]
+}

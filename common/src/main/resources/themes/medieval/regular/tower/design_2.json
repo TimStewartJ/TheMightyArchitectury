@@ -1,0 +1,20 @@
+{
+  "Radius": 2,
+  "Size": {
+    "X": 5,
+    "Y": 2,
+    "Z": 5
+  },
+  "Layers": [
+    {
+      "Facing": "ADADA,DAAAD,AAAAA,DAAAD,ADADA",
+      "Blocks": "JGFGJ,GQQQG,FQQQF,GQQQG,JGFGJ",
+      "Trait": "Optional"
+    },
+    {
+      "Facing": "CADAC,AAAAA,DAAAD,AAAAA,CADAC",
+      "Blocks": "KFGFK,FNNNF,GNNNG,FNNNF,KFGFK",
+      "Trait": "Standard"
+    }
+  ]
+}

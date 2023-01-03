@@ -1,0 +1,113 @@
+{
+  "Palette": {
+    "OUTER_THICK": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:diorite_wall"
+    },
+    "OUTER_FLAT": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "powered": "false",
+        "facing": "south",
+        "open": "true"
+      },
+      "Name": "minecraft:dark_oak_trapdoor"
+    },
+    "INNER_PRIMARY": {
+      "Name": "minecraft:white_wool"
+    },
+    "HEAVY_POST": {
+      "Properties": {
+        "distance": "7",
+        "persistent": "true"
+      },
+      "Name": "minecraft:jungle_leaves"
+    },
+    "ROOF_PRIMARY": {
+      "Name": "minecraft:light_gray_terracotta"
+    },
+    "INNER_DETAIL": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:bone_block"
+    },
+    "ROOF_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:dark_oak_slab"
+    },
+    "WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:glass_pane"
+    },
+    "Name": "Chalklate",
+    "HEAVY_PRIMARY": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:dark_oak_log"
+    },
+    "FLOOR": {
+      "Name": "minecraft:oak_planks"
+    },
+    "HEAVY_SECONDARY": {
+      "Name": "minecraft:spruce_planks"
+    },
+    "ROOF_DETAIL": {
+      "Name": "minecraft:dark_oak_planks"
+    },
+    "INNER_SECONDARY": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:quartz_pillar"
+    },
+    "OUTER_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:spruce_slab"
+    },
+    "HEAVY_WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:black_stained_glass_pane"
+    },
+    "CLEAR": {
+      "Name": "minecraft:barrier"
+    },
+    "OUTER_THIN": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:spruce_fence"
+    }
+  }
+}

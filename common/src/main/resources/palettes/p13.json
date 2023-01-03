@@ -1,0 +1,113 @@
+{
+  "Palette": {
+    "OUTER_THICK": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:mossy_stone_brick_wall"
+    },
+    "OUTER_FLAT": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:mossy_cobblestone_wall"
+    },
+    "INNER_PRIMARY": {
+      "Name": "minecraft:mossy_stone_bricks"
+    },
+    "HEAVY_POST": {
+      "Properties": {
+        "distance": "7",
+        "persistent": "true"
+      },
+      "Name": "minecraft:spruce_leaves"
+    },
+    "ROOF_PRIMARY": {
+      "Name": "minecraft:cobblestone"
+    },
+    "INNER_DETAIL": {
+      "Name": "minecraft:chiseled_stone_bricks"
+    },
+    "ROOF_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:smooth_stone_slab"
+    },
+    "WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:iron_bars"
+    },
+    "Name": "Skeleton HQ",
+    "HEAVY_PRIMARY": {
+      "Name": "minecraft:mossy_cobblestone"
+    },
+    "FLOOR": {
+      "Name": "minecraft:andesite"
+    },
+    "HEAVY_SECONDARY": {
+      "Name": "minecraft:stone"
+    },
+    "ROOF_DETAIL": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "double"
+      },
+      "Name": "minecraft:smooth_stone_slab"
+    },
+    "INNER_SECONDARY": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "shape": "straight",
+        "facing": "north"
+      },
+      "Name": "minecraft:stone_brick_stairs"
+    },
+    "OUTER_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:stone_slab"
+    },
+    "HEAVY_WINDOW": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:mossy_cobblestone_wall"
+    },
+    "CLEAR": {
+      "Name": "minecraft:barrier"
+    },
+    "OUTER_THIN": {
+      "Properties": {
+        "distance": "7",
+        "persistent": "true"
+      },
+      "Name": "minecraft:jungle_leaves"
+    }
+  }
+}

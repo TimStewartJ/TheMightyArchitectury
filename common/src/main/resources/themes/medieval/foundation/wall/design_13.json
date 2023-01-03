@@ -1,0 +1,20 @@
+{
+  "Size": {
+    "X": 3,
+    "Y": 2,
+    "Z": 2
+  },
+  "ExpandBehaviour": "MergedRepeat",
+  "Layers": [
+    {
+      "Facing": "AAA,AAA",
+      "Blocks": "AIA,D D",
+      "Trait": "CloneOnce"
+    },
+    {
+      "Facing": "AAA,CAC",
+      "Blocks": "BIB,K K",
+      "Trait": "Standard"
+    }
+  ]
+}

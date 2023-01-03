@@ -1,0 +1,20 @@
+{
+  "Radius": 2,
+  "Size": {
+    "X": 5,
+    "Y": 2,
+    "Z": 5
+  },
+  "Layers": [
+    {
+      "Facing": "AAAAA,AAAAA,AAAAA,AAAAA,AAAAA",
+      "Blocks": "I   I,     ,     ,     ,I   I",
+      "Trait": "MaskBelow"
+    },
+    {
+      "Facing": "DAAAD,AAAAA,AAAAA,AAAAA,DAAAD",
+      "Blocks": "GIIIG,I   I,I   I,I   I,GIIIG",
+      "Trait": "Standard"
+    }
+  ]
+}

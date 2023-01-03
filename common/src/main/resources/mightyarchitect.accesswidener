@@ -1,0 +1,8 @@
+accessWidener   v2  named
+
+accessible    method    net/minecraft/client/renderer/GameRenderer      loadEffect      (Lnet/minecraft/resources/ResourceLocation;)V
+
+accessible    field     com/mojang/blaze3d/vertex/BufferBuilder         buffer          Ljava/nio/ByteBuffer;
+accessible    field     com/mojang/blaze3d/vertex/BufferBuilder         vertices        I
+accessible    field     com/mojang/blaze3d/vertex/BufferBuilder         format          Lcom/mojang/blaze3d/vertex/VertexFormat;
+accessible    method    com/mojang/blaze3d/vertex/BufferBuilder         storeRenderedBuffer          ()Lcom/mojang/blaze3d/vertex/BufferBuilder$RenderedBuffer;

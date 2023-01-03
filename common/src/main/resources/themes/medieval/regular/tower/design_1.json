@@ -1,0 +1,30 @@
+{
+  "Radius": 2,
+  "Size": {
+    "X": 5,
+    "Y": 4,
+    "Z": 5
+  },
+  "Layers": [
+    {
+      "Facing": "DAAAD,AAAAA,AAAAA,AAAAA,DAAAD",
+      "Blocks": "GEEEG,EQQQE,EQQQE,EQQQE,GEEEG",
+      "Trait": "CloneOnce"
+    },
+    {
+      "Facing": "AAAAA,AAAAA,AAAAA,AAAAA,AAAAA",
+      "Blocks": "JEHEJ,EQQQE,HQQQH,EQQQE,JEHEJ",
+      "Trait": "CloneThrice"
+    },
+    {
+      "Facing": "AAAAA,AAAAA,AAAAA,AAAAA,AAAAA",
+      "Blocks": "JEHEJ,EQQQE,HQQQH,EQQQE,JEHEJ",
+      "Trait": "Optional"
+    },
+    {
+      "Facing": "DAAAD,AAAAA,AAAAA,AAAAA,DAAAD",
+      "Blocks": "GEEEG,ENNNE,ENNNE,ENNNE,GEEEG",
+      "Trait": "Standard"
+    }
+  ]
+}

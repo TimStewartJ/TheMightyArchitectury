@@ -1,0 +1,29 @@
+{
+  "Size": {
+    "X": 2,
+    "Y": 4,
+    "Z": 2
+  },
+  "Layers": [
+    {
+      "Facing": "DD,DA",
+      "Blocks": "GG,G ",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "DA,AA",
+      "Blocks": "GI,I ",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "DH,GA",
+      "Blocks": "GG,G ",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "DA,AA",
+      "Blocks": "GI,I ",
+      "Trait": "Standard"
+    }
+  ]
+}

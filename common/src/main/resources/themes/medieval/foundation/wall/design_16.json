@@ -1,0 +1,15 @@
+{
+  "Size": {
+    "X": 5,
+    "Y": 1,
+    "Z": 2
+  },
+  "ExpandBehaviour": "MergedRepeat",
+  "Layers": [
+    {
+      "Facing": "AAAAA,CAAAC",
+      "Blocks": "AIDIA,K   K",
+      "Trait": "Standard"
+    }
+  ]
+}

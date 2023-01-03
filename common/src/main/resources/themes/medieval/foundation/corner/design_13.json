@@ -1,0 +1,19 @@
+{
+  "Size": {
+    "X": 2,
+    "Y": 2,
+    "Z": 2
+  },
+  "Layers": [
+    {
+      "Facing": "AC,CA",
+      "Blocks": "AK,KD",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "AA,AC",
+      "Blocks": "  , K",
+      "Trait": "MaskAbove"
+    }
+  ]
+}

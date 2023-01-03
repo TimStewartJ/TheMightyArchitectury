@@ -1,0 +1,114 @@
+{
+  "Palette": {
+    "OUTER_THICK": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:stone_brick_wall"
+    },
+    "OUTER_FLAT": {
+      "Properties": {
+        "waterlogged": "false",
+        "facing": "south"
+      },
+      "Name": "minecraft:dead_bubble_coral_wall_fan"
+    },
+    "INNER_PRIMARY": {
+      "Name": "minecraft:dead_tube_coral_block"
+    },
+    "HEAVY_POST": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:stone_brick_wall"
+    },
+    "ROOF_PRIMARY": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:oak_wood"
+    },
+    "INNER_DETAIL": {
+      "Name": "minecraft:dead_horn_coral_block"
+    },
+    "ROOF_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:smooth_stone_slab"
+    },
+    "WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:black_stained_glass_pane"
+    },
+    "Name": "Coral Genocide",
+    "HEAVY_PRIMARY": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:acacia_log"
+    },
+    "FLOOR": {
+      "Name": "minecraft:smooth_stone"
+    },
+    "HEAVY_SECONDARY": {
+      "Name": "minecraft:cobblestone"
+    },
+    "ROOF_DETAIL": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "double"
+      },
+      "Name": "minecraft:smooth_stone_slab"
+    },
+    "INNER_SECONDARY": {
+      "Name": "minecraft:dead_fire_coral_block"
+    },
+    "OUTER_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:spruce_slab"
+    },
+    "HEAVY_WINDOW": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "shape": "straight",
+        "facing": "north"
+      },
+      "Name": "minecraft:polished_andesite_stairs"
+    },
+    "CLEAR": {
+      "Name": "minecraft:barrier"
+    },
+    "OUTER_THIN": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:dark_oak_fence"
+    }
+  }
+}

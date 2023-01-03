@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "mightyarchitect",
+  "version": "${version}",
+  "name": "The Mighty Architect",
+  "description": "This is an example description! Tell everyone what your mod is about!",
+  "authors": [
+    "Me!"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+  "license": "Insert License Here",
+  "icon": "assets/mightyarchitect/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.timmie.mightyarchitect.fabric.TheMightyArchitectFabric"
+    ]
+  },
+  "mixins": [
+  ],
+  "depends": {
+    "fabric": "*",
+    "minecraft": ">=1.19.2",
+    "architectury": ">=6.2.43"
+  }
+}

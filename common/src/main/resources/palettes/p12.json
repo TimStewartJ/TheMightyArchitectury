@@ -1,0 +1,100 @@
+{
+  "Palette": {
+    "OUTER_THICK": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:diorite_wall"
+    },
+    "OUTER_FLAT": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "powered": "false",
+        "facing": "south",
+        "open": "true"
+      },
+      "Name": "minecraft:jungle_trapdoor"
+    },
+    "INNER_PRIMARY": {
+      "Name": "minecraft:white_wool"
+    },
+    "HEAVY_POST": {
+      "Properties": {
+        "distance": "7",
+        "persistent": "true"
+      },
+      "Name": "minecraft:birch_leaves"
+    },
+    "ROOF_PRIMARY": {
+      "Name": "minecraft:cobblestone"
+    },
+    "INNER_DETAIL": {
+      "Name": "minecraft:dried_kelp_block"
+    },
+    "ROOF_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:smooth_stone_slab"
+    },
+    "WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:glass_pane"
+    },
+    "Name": "Sushi",
+    "HEAVY_PRIMARY": {
+      "Name": "minecraft:polished_granite"
+    },
+    "FLOOR": {
+      "Name": "minecraft:oak_planks"
+    },
+    "HEAVY_SECONDARY": {
+      "Name": "minecraft:smooth_quartz"
+    },
+    "ROOF_DETAIL": {
+      "Name": "minecraft:smooth_stone"
+    },
+    "INNER_SECONDARY": {
+      "Name": "minecraft:jungle_planks"
+    },
+    "OUTER_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:quartz_slab"
+    },
+    "HEAVY_WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:light_gray_stained_glass_pane"
+    },
+    "CLEAR": {
+      "Name": "minecraft:barrier"
+    },
+    "OUTER_THIN": {
+      "Properties": {
+        "facing": "down"
+      },
+      "Name": "minecraft:end_rod"
+    }
+  }
+}

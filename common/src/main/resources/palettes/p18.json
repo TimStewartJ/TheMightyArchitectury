@@ -1,0 +1,113 @@
+{
+  "Palette": {
+    "OUTER_THICK": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:cobblestone_wall"
+    },
+    "OUTER_FLAT": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "powered": "false",
+        "facing": "south",
+        "open": "true"
+      },
+      "Name": "minecraft:oak_trapdoor"
+    },
+    "INNER_PRIMARY": {
+      "Name": "minecraft:oak_planks"
+    },
+    "HEAVY_POST": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:stone_brick_wall"
+    },
+    "ROOF_PRIMARY": {
+      "Name": "minecraft:granite"
+    },
+    "INNER_DETAIL": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:oak_log"
+    },
+    "ROOF_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:brick_slab"
+    },
+    "WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:glass_pane"
+    },
+    "Name": "Early Game",
+    "HEAVY_PRIMARY": {
+      "Name": "minecraft:polished_andesite"
+    },
+    "FLOOR": {
+      "Name": "minecraft:spruce_planks"
+    },
+    "HEAVY_SECONDARY": {
+      "Name": "minecraft:cobblestone"
+    },
+    "ROOF_DETAIL": {
+      "Name": "minecraft:bricks"
+    },
+    "INNER_SECONDARY": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:stripped_oak_log"
+    },
+    "OUTER_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:cobblestone_slab"
+    },
+    "HEAVY_WINDOW": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "shape": "straight",
+        "facing": "north"
+      },
+      "Name": "minecraft:cobblestone_stairs"
+    },
+    "CLEAR": {
+      "Name": "minecraft:barrier"
+    },
+    "OUTER_THIN": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:spruce_fence"
+    }
+  }
+}

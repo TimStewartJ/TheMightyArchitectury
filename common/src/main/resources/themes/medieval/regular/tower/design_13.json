@@ -1,0 +1,15 @@
+{
+  "Radius": 4,
+  "Size": {
+    "X": 9,
+    "Y": 1,
+    "Z": 9
+  },
+  "Layers": [
+    {
+      "Facing": "AAADADAAA,ADAAAAADA,AAAAAAAAA,DAAAAAAAD,AAAAAAAAA,DAAAAAAAD,AAAAAAAAA,ADAAAAADA,AAADADAAA",
+      "Blocks": "JJIGFGIJJ,JGFNNNFGJ,IFNNNNNFI,GNNNNNNNG,FNNNNNNNF,GNNNNNNNG,IFNNNNNFI,JGFNNNFGJ,JJIGFGIJJ",
+      "Trait": "Standard"
+    }
+  ]
+}

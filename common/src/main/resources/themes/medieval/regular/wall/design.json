@@ -1,0 +1,30 @@
+{
+  "Size": {
+    "X": 7,
+    "Y": 4,
+    "Z": 3
+  },
+  "ExpandBehaviour": "None",
+  "Layers": [
+    {
+      "Facing": "AAAAAAA,ADAAADA,ADDDDDA",
+      "Blocks": "EEEEEEE, GFFFG , GGGGG ",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "AAAAAAA,AARAAAA,AAAAAAA",
+      "Blocks": "EEE EEE, JL  J , JJJJJ ",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "AAAAAAA,AARAAAA,AAAAAAA",
+      "Blocks": "EEE EEE,  L    ,       ",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "AAAAAAA,AAAAAAA,AAAAAAA",
+      "Blocks": "EEEEEEE,       ,       ",
+      "Trait": "CloneOnce"
+    }
+  ]
+}

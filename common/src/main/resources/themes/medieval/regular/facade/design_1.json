@@ -1,0 +1,39 @@
+{
+  "Size": {
+    "X": 7,
+    "Y": 6,
+    "Z": 2
+  },
+  "Layers": [
+    {
+      "Facing": "AAAAAAA,AAAAAAA",
+      "Blocks": "EEEEEEE,       ",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "AAAAAAA,AAAAAAA",
+      "Blocks": "EHEHEHE,       ",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "AAAAAAA,AAAAAAA",
+      "Blocks": "EHEHEHE,       ",
+      "Trait": "Optional"
+    },
+    {
+      "Facing": "AAAAAAA,AAAAAAA",
+      "Blocks": "EHEHEHE,J     J",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "AAAAAAA,AAAAAAA",
+      "Blocks": "EEEHEEE,J J J J",
+      "Trait": "Standard"
+    },
+    {
+      "Facing": "AAAAAAA,AAAAAAA",
+      "Blocks": "EEEEEEE,FFJJJFF",
+      "Trait": "Standard"
+    }
+  ]
+}

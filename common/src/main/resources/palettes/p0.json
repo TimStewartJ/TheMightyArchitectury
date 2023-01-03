@@ -1,0 +1,117 @@
+{
+  "Palette": {
+    "OUTER_THICK": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:cobblestone_wall"
+    },
+    "OUTER_FLAT": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "powered": "false",
+        "facing": "south",
+        "open": "true"
+      },
+      "Name": "minecraft:spruce_trapdoor"
+    },
+    "INNER_PRIMARY": {
+      "Name": "minecraft:spruce_planks"
+    },
+    "HEAVY_POST": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:stone_brick_wall"
+    },
+    "ROOF_PRIMARY": {
+      "Name": "minecraft:granite"
+    },
+    "INNER_DETAIL": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:spruce_wood"
+    },
+    "ROOF_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:brick_slab"
+    },
+    "WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:glass_pane"
+    },
+    "Name": "Standard Medieval",
+    "HEAVY_PRIMARY": {
+      "Name": "minecraft:polished_andesite"
+    },
+    "FLOOR": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:stripped_oak_wood"
+    },
+    "HEAVY_SECONDARY": {
+      "Name": "minecraft:cobblestone"
+    },
+    "ROOF_DETAIL": {
+      "Name": "minecraft:bricks"
+    },
+    "INNER_SECONDARY": {
+      "Properties": {
+        "axis": "z"
+      },
+      "Name": "minecraft:stripped_spruce_log"
+    },
+    "OUTER_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:cobblestone_slab"
+    },
+    "HEAVY_WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:black_stained_glass_pane"
+    },
+    "CLEAR": {
+      "Name": "minecraft:air"
+    },
+    "OUTER_THIN": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:spruce_fence"
+    }
+  }
+}

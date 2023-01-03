@@ -1,0 +1,8 @@
+{
+	"textures": {
+		"side" : "#icon",
+		"end" : "mightyarchitect:block/slice_marker_top"
+	},
+	"parent": "block/cube_column",
+	"uvlock": true
+}
