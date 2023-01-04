@@ -43,7 +43,7 @@ public class LayerStyleTool extends WallDecorationToolBase {
 		if (selectedRoom == null)
 			return;
 
-		Optional<KeyMapping> mapping = Arrays.stream(Minecraft.getInstance().options.keyHotbarSlots).filter(keyMapping -> keyMapping.getDefaultKey().getValue() == key).findFirst();
+		Optional<KeyMapping> mapping = Arrays.stream(Minecraft.getInstance().options.keyHotbarSlots).filter(keyMapping -> keyMapping.matches(key, 0)).findFirst();
 		if (mapping.isEmpty())
 			return;
 

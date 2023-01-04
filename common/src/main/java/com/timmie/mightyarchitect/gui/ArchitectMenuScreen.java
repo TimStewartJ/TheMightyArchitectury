@@ -99,8 +99,7 @@ public class ArchitectMenuScreen extends Screen {
 			return true;
 		}
 
-		if (keyCode == MightyClient.COMPOSE.getDefaultKey()
-			.getValue()) {
+		if (MightyClient.COMPOSE.matches(keyCode, 0)) {
 			if (hideOnClose)
 				setVisible(false);
 			minecraft.setScreen(null);
