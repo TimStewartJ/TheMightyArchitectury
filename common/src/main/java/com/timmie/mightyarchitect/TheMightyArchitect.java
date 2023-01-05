@@ -15,7 +15,6 @@ public class TheMightyArchitect {
 
 	public static final String ID = "mightyarchitect";
 	public static final String NAME = "The Mighty Architect";
-	public static final String VERSION = "0.6";
 
 	public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ID, Registry.ITEM_REGISTRY);
 	public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ID, Registry.BLOCK_REGISTRY);
