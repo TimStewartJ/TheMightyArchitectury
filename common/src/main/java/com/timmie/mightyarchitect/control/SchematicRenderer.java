@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.foundation.MatrixStacker;
 import com.timmie.mightyarchitect.foundation.SuperByteBuffer;
 import net.minecraft.client.Minecraft;
@@ -80,8 +79,6 @@ public class SchematicRenderer {
 	}
 
 	private void redraw(Minecraft minecraft) {
-		TheMightyArchitect.logger.info("Going to try to draw schematic...");
-
 		usedBlockRenderLayers.clear();
 		startedBufferBuilders.clear();
 
