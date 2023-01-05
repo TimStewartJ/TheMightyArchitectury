@@ -21,7 +21,7 @@ public interface IComposerTool {
 		if (!numberInputSimulatesScrolls())
 			return;
 
-		Optional<KeyMapping> mapping = Arrays.stream(Minecraft.getInstance().options.keyHotbarSlots).filter(keyMapping -> keyMapping.getDefaultKey().getValue() == key).findFirst();
+		Optional<KeyMapping> mapping = Arrays.stream(Minecraft.getInstance().options.keyHotbarSlots).filter(keyMapping -> keyMapping.matches(key, 0)).findFirst();
 		if (mapping.isEmpty())
 			return;
 

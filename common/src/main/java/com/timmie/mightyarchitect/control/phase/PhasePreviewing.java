@@ -56,7 +56,7 @@ public class PhasePreviewing extends PhaseBase implements IRenderGameOverlay {
 
 	@Override
 	public void onKey(int key, boolean released) {
-		if (key == MightyClient.TOOL_MENU.getDefaultKey().getValue()) {
+		if (MightyClient.TOOL_MENU.matches(key, 0)) {
 			if (released && toolSelection.focused) {
 				toolSelection.focused = false;
 				toolSelection.onClose();
@@ -72,7 +72,7 @@ public class PhasePreviewing extends PhaseBase implements IRenderGameOverlay {
 			return;
 
 		if (toolSelection.focused) {
-			Optional<KeyMapping> mapping = Arrays.stream(Minecraft.getInstance().options.keyHotbarSlots).filter(keyMapping -> keyMapping.getDefaultKey().getValue() == key).findFirst();
+			Optional<KeyMapping> mapping = Arrays.stream(Minecraft.getInstance().options.keyHotbarSlots).filter(keyMapping -> keyMapping.matches(key, 0)).findFirst();
 			if (mapping.isEmpty())
 				return;
 

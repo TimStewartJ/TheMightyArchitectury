@@ -55,7 +55,7 @@ public class PalettePainterTool extends WallDecorationToolBase {
 
 	@Override
 	public void handleKeyInput(int key) {
-		Optional<KeyMapping> mapping = Arrays.stream(Minecraft.getInstance().options.keyHotbarSlots).filter(keyMapping -> keyMapping.getDefaultKey().getValue() == key).findFirst();
+		Optional<KeyMapping> mapping = Arrays.stream(Minecraft.getInstance().options.keyHotbarSlots).filter(keyMapping -> keyMapping.matches(key, 0)).findFirst();
 		if (mapping.isEmpty())
 			return;
 
