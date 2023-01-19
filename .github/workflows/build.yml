@@ -13,13 +13,17 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
 
-      - name: Execute Gradle build
+      - name: Execute Gradle Build
         run: chmod +x gradlew && ./gradlew build
 
-      - name: Upload builds
+      - name: Upload Forge build
         uses: actions/upload-artifact@v3
         with:
-          name: builds
-          path: |
-            fabric/build/libs/*FABRIC.jar
-            forge/build/libs/*FORGE.jar
+          name: MightyArchitect-FORGE
+          path: forge/build/libs/*FORGE.jar
+
+      - name: Upload Fabric Build
+        uses: actions/upload-artifact@v3
+        with:
+          name: MightyArchitect-FABRIC
+          path: fabric/build/libs/*FABRIC.jar
