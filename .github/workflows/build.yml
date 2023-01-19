@@ -15,3 +15,11 @@ jobs:
 
       - name: Execute Gradle build
         run: chmod +x gradlew && ./gradlew build
+
+      - name: Upload builds
+        uses: actions/upload-artifact@v3
+        with:
+          name: builds
+          path: |
+            fabric/build/libs/*FABRIC.jar
+            forge/build/libs/*FORGE.jar
