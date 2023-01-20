@@ -51,7 +51,7 @@ public class LayerStyleTool extends WallDecorationToolBase {
 		List<DesignLayer> layers = model.getTheme().getRoomLayers();
 
 		int index = ArrayUtils.indexOf(Minecraft.getInstance().options.keyHotbarSlots, mapping.get());
-		if (index > layers.size())
+		if (index >= layers.size())
 			return;
 
 		DesignLayer newLayer = layers.get(index);
