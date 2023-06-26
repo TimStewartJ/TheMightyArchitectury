@@ -1,18 +1,12 @@
 package com.timmie.mightyarchitect;
 
 import com.timmie.mightyarchitect.block.DesignAnchorBlock;
-import com.timmie.mightyarchitect.block.IJustForRendering;
 import com.timmie.mightyarchitect.block.SliceMarkerBlock;
 import dev.architectury.registry.registries.DeferredRegister;
-import dev.architectury.registry.registries.RegistrySupplier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import org.checkerframework.checker.units.qual.A;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class AllBlocks {
 
