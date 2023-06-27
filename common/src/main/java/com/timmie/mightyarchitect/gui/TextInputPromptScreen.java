@@ -47,15 +47,15 @@ public class TextInputPromptScreen extends AbstractSimiScreen {
 		this.nameField.setMaxLength(35);
 		this.nameField.changeFocus(true);
 
-		confirm = new Button(topLeftX - 5, topLeftY + 50, 100, 20, buttonTextConfirm, button -> {
+		confirm = Button.builder(buttonTextConfirm, button -> {
 			callback.accept(nameField.getValue());
 			confirmed = true;
 			minecraft.setScreen(null);
-		});
+		}).pos(topLeftX - 5, topLeftY + 50).size(100, 20).build();
 
-		abort = new Button(topLeftX + 100, topLeftY + 50, 100, 20, buttonTextAbort, button -> {
+		abort = Button.builder(buttonTextAbort, button -> {
 			minecraft.setScreen(null);
-		});
+		}).pos(topLeftX + 100, topLeftY + 50).size(100, 20).build();
 
 		widgets.add(confirm);
 		widgets.add(abort);

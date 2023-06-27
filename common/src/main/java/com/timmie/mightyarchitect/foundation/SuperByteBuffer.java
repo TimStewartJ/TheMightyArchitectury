@@ -1,12 +1,11 @@
 package com.timmie.mightyarchitect.foundation;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferBuilder.DrawState;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.datafixers.util.Pair;
-import com.mojang.math.Matrix4f;
-import com.mojang.math.Vector4f;
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+import org.joml.Vector4f;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
@@ -15,7 +14,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 public class SuperByteBuffer {
 
@@ -68,12 +66,11 @@ public class SuperByteBuffer {
 			return;
 		buffer.rewind();
 
-		Matrix4f t = input.last()
-			.pose()
-			.copy();
+		Matrix4f t = new Matrix4f(input.last()
+			.pose());
 		Matrix4f localTransforms = transforms.last()
 			.pose();
-		t.multiply(localTransforms);
+		t.mul(localTransforms);
 
 		for (int i = 0; i < vertexCount(buffer); i++) {
 			float x = getX(buffer, i);
@@ -82,8 +79,8 @@ public class SuperByteBuffer {
 
 			Vector4f pos = new Vector4f(x, y, z, 1F);
 			Vector4f lightPos = new Vector4f(x, y, z, 1F);
-			pos.transform(t);
-			lightPos.transform(localTransforms);
+			pos.mul(t);
+			lightPos.mul(localTransforms);
 
 			builder.vertex(pos.x(), pos.y(), pos.z());
 
@@ -113,7 +110,7 @@ public class SuperByteBuffer {
 			if (shouldLight) {
 				int light = packedLightCoords;
 				if (lightTransform != null) {
-					lightPos.transform(lightTransform);
+					lightPos.mul(lightTransform);
 					light = getLight(Minecraft.getInstance().level, lightPos);
 				}
 				builder.uv2(light);
@@ -142,8 +139,9 @@ public class SuperByteBuffer {
 	public SuperByteBuffer rotate(Direction axis, float radians) {
 		if (radians == 0)
 			return this;
-		transforms.mulPose(axis.step()
-			.rotation(radians));
+		Quaternionf quaternionOfAxisRotation = new Quaternionf();
+		quaternionOfAxisRotation.fromAxisAngleRad(axis.step(), radians);
+		transforms.mulPose(quaternionOfAxisRotation);
 		return this;
 	}
 

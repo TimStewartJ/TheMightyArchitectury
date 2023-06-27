@@ -3,7 +3,7 @@ package com.timmie.mightyarchitect.gui.widgets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.gui.ScreenResources;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 
 public class IconButton extends AbstractSimiWidget {
@@ -42,6 +42,11 @@ public class IconButton extends AbstractSimiWidget {
 	public void onRelease(double p_onRelease_1_, double p_onRelease_3_) {
 		super.onRelease(p_onRelease_1_, p_onRelease_3_);
 		this.pressed = false;
+	}
+
+	@Override
+	protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+		defaultButtonNarrationText(narrationElementOutput);
 	}
 
 	public void setToolTip(String text) {

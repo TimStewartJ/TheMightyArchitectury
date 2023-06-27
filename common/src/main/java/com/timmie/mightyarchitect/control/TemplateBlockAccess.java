@@ -6,8 +6,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
@@ -90,7 +90,7 @@ public class TemplateBlockAccess extends WrappedWorld {
 
 	@Override
 	public Holder<Biome> getBiome(BlockPos pos) {
-		return Holder.direct(registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).get(Biomes.THE_VOID));
+		return Holder.direct(registryAccess().registryOrThrow(Registries.BIOME).get(Biomes.THE_VOID));
 	}
 
 	@Override

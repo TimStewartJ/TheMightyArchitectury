@@ -3,7 +3,6 @@ package com.timmie.mightyarchitect.foundation.utility.outliner;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.PoseStack.Pose;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Matrix3f;
 import com.timmie.mightyarchitect.AllSpecialTextures;
 import com.timmie.mightyarchitect.foundation.MatrixStacker;
 import com.timmie.mightyarchitect.foundation.RenderTypes;
@@ -17,6 +16,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Matrix3f;
 
 import javax.annotation.Nullable;
 import java.util.Optional;

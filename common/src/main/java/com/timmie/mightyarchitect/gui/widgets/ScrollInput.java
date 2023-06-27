@@ -1,8 +1,8 @@
 package com.timmie.mightyarchitect.gui.widgets;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Component;
 
 import java.util.function.Consumer;
@@ -117,6 +117,11 @@ public class ScrollInput extends AbstractSimiWidget {
 			.withStyle(ChatFormatting.BLUE));
 		toolTip.add(scrollToModify.plainCopy()
 			.withStyle(ChatFormatting.ITALIC, ChatFormatting.DARK_GRAY));
+	}
+
+	@Override
+	protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+		defaultButtonNarrationText(narrationElementOutput);
 	}
 
 }

@@ -1,6 +1,5 @@
 package com.timmie.mightyarchitect.gui;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.control.ArchitectManager;
@@ -26,7 +25,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 	private IconButton buttonAddPalette;
 	private IconButton buttonOpenFolder;
 	private IconButton buttonRefresh;
-	private boolean scanPicker;
+	private final boolean scanPicker;
 
 	public PalettePickerScreen() {
 		this(false);
@@ -88,8 +87,6 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 		buttonRefresh = new IconButton(x + (i % 5) * 23, y + (i / 5) * 23, ScreenResources.ICON_REFRESH);
 		buttonRefresh.setToolTip(Component.literal("Refresh Imported Palettes"));
 		widgets.add(buttonRefresh);
-		i++;
-
 	}
 
 	@Override
@@ -110,10 +107,8 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 	}
 
 	private void updateSelected() {
-		if (widgets.contains(primary))
-			widgets.remove(primary);
-		if (widgets.contains(secondary))
-			widgets.remove(secondary);
+		widgets.remove(primary);
+		widgets.remove(secondary);
 
 		if (scanPicker) {
 			primary = new PaletteButton(DesignExporter.scanningPalette, this, 0, topLeftX + 135, topLeftY + 8);
@@ -266,13 +261,15 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 			preview(ms, minecraft);
 		}
 
+		// TODO: Fix this tooltip too
+		/*
 		@Override
 		public void renderToolTip(PoseStack ms, int mouseX, int mouseY) {
 			if (isHovered) {
 				renderTooltip(ms, Component.literal(palette.getName()), mouseX, mouseY);
 				RenderSystem.setShaderColor(1, 1, 1, 1);
 			}
-		}
+		}*/
 
 	}
 

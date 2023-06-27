@@ -3,7 +3,7 @@ package com.timmie.mightyarchitect.gui.widgets;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.gui.ScreenResources;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 
 public class Indicator extends AbstractSimiWidget {
@@ -38,5 +38,10 @@ public class Indicator extends AbstractSimiWidget {
 		}
 		toDraw.draw(matrixStack, this, x, y);
 	}
-	
+
+	@Override
+	protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+		defaultButtonNarrationText(narrationElementOutput);
+	}
+
 }

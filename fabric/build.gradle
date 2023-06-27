@@ -19,6 +19,12 @@ configurations {
     developmentFabric.extendsFrom common
 }
 
+configurations.all {
+    resolutionStrategy {
+        force "net.fabricmc:fabric-loader:$fabric_loader_version"
+    }
+}
+
 dependencies {
     modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
     modApi "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
@@ -48,7 +54,7 @@ remapJar {
     injectAccessWidener = true
     inputFile.set shadowJar.archiveFile
     dependsOn shadowJar
-    archiveClassifier.set("FABRIC")
+    archiveClassifier.set(null)
 }
 
 jar {

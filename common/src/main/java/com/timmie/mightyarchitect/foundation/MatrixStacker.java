@@ -1,7 +1,7 @@
 package com.timmie.mightyarchitect.foundation;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Vector3f;
+import com.mojang.math.Axis;
 import com.timmie.mightyarchitect.foundation.utility.AngleHelper;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
 import net.minecraft.core.BlockPos;
@@ -23,15 +23,15 @@ public class MatrixStacker {
 	}
 
 	public MatrixStacker rotateX(double angle) {
-		return multiply(Vector3f.XP, angle);
+		return multiply(Axis.XP, angle);
 	}
 
 	public MatrixStacker rotateY(double angle) {
-		return multiply(Vector3f.YP, angle);
+		return multiply(Axis.YP, angle);
 	}
 
 	public MatrixStacker rotateZ(double angle) {
-		return multiply(Vector3f.ZP, angle);
+		return multiply(Axis.ZP, angle);
 	}
 
 	public MatrixStacker rotateRadians(double angleRoll, double angleYaw, double anglePitch) {
@@ -74,7 +74,7 @@ public class MatrixStacker {
 		return this;
 	}
 
-	private MatrixStacker multiply(Vector3f axis, double angle) {
+	private MatrixStacker multiply(Axis axis, double angle) {
 		ms.mulPose(axis.rotationDegrees((float) angle));
 		return this;
 	}

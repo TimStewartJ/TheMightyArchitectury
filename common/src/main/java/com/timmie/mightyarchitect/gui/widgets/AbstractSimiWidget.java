@@ -2,7 +2,6 @@ package com.timmie.mightyarchitect.gui.widgets;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 
 import java.util.LinkedList;
@@ -24,10 +23,4 @@ public abstract class AbstractSimiWidget extends AbstractWidget {
 	@Override
 	public void renderButton(PoseStack matrixStack, int p_renderButton_1_, int p_renderButton_2_, float p_renderButton_3_) {
 	}
-
-	@Override
-	public void updateNarration(NarrationElementOutput pNarrationElementOutput) {
-		defaultButtonNarrationText(pNarrationElementOutput);
-	}
-
 }

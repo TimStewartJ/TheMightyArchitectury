@@ -6,8 +6,10 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.AbortableIterationConsumer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
@@ -56,7 +58,7 @@ public class WrappedWorld extends Level {
 		}
 
 		@Override
-		public <U extends Entity> void get(EntityTypeTest<Entity, U> p_156935_, Consumer<U> p_156936_) {
+		public <U extends Entity> void get(EntityTypeTest<Entity, U> entityTypeTest, AbortableIterationConsumer<U> abortableIterationConsumer) {
 
 		}
 
@@ -66,7 +68,7 @@ public class WrappedWorld extends Level {
 		}
 
 		@Override
-		public <U extends Entity> void get(EntityTypeTest<Entity, U> p_156932_, AABB p_156933_, Consumer<U> p_156934_) {
+		public <U extends Entity> void get(EntityTypeTest<Entity, U> entityTypeTest, AABB aABB, AbortableIterationConsumer<U> abortableIterationConsumer) {
 
 		}
 	};
@@ -83,12 +85,17 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
+	public void playSeededSound(@org.jetbrains.annotations.Nullable Player player, double d, double e, double f, Holder<SoundEvent> holder, SoundSource soundSource, float g, float h, long l) {
+
+	}
+
+	@Override
 	public void playSeededSound(@org.jetbrains.annotations.Nullable Player player, double d, double e, double f, SoundEvent soundEvent, SoundSource soundSource, float g, float h, long l) {
 
 	}
 
 	@Override
-	public void playSeededSound(@org.jetbrains.annotations.Nullable Player player, Entity entity, SoundEvent soundEvent, SoundSource soundSource, float f, float g, long l) {
+	public void playSeededSound(@org.jetbrains.annotations.Nullable Player player, Entity entity, Holder<SoundEvent> holder, SoundSource soundSource, float f, float g, long l) {
 
 	}
 
@@ -208,6 +215,11 @@ public class WrappedWorld extends Level {
 	@Override
 	public RegistryAccess registryAccess() {
 		return world.registryAccess();
+	}
+
+	@Override
+	public FeatureFlagSet enabledFeatures() {
+		return null;
 	}
 
 	@Override

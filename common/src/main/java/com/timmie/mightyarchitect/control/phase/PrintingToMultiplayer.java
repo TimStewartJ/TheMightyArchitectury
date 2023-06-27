@@ -9,12 +9,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.OutgoingChatMessage;
+import net.minecraft.network.chat.PlayerChatMessage;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 
 import java.util.LinkedList;
 import java.util.List;
 
+// TODO: Fix command sending
 public class PrintingToMultiplayer extends PhaseBase {
 
 	static List<BlockPos> remaining;
@@ -31,10 +34,12 @@ public class PrintingToMultiplayer extends PhaseBase {
 
 		success = true;
 
-		Minecraft.getInstance().player
-				.commandUnsigned("me is printing a structure created by the Mighty Architect.");
-		Minecraft.getInstance().player.commandUnsigned("gamerule sendCommandFeedback false");
-		Minecraft.getInstance().player.commandUnsigned("gamerule logAdminCommands false");
+		String cmd = "me is printing a structure created by the Mighty Architect.";
+		//Minecraft.getInstance().player.commandUnsigned(cmd);
+		cmd = "gamerule sendCommandFeedback false";
+		//Minecraft.getInstance().player.commandUnsigned(cmd);
+		cmd = "gamerule logAdminCommands false";
+		//Minecraft.getInstance().player.commandUnsigned(cmd);
 
 		remaining = new LinkedList<>(((TemplateBlockAccess) getModel().getMaterializedSketch()).getAllPositions());
 		remaining.sort((o1, o2) -> Integer.compare(o1.getY(), o2.getY()));
@@ -64,9 +69,10 @@ public class PrintingToMultiplayer extends PhaseBase {
 					continue;
 
 				String blockstring = state.toString().replaceFirst("Block\\{", "").replaceFirst("\\}", "");
-				
-				Minecraft.getInstance().player.commandUnsigned("setblock " + pos.getX() + " " + pos.getY() + " "
-						+ pos.getZ() + " " + blockstring);
+
+				String cmd = "setblock " + pos.getX() + " " + pos.getY() + " " + pos.getZ() + " " + blockstring;
+				// Minecraft.getInstance().player.commandUnsigned(cmd);
+				// Minecraft.getInstance().player.createCommandSourceStack().sendChatMessage(OutgoingChatMessage.create(PlayerChatMessage.system(cmd)), true, );
 			} else {
 				ArchitectManager.unload();
 				break;
@@ -83,8 +89,10 @@ public class PrintingToMultiplayer extends PhaseBase {
 		if (success) {
 			Minecraft.getInstance().player.displayClientMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"),
 					false);
-			Minecraft.getInstance().player.commandUnsigned("gamerule logAdminCommands true");
-			Minecraft.getInstance().player.commandUnsigned("gamerule sendCommandFeedback true");
+			String cmd = "gamerule logAdminCommands true";
+			//Minecraft.getInstance().player.commandUnsigned(cmd);
+			cmd = "gamerule sendCommandFeedback true";
+			//Minecraft.getInstance().player.commandUnsigned(cmd);
 		}
 	}
 

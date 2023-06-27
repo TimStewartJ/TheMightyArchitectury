@@ -3,7 +3,7 @@
   "id": "mightyarchitect",
   "version": "${version}",
   "name": "The Mighty Architect",
-  "description": "1.19.2 Architectury port of The Mighty Architect. Design elaborate buildings within a minute!",
+  "description": "Architectury port of The Mighty Architect. Design elaborate buildings within a minute!",
   "authors": [
     "simibubi",
     "timmie"
@@ -20,11 +20,9 @@
       "com.timmie.mightyarchitect.fabric.TheMightyArchitectFabric"
     ]
   },
-  "mixins": [
-  ],
   "depends": {
     "fabric": "*",
-    "minecraft": ">=1.19.2",
-    "architectury": ">=6.2.43"
+    "minecraft": ">=1.19.3",
+    "architectury": ">=7.1.78"
   }
 }

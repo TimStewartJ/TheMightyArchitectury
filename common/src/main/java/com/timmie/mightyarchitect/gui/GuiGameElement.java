@@ -6,7 +6,7 @@ import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Vector3f;
+import com.mojang.math.Axis;
 import com.timmie.mightyarchitect.foundation.utility.ColorHelper;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
 import net.minecraft.client.Minecraft;
@@ -138,9 +138,10 @@ public class GuiGameElement {
 			matrixStack.translate(x, y, z);
 			matrixStack.scale(1, -1, 1);
 			matrixStack.translate(rotationOffset.x, rotationOffset.y, rotationOffset.z);
-			matrixStack.mulPose(Vector3f.ZP.rotationDegrees((float) zRot));
-			matrixStack.mulPose(Vector3f.XP.rotationDegrees((float) xRot));
-			matrixStack.mulPose(Vector3f.YP.rotationDegrees((float) yRot));
+
+			matrixStack.mulPose(Axis.ZP.rotationDegrees((float) zRot));
+			matrixStack.mulPose(Axis.XP.rotationDegrees((float) xRot));
+			matrixStack.mulPose(Axis.YP.rotationDegrees((float) yRot));
 			matrixStack.translate(-rotationOffset.x, -rotationOffset.y, -rotationOffset.z);
 		}
 
