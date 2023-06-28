@@ -34,9 +34,6 @@ public abstract class AbstractSimiScreen extends Screen {
 		for (AbstractWidget widget : widgets)
 			widget.render(ms, mouseX, mouseY, partialTicks);
 		renderWindowForeground(ms, mouseX, mouseY, partialTicks);
-		// TODO: fix tooltip here
-		// for (AbstractWidget widget : widgets)
-		// 	widget.renderToolTip(ms, mouseX, mouseY);
 	}
 
 	@Override

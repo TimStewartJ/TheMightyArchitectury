@@ -13,6 +13,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -231,6 +232,8 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 			this.palette = palette;
 			visible = true;
 			active = true;
+			var tooltipText = Component.literal(palette.getName());
+			this.setTooltip(Tooltip.create(tooltipText));
 		}
 
 		private void preview(PoseStack ms, Minecraft mc) {
@@ -260,17 +263,6 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 			super.renderButton(ms, mouseX, mouseY, partialTicks);
 			preview(ms, minecraft);
 		}
-
-		// TODO: Fix this tooltip too
-		/*
-		@Override
-		public void renderToolTip(PoseStack ms, int mouseX, int mouseY) {
-			if (isHovered) {
-				renderTooltip(ms, Component.literal(palette.getName()), mouseX, mouseY);
-				RenderSystem.setShaderColor(1, 1, 1, 1);
-			}
-		}*/
-
 	}
 
 }
