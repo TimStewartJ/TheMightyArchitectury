@@ -16,20 +16,20 @@ Architectury port of The Mighty Architect. Design elaborate buildings within a m
 [[dependencies.mightyarchitect]]
 modId = "forge"
 mandatory = true
-versionRange = "[44,)"
+versionRange = "[45,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.mightyarchitect]]
 modId = "minecraft"
 mandatory = true
-versionRange = "[1.19.3,)"
+versionRange = "[1.19.4,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.mightyarchitect]]
 modId = "architectury"
 mandatory = true
-versionRange = "[7.1.78,)"
+versionRange = "[8.1.79,)"
 ordering = "AFTER"
 side = "BOTH"

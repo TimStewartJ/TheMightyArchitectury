@@ -1,5 +1,6 @@
 package com.timmie.mightyarchitect.gui.widgets;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
@@ -117,6 +118,11 @@ public class ScrollInput extends AbstractSimiWidget {
 			.withStyle(ChatFormatting.BLUE));
 		toolTip.add(scrollToModify.plainCopy()
 			.withStyle(ChatFormatting.ITALIC, ChatFormatting.DARK_GRAY));
+	}
+
+	@Override
+	public void renderWidget(PoseStack poseStack, int i, int j, float f) {
+
 	}
 
 	@Override

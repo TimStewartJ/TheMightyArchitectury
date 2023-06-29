@@ -45,7 +45,7 @@ public class TextInputPromptScreen extends AbstractSimiScreen {
 		this.nameField.setTextColorUneditable(-1);
 		this.nameField.setBordered(false);
 		this.nameField.setMaxLength(35);
-		this.nameField.changeFocus(true);
+		this.nameField.setFocused(true);
 
 		confirm = Button.builder(buttonTextConfirm, button -> {
 			callback.accept(nameField.getValue());

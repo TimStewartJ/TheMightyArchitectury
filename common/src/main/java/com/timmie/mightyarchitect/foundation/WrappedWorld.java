@@ -74,7 +74,7 @@ public class WrappedWorld extends Level {
 	};
 
 	public WrappedWorld(Level world) {
-		super((WritableLevelData) world.getLevelData(), world.dimension(), world.dimensionTypeRegistration(),
+		super((WritableLevelData) world.getLevelData(), world.dimension(), world.registryAccess(), world.dimensionTypeRegistration(),
 			() -> world.getProfiler(), world.isClientSide, false, 0, 0);
 		this.world = world;
 	}

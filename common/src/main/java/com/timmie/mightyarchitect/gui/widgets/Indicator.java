@@ -40,6 +40,11 @@ public class Indicator extends AbstractSimiWidget {
 	}
 
 	@Override
+	public void renderWidget(PoseStack poseStack, int i, int j, float f) {
+
+	}
+
+	@Override
 	protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
 		defaultButtonNarrationText(narrationElementOutput);
 	}

@@ -12,6 +12,8 @@ import com.timmie.mightyarchitect.foundation.utility.outliner.Outline.OutlinePar
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
@@ -45,7 +47,9 @@ public abstract class GroundPlanningToolBase extends ComposerToolBase {
 		BlockHitResult trace = RaycastHelper.rayTraceRange(player.level, player, 75);
 		if (trace != null && trace.getType() == Type.BLOCK) {
 
-			BlockPos hit = new BlockPos(trace.getLocation());
+			var hitVec = trace.getLocation();
+			var hitVec3i = new Vec3i(Mth.floor(hitVec.x), Mth.floor(hitVec.y), Mth.floor(hitVec.z));
+			BlockPos hit = new BlockPos(hitVec3i);
 			makeStacksTransparent(player, hit);
 
 			boolean replaceable = player.level.getBlockState(hit)

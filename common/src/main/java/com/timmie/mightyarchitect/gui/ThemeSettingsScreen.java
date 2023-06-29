@@ -54,12 +54,12 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 
 		inputName = new EditBox(font, x, y, 104, 8, Component.literal(""));
 		inputName.setValue(theme.getDisplayName());
-		inputName.changeFocus(false);
+		inputName.setFocused(false);
 		inputs.add(inputName);
 
 		inputAuthor = new EditBox(font, x, y + 20, 104, 8, Component.literal(""));
 		inputAuthor.setValue(theme.getDesigner());
-		inputAuthor.changeFocus(false);
+		inputAuthor.setFocused(false);
 		inputs.add(inputAuthor);
 
 		inputs.forEach(input -> {
@@ -67,7 +67,7 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 			input.setTextColorUneditable(-1);
 			input.setBordered(false);
 			input.setMaxLength(35);
-			input.changeFocus(false);
+			input.setFocused(false);
 		});
 
 		// init toggleButtons and indicators

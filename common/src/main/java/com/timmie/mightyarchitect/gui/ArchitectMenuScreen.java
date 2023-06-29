@@ -158,7 +158,6 @@ public class ArchitectMenuScreen extends Screen {
 		RenderSystem.setShaderColor(1, 1, 1, 3 / 4f);
 
 		RenderSystem.setShaderTexture(0, gray.location);
-		RenderSystem.enableTexture();
 		blit(ms, x, y, gray.startX, gray.startY, menuWidth, menuHeight, gray.width, gray.height);
 		RenderSystem.setShaderColor(1, 1, 1, 1);
 

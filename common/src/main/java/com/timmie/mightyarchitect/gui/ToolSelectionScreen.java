@@ -66,7 +66,6 @@ public class ToolSelectionScreen extends Screen {
 		ScreenResources gray = ScreenResources.GRAY;
 		RenderSystem.enableBlend();
 		RenderSystem.defaultBlendFunc();
-		RenderSystem.enableTexture();
 		RenderSystem.setShaderColor(1, 1, 1, focused ? 7 / 8f : 1 / 2f);
 		RenderSystem.setShaderTexture(0, gray.location);
 		float toolTipAlpha = yOffset.getValue(partialTicks) / 10;

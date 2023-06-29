@@ -36,7 +36,7 @@ public class LangBuilder {
 	 * @return
 	 */
 	public LangBuilder translate(String langKey, Object... args) {
-		return add(MutableComponent.create(new TranslatableContents(namespace + "." + langKey, Lang.resolveBuilders(args))));
+		return add(Component.translatable(namespace + "." + langKey, Lang.resolveBuilders(args)));
 	}
 
 	/**

@@ -259,10 +259,9 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 		}
 
 		@Override
-		public void renderButton(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
-			super.renderButton(ms, mouseX, mouseY, partialTicks);
+		public void renderWidget(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
+			super.renderWidget(ms, mouseX, mouseY, partialTicks);
 			preview(ms, minecraft);
 		}
 	}
-
 }

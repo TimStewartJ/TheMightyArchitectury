@@ -340,7 +340,6 @@ public class ArchitectManager {
 
 		menu.drawPassive();
 		RenderSystem.enableBlend();
-		RenderSystem.enableTexture();
 	}
 
 	public static EventResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return EventResult.pass(); }
