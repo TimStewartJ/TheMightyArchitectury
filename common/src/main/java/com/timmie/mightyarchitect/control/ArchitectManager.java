@@ -25,6 +25,7 @@ import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.event.events.common.InteractionEvent;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -332,7 +333,7 @@ public class ArchitectManager {
 			((IDrawBlockHighlights) phaseHandler).tickHighlightOutlines();
 	}
 
-	public static void onDrawGameOverlay(PoseStack poseStack, float partialTicks) {
+	public static void onDrawGameOverlay(GuiGraphics poseStack, float partialTicks) {
 		IArchitectPhase phaseHandler = phase.getPhaseHandler();
 		if (phaseHandler instanceof IRenderGameOverlay) {
 			((IRenderGameOverlay) phaseHandler).renderGameOverlay(poseStack, partialTicks);

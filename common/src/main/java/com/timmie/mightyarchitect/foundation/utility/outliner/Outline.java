@@ -9,6 +9,7 @@ import com.timmie.mightyarchitect.foundation.RenderTypes;
 import com.timmie.mightyarchitect.foundation.utility.AngleHelper;
 import com.timmie.mightyarchitect.foundation.utility.ColorHelper;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -30,7 +31,7 @@ public abstract class Outline {
 		params = new OutlineParams();
 	}
 
-	public abstract void render(PoseStack ms, MultiBufferSource buffer);
+	public abstract void render(GuiGraphics ms, MultiBufferSource buffer);
 
 	public void renderCuboidLine(PoseStack ms, MultiBufferSource buffer, Vec3 start, Vec3 end) {
 		Vec3 diff = end.subtract(start);

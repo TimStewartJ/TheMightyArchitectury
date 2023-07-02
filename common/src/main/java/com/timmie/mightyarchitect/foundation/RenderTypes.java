@@ -47,7 +47,7 @@ public class RenderTypes extends RenderStateShard {
 	public static RenderType getGlowingSolid(ResourceLocation texture) {
 		return RenderType.create(createLayerName("glowing_solid"), DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256,
 				true, false, RenderType.CompositeState.builder()
-						.setShaderState(NEW_ENTITY_SHADER)
+						.setShaderState(RENDERTYPE_ENTITY_SOLID_SHADER)
 						.setTextureState(new TextureStateShard(texture, false, false))
 						.setLightmapState(LIGHTMAP)
 						.setOverlayState(OVERLAY)
@@ -63,7 +63,7 @@ public class RenderTypes extends RenderStateShard {
 	public static RenderType getGlowingTranslucent(ResourceLocation texture) {
 		return RenderType.create(createLayerName("glowing_translucent"), DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS,
 				256, true, true, RenderType.CompositeState.builder()
-						.setShaderState(NEW_ENTITY_SHADER)
+						.setShaderState(RENDERTYPE_ENTITY_SOLID_SHADER)
 						.setTextureState(new TextureStateShard(texture, false, false))
 						.setTransparencyState(TRANSLUCENT_TRANSPARENCY)
 						.setCullState(NO_CULL)

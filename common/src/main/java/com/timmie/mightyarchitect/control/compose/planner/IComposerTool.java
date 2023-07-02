@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import org.apache.commons.lang3.ArrayUtils;
 import org.lwjgl.glfw.GLFW;
 
@@ -41,6 +42,6 @@ public interface IComposerTool {
 	void tickGroundPlanOutlines();
 	
 	void updateSelection();
-	void renderOverlay(PoseStack ms);
+	void renderOverlay(GuiGraphics ms);
 	void init();
 }

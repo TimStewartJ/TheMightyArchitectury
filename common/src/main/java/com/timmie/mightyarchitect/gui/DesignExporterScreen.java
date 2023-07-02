@@ -9,6 +9,7 @@ import com.timmie.mightyarchitect.control.phase.export.PhaseEditTheme;
 import com.timmie.mightyarchitect.gui.widgets.Label;
 import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
 import com.timmie.mightyarchitect.gui.widgets.SelectionScrollInput;
+import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -231,24 +232,24 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	protected void renderWindow(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
-		ScreenResources.EXPORTER.draw(ms, this, topLeftX, topLeftY);
+	protected void renderWindow(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+		ScreenResources.EXPORTER.draw(ms, topLeftX, topLeftY);
 
-		ms.pushPose();
-		ms.translate(0, 0, -200);
-		ms.translate((this.width - this.sWidth) / 2 + 150, 120, 0);
-		ms.scale(10, 10, 10);
+		ms.pose().pushPose();
+		ms.pose().translate(0, 0, -200);
+		ms.pose().translate((this.width - this.sWidth) / 2 + 150, 120, 0);
+		ms.pose().scale(10, 10, 10);
 		GuiGameElement.of(minecraft.player.getMainHandItem())
 			.rotate(-1, 0, 20)
 			.render(ms);
-		ms.popPose();
+		ms.pose().popPose();
 
 		int color = ScreenResources.FONT_COLOR;
-		font.draw(ms, "Export custom Designs", topLeftX + 10, topLeftY + 10, color);
-		font.draw(ms, "Theme", topLeftX + 10, topLeftY + 28, color);
-		font.draw(ms, "Building Layer", topLeftX + 10, topLeftY + 48, color);
-		font.draw(ms, "Design Type", topLeftX + 10, topLeftY + 68, color);
-		font.draw(ms, additionalDataKey, topLeftX + 10, topLeftY + 88, color);
+		ms.drawString(font, "Export custom Designs", topLeftX + 10, topLeftY + 10, color);
+		ms.drawString(font, "Theme", topLeftX + 10, topLeftY + 28, color);
+		ms.drawString(font, "Building Layer", topLeftX + 10, topLeftY + 48, color);
+		ms.drawString(font, "Design Type", topLeftX + 10, topLeftY + 68, color);
+		ms.drawString(font, additionalDataKey, topLeftX + 10, topLeftY + 88, color);
 	}
 
 	@Override

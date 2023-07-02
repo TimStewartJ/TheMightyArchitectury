@@ -1,9 +1,8 @@
 package com.timmie.mightyarchitect.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -63,9 +62,9 @@ public class TextInputPromptScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public void renderWindow(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
-		ScreenResources.TEXT_INPUT.draw(ms, this, topLeftX, topLeftY);
-		font.draw(ms, title, topLeftX + (sWidth / 2) - (font.width(title) / 2), topLeftY + 11,
+	public void renderWindow(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+		ScreenResources.TEXT_INPUT.draw(ms, topLeftX, topLeftY);
+		ms.drawString(font, title, topLeftX + (sWidth / 2) - (font.width(title) / 2), topLeftY + 11,
 			ScreenResources.FONT_COLOR);
 	}
 

@@ -3,7 +3,7 @@ package com.timmie.mightyarchitect.gui;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.TheMightyArchitect;
-import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
 public enum ScreenResources {
@@ -84,9 +84,8 @@ public enum ScreenResources {
 		this.startX = startX; this.startY = startY;
 	}
 	
-	public void draw(PoseStack ms, GuiComponent screen, int i, int j) {
-		bind();
-		screen.blit(ms, i, j, startX, startY, width, height);
+	public void draw(GuiGraphics screen, int i, int j) {
+		screen.blit(location, i, j, startX, startY, width, height);
 	}
 
 	public void bind() {

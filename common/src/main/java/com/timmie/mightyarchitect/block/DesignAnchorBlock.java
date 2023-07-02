@@ -5,14 +5,14 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.material.MapColor;
 
 public class DesignAnchorBlock extends Block {
 
 	public static final BooleanProperty compass = BooleanProperty.create("compass");
 	
 	public DesignAnchorBlock() {
-		super(Properties.of(Material.STONE));
+		super(Properties.of().mapColor(MapColor.STONE));
 	}
 	
 	@Override

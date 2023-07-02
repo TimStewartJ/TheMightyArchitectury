@@ -1,7 +1,8 @@
 package com.timmie.mightyarchitect.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.gui.widgets.AbstractSimiWidget;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -28,7 +29,7 @@ public abstract class AbstractSimiScreen extends Screen {
 	}
 
 	@Override
-	public void render(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
+	public void render(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
 		renderBackground(ms);
 		renderWindow(ms, mouseX, mouseY, partialTicks);
 		for (AbstractWidget widget : widgets)
@@ -85,15 +86,15 @@ public abstract class AbstractSimiScreen extends Screen {
 		return false;
 	}
 
-	protected abstract void renderWindow(PoseStack ms, int mouseX, int mouseY, float partialTicks);
+	protected abstract void renderWindow(GuiGraphics ms, int mouseX, int mouseY, float partialTicks);
 
-	protected void renderWindowForeground(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
+	protected void renderWindowForeground(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
 		for (AbstractWidget widget : widgets) {
 			if (!widget.isHoveredOrFocused())
 				continue;
 			if (widget instanceof AbstractSimiWidget && !((AbstractSimiWidget) widget).getToolTip()
 				.isEmpty())
-				renderComponentTooltip(ms, ((AbstractSimiWidget) widget).getToolTip(), mouseX, mouseY);
+				ms.renderComponentTooltip(Minecraft.getInstance().font, ((AbstractSimiWidget) widget).getToolTip(), mouseX, mouseY);
 		}
 	}
 

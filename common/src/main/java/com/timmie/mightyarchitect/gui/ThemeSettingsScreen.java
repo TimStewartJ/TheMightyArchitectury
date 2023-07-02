@@ -1,6 +1,5 @@
 package com.timmie.mightyarchitect.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.design.*;
 import com.timmie.mightyarchitect.gui.widgets.IconButton;
@@ -8,6 +7,7 @@ import com.timmie.mightyarchitect.gui.widgets.Indicator;
 import com.timmie.mightyarchitect.gui.widgets.Indicator.State;
 import com.timmie.mightyarchitect.gui.widgets.Label;
 import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 
@@ -263,20 +263,20 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public void renderWindow(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
-		ScreenResources.THEME_EDITOR.draw(ms, this, topLeftX, topLeftY);
+	public void renderWindow(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+		ScreenResources.THEME_EDITOR.draw(ms, topLeftX, topLeftY);
 
 		int x = topLeftX + 10;
 		int y = topLeftY + 14;
 
-		font.draw(ms, "Theme name", x, y, ScreenResources.FONT_COLOR);
-		font.draw(ms, "Designer", x, y + 20, ScreenResources.FONT_COLOR);
+		ms.drawString(font, "Theme name", x, y, ScreenResources.FONT_COLOR);
+		ms.drawString(font, "Designer", x, y + 20, ScreenResources.FONT_COLOR);
 
 		y = topLeftY + 75;
 
-		font.draw(ms, "Styles included", x, y - 17, ScreenResources.FONT_COLOR);
-		font.draw(ms, "Shapes and Roof Types included", x, y + 32, ScreenResources.FONT_COLOR);
-		font.draw(ms, "Max. Room Height", x, y + 87, ScreenResources.FONT_COLOR);
+		ms.drawString(font, "Styles included", x, y - 17, ScreenResources.FONT_COLOR);
+		ms.drawString(font, "Shapes and Roof Types included", x, y + 32, ScreenResources.FONT_COLOR);
+		ms.drawString(font, "Max. Room Height", x, y + 87, ScreenResources.FONT_COLOR);
 	}
 
 	@Override

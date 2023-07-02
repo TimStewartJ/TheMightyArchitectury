@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.foundation.RenderTypes;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.world.phys.Vec3;
@@ -38,10 +39,11 @@ public class OutlinedText extends Outline {
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {
+	public void render(GuiGraphics guiGraphics, MultiBufferSource buffer) {
 		if (text == null)
 			return;
-		
+
+		var ms = guiGraphics.pose();
 		Minecraft mc = Minecraft.getInstance();
 		float pt = mc.getFrameTime();
 		Vec3 vec = VecHelper.lerp(prevLocation, location, pt);
@@ -85,7 +87,7 @@ public class OutlinedText extends Outline {
 		ms.pushPose();
 		ms.scale(-scaleMod, -scaleMod, scaleMod);
 		//mc.font.drawInBatch(text, f, 0, params.color, false, matrix4f, buffer, true, 0, 0xF000F0);
-		mc.font.draw(ms, text, f, 0, params.color);
+		guiGraphics.drawString(mc.font, text, (int) f, 0, params.color);
 		ms.popPose();
 
 		ms.popPose();

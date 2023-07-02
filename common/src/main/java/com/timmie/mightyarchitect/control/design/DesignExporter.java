@@ -186,8 +186,7 @@ public class DesignExporter {
 		if (worldIn.getBlockState(signPos)
 			.getBlock() == Blocks.SPRUCE_SIGN) {
 			SignBlockEntity sign = (SignBlockEntity) worldIn.getBlockEntity(signPos);
-			filename = sign.getMessage(1, false)
-				.getString();
+			filename = sign.getFrontText().toString();
 			designPath = typePath + "/" + filename;
 
 		} else {

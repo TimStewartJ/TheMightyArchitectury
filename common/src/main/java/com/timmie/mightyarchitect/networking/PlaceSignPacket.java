@@ -7,6 +7,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
+import net.minecraft.world.level.block.entity.SignText;
 
 import java.util.function.Supplier;
 
@@ -40,8 +41,8 @@ public class PlaceSignPacket {
 			Level entityWorld = context.get().getPlayer().getCommandSenderWorld();
 			entityWorld.setBlockAndUpdate(position, Blocks.SPRUCE_SIGN.defaultBlockState());
 			SignBlockEntity sign = (SignBlockEntity) entityWorld.getBlockEntity(position);
-			sign.setMessage(0, Component.literal(text1));
-			sign.setMessage(1, Component.literal(text2));
+
+			sign.setText(new SignText().setMessage(0, Component.literal(text1)).setMessage(1, Component.literal(text2)), true);
 		});
 	}
 	

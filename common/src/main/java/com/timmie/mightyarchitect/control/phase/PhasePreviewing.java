@@ -7,6 +7,7 @@ import com.timmie.mightyarchitect.control.compose.planner.Tools;
 import com.timmie.mightyarchitect.gui.ToolSelectionScreen;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -115,7 +116,7 @@ public class PhasePreviewing extends PhaseBase implements IRenderGameOverlay {
 	}
 
 	@Override
-	public void renderGameOverlay(PoseStack ms, float partialTicks) {
+	public void renderGameOverlay(GuiGraphics ms, float partialTicks) {
 		toolSelection.renderPassive(ms, partialTicks);
 		activeTool.getTool()
 			.renderOverlay(ms);

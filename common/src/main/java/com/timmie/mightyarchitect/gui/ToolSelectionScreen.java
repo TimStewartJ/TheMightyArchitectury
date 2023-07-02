@@ -2,7 +2,6 @@ package com.timmie.mightyarchitect.gui;
 
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.control.compose.planner.Tools;
 import com.timmie.mightyarchitect.foundation.utility.LerpedFloat;
@@ -10,6 +9,7 @@ import com.timmie.mightyarchitect.foundation.utility.LerpedFloat.Chaser;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -52,7 +52,7 @@ public class ToolSelectionScreen extends Screen {
 		selection = Mth.clamp(index, 0, tools.size() - 1);
 	}
 
-	private void draw(PoseStack ms, float partialTicks) {
+	private void draw(GuiGraphics ms, float partialTicks) {
 		Window mainWindow = Minecraft.getInstance()
 			.getWindow();
 		Font font = minecraft.font;
@@ -60,8 +60,8 @@ public class ToolSelectionScreen extends Screen {
 		int x = (mainWindow.getGuiScaledWidth() - w) / 2 + 15;
 		int y = 15;
 
-		ms.pushPose();
-		ms.translate(0, 0, focused ? 100 : 0);
+		ms.pose().pushPose();
+		ms.pose().translate(0, 0, focused ? 100 : 0);
 
 		ScreenResources gray = ScreenResources.GRAY;
 		RenderSystem.enableBlend();
@@ -71,7 +71,7 @@ public class ToolSelectionScreen extends Screen {
 		float toolTipAlpha = yOffset.getValue(partialTicks) / 10;
 
 		// render main box
-		blit(ms, x - 15, y, gray.startX, gray.startY, w, h, gray.width, gray.height);
+		ms.blit(gray.location, x - 15, y, gray.startX, gray.startY, w, h, gray.width, gray.height);
 
 		// render tools
 		List<String> toolTip = tools.get(selection)
@@ -81,17 +81,17 @@ public class ToolSelectionScreen extends Screen {
 		if (toolTipAlpha > 0.25f) {
 			RenderSystem.setShaderTexture(0, gray.location);
 			RenderSystem.setShaderColor(.7f, .7f, .8f, toolTipAlpha);
-			blit(ms, x - 15, y + 30, gray.startX, gray.startY, w, h + 22, gray.width, gray.height);
+			ms.blit(gray.location, x - 15, y + 30, gray.startX, gray.startY, w, h + 22, gray.width, gray.height);
 			RenderSystem.setShaderColor(1, 1, 1, 1);
 
 			if (toolTip.size() > 0)
-				font.draw(ms, toolTip.get(0), x - 10, y + 35, 0xEEEEEE + stringAlphaComponent);
+				ms.drawString(font, toolTip.get(0), x - 10, y + 35, 0xEEEEEE + stringAlphaComponent);
 			if (toolTip.size() > 1)
-				font.draw(ms, toolTip.get(1), x - 10, y + 47, 0xCCDDFF + stringAlphaComponent);
+				ms.drawString(font, toolTip.get(1), x - 10, y + 47, 0xCCDDFF + stringAlphaComponent);
 			if (toolTip.size() > 2)
-				font.draw(ms, toolTip.get(2), x - 10, y + 57, 0xCCDDFF + stringAlphaComponent);
+				ms.drawString(font, toolTip.get(2), x - 10, y + 57, 0xCCDDFF + stringAlphaComponent);
 			if (toolTip.size() > 3)
-				font.draw(ms, toolTip.get(3), x - 10, y + 69, 0xCCCCDD + stringAlphaComponent);
+				ms.drawString(font, toolTip.get(3), x - 10, y + 69, 0xCCCCDD + stringAlphaComponent);
 		}
 
 		RenderSystem.setShaderColor(1, 1, 1, 1);
@@ -101,40 +101,40 @@ public class ToolSelectionScreen extends Screen {
 		int width = minecraft.getWindow()
 			.getGuiScaledWidth();
 		if (!focused)
-			drawCenteredString(ms, minecraft.font, "Hold [" + translationKey + "] to focus", width / 2, y - 10,
+			ms.drawCenteredString(minecraft.font, "Hold [" + translationKey + "] to focus", width / 2, y - 10,
 				0xCCDDFF);
 		else
-			drawCenteredString(ms, minecraft.font, "[SCROLL] to Cycle", width / 2, y - 10, 0xCCDDFF);
+			ms.drawCenteredString(minecraft.font, "[SCROLL] to Cycle", width / 2, y - 10, 0xCCDDFF);
 
 		for (int i = 0; i < tools.size(); i++) {
-			ms.pushPose();
+			ms.pose().pushPose();
 
 			float alpha = focused ? 1 : .2f;
 			if (i == selection) {
-				ms.translate(0, -10, 0);
-				drawCenteredString(ms, minecraft.font, tools.get(i)
+				ms.pose().translate(0, -10, 0);
+				ms.drawCenteredString(minecraft.font, tools.get(i)
 					.getDisplayName(), x + i * 50 + 24, y + 28, 0xCCDDFF);
 				alpha = 1;
 			}
 			RenderSystem.setShaderColor(0, 0, 0, alpha);
 			tools.get(i)
 				.getIcon()
-				.draw(ms, this, x + i * 50 + 16, y + 12);
+				.draw(ms, x + i * 50 + 16, y + 12);
 			RenderSystem.setShaderColor(1, 1, 1, alpha);
 			tools.get(i)
 				.getIcon()
-				.draw(ms, this, x + i * 50 + 16, y + 11);
+				.draw(ms, x + i * 50 + 16, y + 11);
 
 			if (focused && i != selection) {
 				KeyMapping keyMapping = minecraft.options.keyHotbarSlots[i];
-				drawCenteredString(ms, minecraft.font, "[" + keyMapping.getTranslatedKeyMessage()
+				ms.drawCenteredString(minecraft.font, "[" + keyMapping.getTranslatedKeyMessage()
 					.getString() + "]", x + i * 50 + 24, y + 3, 0xCCDDFF);
 			}
 
-			ms.popPose();
+			ms.pose().popPose();
 		}
 
-		ms.popPose();
+		ms.pose().popPose();
 	}
 
 	public void update() {
@@ -142,7 +142,7 @@ public class ToolSelectionScreen extends Screen {
 		yOffset.tickChaser();
 	}
 
-	public void renderPassive(PoseStack ms, float partialTicks) {
+	public void renderPassive(GuiGraphics ms, float partialTicks) {
 		if (Minecraft.getInstance().screen != null)
 			return;
 		draw(ms, partialTicks);

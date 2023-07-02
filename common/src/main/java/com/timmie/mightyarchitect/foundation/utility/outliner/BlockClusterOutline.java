@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.timmie.mightyarchitect.AllSpecialTextures;
 import com.timmie.mightyarchitect.foundation.RenderTypes;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
@@ -25,7 +26,8 @@ public class BlockClusterOutline extends Outline {
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {
+	public void render(GuiGraphics gg, MultiBufferSource buffer) {
+		var ms = gg.pose();
 		for (MergeEntry edge : cluster.visibleEdges) {
 			Vec3 start = Vec3.atLowerCornerOf(edge.pos);
 			Direction direction = Direction.get(AxisDirection.POSITIVE, edge.axis);

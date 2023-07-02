@@ -2,7 +2,6 @@ package com.timmie.mightyarchitect.gui;
 
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.ArchitectMenu;
@@ -12,6 +11,7 @@ import com.timmie.mightyarchitect.foundation.utility.LerpedFloat;
 import com.timmie.mightyarchitect.foundation.utility.LerpedFloat.Chaser;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -71,7 +71,7 @@ public class ArchitectMenuScreen extends Screen {
 	}
 
 	@Override
-	public void render(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
+	public void render(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
 		// FOCUSED
 		super.render(ms, mouseX, mouseY, partialTicks);
 		draw(ms, partialTicks);
@@ -82,7 +82,7 @@ public class ArchitectMenuScreen extends Screen {
 			return;
 
 		// NOT FOCUSED
-		draw(new PoseStack(), Minecraft.getInstance()
+		draw(new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource()), Minecraft.getInstance()
 			.getFrameTime());
 	}
 
@@ -128,7 +128,7 @@ public class ArchitectMenuScreen extends Screen {
 		return super.charTyped(p_charTyped_1_, p_charTyped_2_);
 	}
 
-	private void draw(PoseStack ms, float partialTicks) {
+	private void draw(GuiGraphics ms, float partialTicks) {
 		Minecraft mc = Minecraft.getInstance();
 		Window mainWindow = mc.getWindow();
 		partialTicks = mc.getFrameTime();
@@ -145,11 +145,11 @@ public class ArchitectMenuScreen extends Screen {
 			y -= 24;
 		}
 
-		ms.pushPose();
+		ms.pose().pushPose();
 		float shift = animation.getValue(partialTicks);
 		float sidewaysShift =
 			shift * ((float) menuWidth / (float) menuHeight) + (!focused ? 40 + menuHeight / 4f : 0) + 8;
-		ms.translate(sideways ? sidewaysShift : 0, sideways ? 0 : shift, 0);
+		ms.pose().translate(sideways ? sidewaysShift : 0, sideways ? 0 : shift, 0);
 		mouseX -= sideways ? sidewaysShift : 0;
 		mouseY -= sideways ? 0 : shift;
 
@@ -157,8 +157,7 @@ public class ArchitectMenuScreen extends Screen {
 		RenderSystem.enableBlend();
 		RenderSystem.setShaderColor(1, 1, 1, 3 / 4f);
 
-		RenderSystem.setShaderTexture(0, gray.location);
-		blit(ms, x, y, gray.startX, gray.startY, menuWidth, menuHeight, gray.width, gray.height);
+		ms.blit(gray.location, x, y, gray.startX, gray.startY, menuWidth, menuHeight, gray.width, gray.height);
 		RenderSystem.setShaderColor(1, 1, 1, 1);
 
 		int yPos = y + 4;
@@ -172,22 +171,21 @@ public class ArchitectMenuScreen extends Screen {
 			if (sideways) {
 				if (visible) {
 					String string = "Press " + compose.toUpperCase() + " for Menu";
-					textRenderer.drawShadow(ms, string,
-						mainWindow.getGuiScaledWidth() - textRenderer.width(string) - 15 - sidewaysShift, yPos - 14,
-						0xEEEEEE);
+					ms.drawString(textRenderer, string,
+							(int) (mainWindow.getGuiScaledWidth() - textRenderer.width(string) - 15 - sidewaysShift), yPos - 14,
+							0xEEEEEE);
 				}
 			} else {
-				textRenderer.drawShadow(ms, "Press " + compose.toUpperCase() + " to focus", xPos, yPos - 14, 0xEEEEEE);
+				ms.drawString(textRenderer, "Press " + compose.toUpperCase() + " to focus", xPos, yPos - 14, 0xEEEEEE);
 			}
 		} else {
 			String string = "Press " + compose + " to close";
-			textRenderer.drawShadow(ms, string,
-				sideways
-					? Math.min(xPos, mainWindow.getGuiScaledWidth() - textRenderer.width(string) - 15 - sidewaysShift)
-					: xPos,
-				yPos - 14, 0xDDDDDD);
+			ms.drawString(textRenderer, string,
+					sideways
+							? (int) Math.min(xPos, mainWindow.getGuiScaledWidth() - textRenderer.width(string) - 15 - sidewaysShift)
+							: xPos, yPos - 14, 0xDDDDDD	);
 		}
-		textRenderer.drawShadow(ms, title, xPos, yPos, 0xEEEEEE);
+		ms.drawString(textRenderer, title, xPos, yPos, 0xEEEEEE);
 
 		boolean hoveredHorizontally = x <= mouseX && mouseX <= x + menuWidth && focused;
 
@@ -201,8 +199,8 @@ public class ArchitectMenuScreen extends Screen {
 			yPos += textRenderer.lineHeight;
 			int color =
 				hoveredHorizontally && yPos < mouseY && mouseY <= yPos + textRenderer.lineHeight ? 0xFFFFFF : 0xCCDDFF;
-			textRenderer.drawShadow(ms, "[" + key + "] " + keybinds.get(key), xPos, yPos, color);
-			textRenderer.drawShadow(ms, ">", xPos - 12, yPos, color);
+			ms.drawString(textRenderer, "[" + key + "] " + keybinds.get(key), xPos, yPos, color);
+			ms.drawString(textRenderer, ">", xPos - 12, yPos, color);
 		}
 
 		yPos += 4;
@@ -211,13 +209,13 @@ public class ArchitectMenuScreen extends Screen {
 			int height = mc.font.wordWrapHeight(text, menuWidth - 8);
 			int lineY = yPos;
 			for (FormattedCharSequence iro : textRenderer.split(Component.literal(text), menuWidth - 8)) {
-				textRenderer.draw(ms, iro, xPos, lineY, 0xEEEEEE);
+				ms.drawString(textRenderer, iro, xPos, lineY, 0xEEEEEE);
 				lineY += textRenderer.lineHeight;
 			}
 			yPos += height + 2;
 		}
 
-		ms.popPose();
+		ms.pose().popPose();
 	}
 
 	@Override

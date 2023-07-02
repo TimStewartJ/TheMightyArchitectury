@@ -2,6 +2,8 @@ package com.timmie.mightyarchitect.foundation.utility.outliner;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
@@ -28,8 +30,8 @@ public class ChasingAABBOutline extends AABBOutline {
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {
-		renderBB(ms, buffer, interpolateBBs(prevBB, bb, Minecraft.getInstance()
+	public void render(GuiGraphics ms, MultiBufferSource buffer) {
+		renderBB(ms.pose(), buffer, interpolateBBs(prevBB, bb, Minecraft.getInstance()
 			.getFrameTime()));
 	}
 

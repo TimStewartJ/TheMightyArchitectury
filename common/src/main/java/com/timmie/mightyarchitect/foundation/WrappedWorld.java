@@ -177,7 +177,6 @@ public class WrappedWorld extends Level {
 
 	@Override
 	public boolean addFreshEntity(Entity entityIn) {
-		entityIn.level = world;
 		return world.addFreshEntity(entityIn);
 	}
 

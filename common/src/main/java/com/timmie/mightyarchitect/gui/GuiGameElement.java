@@ -10,6 +10,7 @@ import com.mojang.math.Axis;
 import com.timmie.mightyarchitect.foundation.utility.ColorHelper;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.entity.ItemRenderer;
@@ -104,7 +105,7 @@ public class GuiGameElement {
 			return this;
 		}
 
-		public abstract void render(PoseStack matrixStack);
+		public abstract void render(GuiGraphics matrixStack);
 
 		@Deprecated
 		protected void prepare() {}
@@ -164,8 +165,9 @@ public class GuiGameElement {
 		}
 
 		@Override
-		public void render(PoseStack matrixStack) {
-			prepareMatrix(matrixStack);
+		public void render(GuiGraphics guiGraphics) {
+			var ms = guiGraphics.pose();
+			prepareMatrix(ms);
 
 			Minecraft mc = Minecraft.getInstance();
 			BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
@@ -175,12 +177,12 @@ public class GuiGameElement {
 				: ItemBlockRenderTypes.getRenderType(blockState, true);
 			VertexConsumer vb = buffer.getBuffer(renderType);
 
-			transformMatrix(matrixStack);
+			transformMatrix(ms);
 
 			RenderSystem.setShaderTexture(0, InventoryMenu.BLOCK_ATLAS);
-			renderModel(blockRenderer, buffer, renderType, vb, matrixStack);
+			renderModel(blockRenderer, buffer, renderType, vb, ms);
 
-			cleanUpMatrix(matrixStack);
+			cleanUpMatrix(ms);
 		}
 
 		protected void renderModel(BlockRenderDispatcher blockRenderer, MultiBufferSource.BufferSource buffer,
@@ -239,12 +241,13 @@ public class GuiGameElement {
 		}
 
 		@Override
-		public void render(PoseStack matrixStack) {
-			prepareMatrix(matrixStack);
+		public void render(GuiGraphics guiGraphics) {
+			var ms = guiGraphics.pose();
+			prepareMatrix(ms);
 //			matrixStack.translate(0, 80, 0);
-			transformMatrix(matrixStack);
-			renderItemIntoGUI(matrixStack, stack, true);
-			cleanUpMatrix(matrixStack);
+			transformMatrix(ms);
+			renderItemIntoGUI(ms, stack, true);
+			cleanUpMatrix(ms);
 		}
 
 		public static void renderItemIntoGUI(PoseStack matrixStack, ItemStack stack, boolean useDefaultLighting) {

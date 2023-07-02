@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -76,7 +77,7 @@ public class Label extends AbstractSimiWidget {
 	}
 
 	@Override
-	public void render(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+	public void render(GuiGraphics matrixStack, int mouseX, int mouseY, float partialTicks) {
 		if (!visible)
 			return;
 		if (text == null || text.getString().isEmpty())
@@ -86,15 +87,12 @@ public class Label extends AbstractSimiWidget {
 		MutableComponent copy = text.plainCopy();
 		if (suffix != null && !suffix.isEmpty())
 			copy.append(suffix);
-		
-		if (hasShadow)
-			font.drawShadow(matrixStack, copy, x, y, color);
-		else
-			font.draw(matrixStack, copy, x, y, color);
+
+		matrixStack.drawString(font, copy, x, y, color, hasShadow);
 	}
 
 	@Override
-	public void renderWidget(PoseStack poseStack, int i, int j, float f) {
+	public void renderWidget(GuiGraphics poseStack, int i, int j, float f) {
 
 	}
 

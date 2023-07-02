@@ -12,6 +12,7 @@ import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import com.timmie.mightyarchitect.foundation.utility.RaycastHelper;
 import com.timmie.mightyarchitect.foundation.utility.RaycastHelper.PredicateTraceResult;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -87,12 +88,12 @@ public abstract class ComposerToolBase implements IComposerTool {
 	}
 	
 	@Override
-	public void renderOverlay(PoseStack ms) {
-		ms.pushPose();
+	public void renderOverlay(GuiGraphics ms) {
+		ms.pose().pushPose();
 		Minecraft mc = Minecraft.getInstance();
 		Window mainWindow = mc.getWindow();
-		ms.translate(mainWindow.getGuiScaledWidth() / 2, mainWindow.getGuiScaledHeight() / 2 - 3, 0);
-		ms.translate(25,
+		ms.pose().translate(mainWindow.getGuiScaledWidth() / 2, mainWindow.getGuiScaledHeight() / 2 - 3, 0);
+		ms.pose().translate(25,
 				-Mth.lerp(mc.getFrameTime(), lastToolModeYOffset, toolModeYOffset),
 				0);
 
@@ -100,17 +101,17 @@ public abstract class ComposerToolBase implements IComposerTool {
 			int color = 0xFFFFFFFF;
 			if (Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL))
 				color = 0x66AACCFF;
-			mc.font.drawShadow(ms, toolModeNoCtrl, 0, 0, color);
+			ms.drawString(mc.font, toolModeNoCtrl, 0, 0, color);
 		}
 		if (toolModeCtrl != null) {
 			int color = 0xFFFFFFFF;
 			if (!Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL))
 				color = 0x66AACCFF;
-			mc.font.drawShadow(ms, toolModeCtrl, 0, 12, color);
+			ms.drawString(mc.font, toolModeCtrl, 0, 12, color);
 		}
 
 		RenderSystem.setShaderColor(1, 1, 1, 1);
-		ms.popPose();
+		ms.pose().popPose();
 	}
 	
 	protected void status(String message) {

@@ -12,6 +12,8 @@ import com.timmie.mightyarchitect.gui.widgets.IconButton;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -133,24 +135,24 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public void renderWindow(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
-		ScreenResources.PALETTES.draw(ms, this, topLeftX, topLeftY);
+	public void renderWindow(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+		ScreenResources.PALETTES.draw(ms, topLeftX, topLeftY);
 
 		int color = ScreenResources.FONT_COLOR;
 
 		if (scanPicker) {
-			font.draw(ms, "Choose a palette for", topLeftX + 8, topLeftY + 10, color);
-			font.draw(ms, "your theme.", topLeftX + 8, topLeftY + 18, color);
+			ms.drawString(font, "Choose a palette for", topLeftX + 8, topLeftY + 10, color);
+			ms.drawString(font, "your theme.", topLeftX + 8, topLeftY + 18, color);
 
 		} else {
-			font.draw(ms, "Palette Picker", topLeftX + 8, topLeftY + 10, color);
-			font.draw(ms, "Primary", topLeftX + 134, topLeftY + 30, color);
-			font.draw(ms, "Secondary", topLeftX + 191, topLeftY + 30, color);
+			ms.drawString(font, "Palette Picker", topLeftX + 8, topLeftY + 10, color);
+			ms.drawString(font, "Primary", topLeftX + 134, topLeftY + 30, color);
+			ms.drawString(font, "Secondary", topLeftX + 191, topLeftY + 30, color);
 
 		}
 
-		font.draw(ms, "Included Palettes", topLeftX + 8, topLeftY + 53, color);
-		font.draw(ms, "My Palettes", topLeftX + 134, topLeftY + 53, color);
+		ms.drawString(font, "Included Palettes", topLeftX + 8, topLeftY + 53, color);
+		ms.drawString(font, "My Palettes", topLeftX + 134, topLeftY + 53, color);
 	}
 
 	@Override
@@ -236,30 +238,30 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 			this.setTooltip(Tooltip.create(tooltipText));
 		}
 
-		private void preview(PoseStack ms, Minecraft mc) {
-			ms.pushPose();
-			ms.translate(x + 1, y + 9, 100);
-			ms.scale(1 + 1/64f, 1 + 1/64f, 1);
+		private void preview(GuiGraphics ms, Minecraft mc) {
+			ms.pose().pushPose();
+			ms.pose().translate(x + 1, y + 9, 100);
+			ms.pose().scale(1 + 1/64f, 1 + 1/64f, 1);
 			renderBlock(ms, mc, new BlockPos(0, 1, 0), Palette.INNER_PRIMARY);
 			renderBlock(ms, mc, new BlockPos(1, 1, 0), Palette.INNER_DETAIL);
 			renderBlock(ms, mc, new BlockPos(0, 0, 0), Palette.HEAVY_PRIMARY);
 			renderBlock(ms, mc, new BlockPos(1, 0, 0), Palette.ROOF_PRIMARY);
-			ms.popPose();
+			ms.pose().popPose();
 		}
 
-		protected void renderBlock(PoseStack ms, Minecraft mc, BlockPos pos, Palette key) {
-			ms.pushPose();
+		protected void renderBlock(GuiGraphics ms, Minecraft mc, BlockPos pos, Palette key) {
+			ms.pose().pushPose();
 
 			GuiGameElement.of(palette.get(key))
 				.atLocal(pos.getX(), pos.getY(), pos.getZ())
 				.scale(7.9f)
 				.render(ms);
 
-			ms.popPose();
+			ms.pose().popPose();
 		}
 
 		@Override
-		public void renderWidget(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
+		public void renderWidget(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
 			super.renderWidget(ms, mouseX, mouseY, partialTicks);
 			preview(ms, minecraft);
 		}

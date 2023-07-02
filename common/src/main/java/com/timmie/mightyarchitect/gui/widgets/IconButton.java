@@ -3,6 +3,7 @@ package com.timmie.mightyarchitect.gui.widgets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.gui.ScreenResources;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 
@@ -17,7 +18,7 @@ public class IconButton extends AbstractSimiWidget {
 	}
 
 	@Override
-	public void renderWidget(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+	public void renderWidget(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
 		if (this.visible) {
 			this.isHovered =
 				mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
@@ -27,8 +28,8 @@ public class IconButton extends AbstractSimiWidget {
 
 			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 			ScreenResources.BUTTON.bind();
-			blit(matrixStack, x, y, button.startX, button.startY, button.width, button.height);
-			icon.draw(matrixStack, this, x + 1, y + 1);
+			ms.blit(ScreenResources.GRAY.location, x, y, button.startX, button.startY, button.width, button.height);
+			icon.draw(ms, x + 1, y + 1);
 		}
 	}
 
