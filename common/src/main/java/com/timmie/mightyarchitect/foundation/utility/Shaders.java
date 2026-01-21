@@ -12,7 +12,7 @@ public enum Shaders {
 	private ResourceLocation location;
 
 	private Shaders(String filename) {
-		location = new ResourceLocation(TheMightyArchitect.ID, "shaders/post/" + filename);
+		location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "shaders/post/" + filename);
 	}
 
 	public boolean isActive() {

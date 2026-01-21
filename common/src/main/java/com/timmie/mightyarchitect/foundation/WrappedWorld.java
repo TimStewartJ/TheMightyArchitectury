@@ -10,6 +10,7 @@ import net.minecraft.util.AbortableIterationConsumer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.flag.FeatureFlagSet;
+import net.minecraft.world.item.alchemy.PotionBrewing;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
@@ -21,12 +22,14 @@ import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.entity.LevelEntityGetter;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.minecraft.world.level.storage.WritableLevelData;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.ticks.LevelTickAccess;
+import net.minecraft.world.TickRateManager;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -135,14 +138,14 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
-	public void levelEvent(Player player, int type, BlockPos pos, int data) {}
+	public void levelEvent(@Nullable Player player, int type, BlockPos pos, int data) {}
 
 	@Override
-	public void gameEvent(GameEvent gameEvent, Vec3 vec3, GameEvent.Context context) {
+	public void gameEvent(Holder<GameEvent> gameEvent, Vec3 vec3, GameEvent.Context context) {
 
 	}
 
-	@Override
+
 	public void gameEvent(@Nullable Entity p_151549_, GameEvent p_151550_, BlockPos p_151551_) {
 
 	}
@@ -153,14 +156,12 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
-	public void playSound(Player player, double x, double y, double z, SoundEvent soundIn, SoundSource category,
+	public void playSound(@Nullable Player player, double x, double y, double z, Holder<SoundEvent> soundIn, SoundSource category,
 		float volume, float pitch) {}
 
-	@Override
-	public void playSound(Player p_217384_1_, Entity p_217384_2_, SoundEvent p_217384_3_,
-		SoundSource p_217384_4_, float p_217384_5_, float p_217384_6_) {}
+	public void playSound(@Nullable Player player, Entity entity, Holder<SoundEvent> sound,
+		SoundSource category, float volume, float pitch) {}
 
-	@Override
 	public String gatherChunkSourceStats() {
 		return null;
 	}
@@ -171,7 +172,7 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
-	public MapItemSavedData getMapData(String mapName) {
+	public MapItemSavedData getMapData(MapId mapId) {
 		return null;
 	}
 
@@ -181,11 +182,11 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
-	public void setMapData(String mapId, MapItemSavedData mapDataIn) {}
+	public void setMapData(MapId mapId, MapItemSavedData mapDataIn) {}
 
 	@Override
-	public int getFreeMapId() {
-		return 0;
+	public MapId getFreeMapId() {
+		return new MapId(0);
 	}
 
 	@Override
@@ -218,7 +219,17 @@ public class WrappedWorld extends Level {
 
 	@Override
 	public FeatureFlagSet enabledFeatures() {
-		return null;
+		return world.enabledFeatures();
+	}
+
+	@Override
+	public PotionBrewing potionBrewing() {
+		return world.potionBrewing();
+	}
+
+	@Override
+	public TickRateManager tickRateManager() {
+		return world.tickRateManager();
 	}
 
 	@Override

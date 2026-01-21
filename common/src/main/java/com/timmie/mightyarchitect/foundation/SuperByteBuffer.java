@@ -1,6 +1,6 @@
 package com.timmie.mightyarchitect.foundation;
 
-import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import org.joml.Matrix4f;
@@ -14,6 +14,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 public class SuperByteBuffer {
 
@@ -21,7 +22,8 @@ public class SuperByteBuffer {
 		public int getPackedLight(float x, float y, float z);
 	}
 
-	protected ByteBuffer template;
+	protected int[] vertexData;
+	protected int vertexCount;
 	protected int formatSize;
 
 	// Vertex Position
@@ -42,12 +44,51 @@ public class SuperByteBuffer {
 	private int r, g, b, a;
 	private float sheetSize;
 
-	public SuperByteBuffer(BufferBuilder.RenderedBuffer renderedBuffer) {
-		formatSize = renderedBuffer.drawState().format().getVertexSize();
+	// Standard vertex format size in bytes (position + color + uv + overlay + light + normal)
+	private static final int VERTEX_SIZE = 32; // bytes per vertex
+	private static final int INTS_PER_VERTEX = VERTEX_SIZE / 4;
 
-		template = renderedBuffer.vertexBuffer();
+	public SuperByteBuffer(int[] vertexData, int vertexCount) {
+		this.vertexData = vertexData;
+		this.vertexCount = vertexCount;
+		this.formatSize = VERTEX_SIZE;
+		this.transforms = new PoseStack();
+	}
 
-		transforms = new PoseStack();
+	/**
+	 * Constructs a SuperByteBuffer from MeshData (1.21.1+ API)
+	 */
+	public SuperByteBuffer(MeshData meshData) {
+		if (meshData == null) {
+			this.vertexData = new int[0];
+			this.vertexCount = 0;
+			this.formatSize = VERTEX_SIZE;
+			this.transforms = new PoseStack();
+			return;
+		}
+		
+		MeshData.DrawState drawState = meshData.drawState();
+		this.vertexCount = drawState.vertexCount();
+		this.formatSize = drawState.format().getVertexSize();
+		
+		ByteBuffer vertexBuffer = meshData.vertexBuffer();
+		int intsPerVertex = formatSize / 4;
+		this.vertexData = new int[vertexCount * intsPerVertex];
+		
+		if (vertexBuffer != null) {
+			IntBuffer intBuffer = vertexBuffer.asIntBuffer();
+			intBuffer.get(this.vertexData, 0, Math.min(this.vertexData.length, intBuffer.remaining()));
+		}
+		
+		this.transforms = new PoseStack();
+	}
+
+	public static SuperByteBuffer empty() {
+		return new SuperByteBuffer(new int[0], 0);
+	}
+
+	public boolean isEmpty() {
+		return vertexCount == 0;
 	}
 
 	public static float getUnInterpolatedU(TextureAtlasSprite sprite, float u) {
@@ -61,51 +102,48 @@ public class SuperByteBuffer {
 	}
 
 	public void renderInto(PoseStack input, VertexConsumer builder) {
-		ByteBuffer buffer = template;
-		if (buffer.limit() == 0)
+		if (vertexCount == 0)
 			return;
-		buffer.rewind();
 
-		Matrix4f t = new Matrix4f(input.last()
-			.pose());
-		Matrix4f localTransforms = transforms.last()
-			.pose();
+		Matrix4f t = new Matrix4f(input.last().pose());
+		Matrix4f localTransforms = transforms.last().pose();
 		t.mul(localTransforms);
 
-		for (int i = 0; i < vertexCount(buffer); i++) {
-			float x = getX(buffer, i);
-			float y = getY(buffer, i);
-			float z = getZ(buffer, i);
+		for (int i = 0; i < vertexCount; i++) {
+			float x = getX(i);
+			float y = getY(i);
+			float z = getZ(i);
 
 			Vector4f pos = new Vector4f(x, y, z, 1F);
 			Vector4f lightPos = new Vector4f(x, y, z, 1F);
 			pos.mul(t);
 			lightPos.mul(localTransforms);
 
-			builder.vertex(pos.x(), pos.y(), pos.z());
+			builder.addVertex(pos.x(), pos.y(), pos.z());
 
-			byte r = getR(buffer, i);
-			byte g = getG(buffer, i);
-			byte b = getB(buffer, i);
-			byte a = getA(buffer, i);
+			int color = getColor(i);
+			byte r = (byte) ((color >> 0) & 0xFF);
+			byte g = (byte) ((color >> 8) & 0xFF);
+			byte b = (byte) ((color >> 16) & 0xFF);
+			byte a = (byte) ((color >> 24) & 0xFF);
 
 			if (shouldColor) {
 				float lum = (r < 0 ? 255 + r : r) / 256f;
-				builder.color((int) (this.r * lum), (int) (this.g * lum), (int) (this.b * lum), this.a);
+				builder.setColor((int) (this.r * lum), (int) (this.g * lum), (int) (this.b * lum), this.a);
 			} else
-				builder.color(r, g, b, a);
+				builder.setColor(r & 0xFF, g & 0xFF, b & 0xFF, a & 0xFF);
 
-			float u = getU(buffer, i);
-			float v = getV(buffer, i);
+			float u = getU(i);
+			float v = getV(i);
 
 			if (shouldShiftUV) {
 				float targetU = spriteShift.getTarget()
 					.getU((getUnInterpolatedU(spriteShift.getOriginal(), u) / sheetSize) + uTarget * 16);
 				float targetV = spriteShift.getTarget()
 					.getV((getUnInterpolatedV(spriteShift.getOriginal(), v) / sheetSize) + vTarget * 16);
-				builder.uv(targetU, targetV);
+				builder.setUv(targetU, targetV);
 			} else
-				builder.uv(u, v);
+				builder.setUv(u, v);
 
 			if (shouldLight) {
 				int light = packedLightCoords;
@@ -113,12 +151,11 @@ public class SuperByteBuffer {
 					lightPos.mul(lightTransform);
 					light = getLight(Minecraft.getInstance().level, lightPos);
 				}
-				builder.uv2(light);
+				builder.setLight(light);
 			} else
-				builder.uv2(getLight(buffer, i));
+				builder.setLight(getLightData(i));
 
-			builder.normal(getNX(buffer, i), getNY(buffer, i), getNZ(buffer, i))
-				.endVertex();
+			builder.setNormal(getNX(i), getNY(i), getNZ(i));
 		}
 
 		transforms = new PoseStack();
@@ -190,64 +227,51 @@ public class SuperByteBuffer {
 		return this;
 	}
 
-	protected int vertexCount(ByteBuffer buffer) {
-		return buffer.limit() / formatSize;
+	protected int getIntOffset(int vertexIndex) {
+		return vertexIndex * INTS_PER_VERTEX;
 	}
 
-	protected int getBufferPosition(int vertexIndex) {
-		return vertexIndex * formatSize;
+	protected float getX(int index) {
+		return Float.intBitsToFloat(vertexData[getIntOffset(index)]);
 	}
 
-	protected float getX(ByteBuffer buffer, int index) {
-		return buffer.getFloat(getBufferPosition(index));
+	protected float getY(int index) {
+		return Float.intBitsToFloat(vertexData[getIntOffset(index) + 1]);
 	}
 
-	protected float getY(ByteBuffer buffer, int index) {
-		return buffer.getFloat(getBufferPosition(index) + 4);
+	protected float getZ(int index) {
+		return Float.intBitsToFloat(vertexData[getIntOffset(index) + 2]);
 	}
 
-	protected float getZ(ByteBuffer buffer, int index) {
-		return buffer.getFloat(getBufferPosition(index) + 8);
+	protected int getColor(int index) {
+		return vertexData[getIntOffset(index) + 3];
 	}
 
-	protected byte getR(ByteBuffer buffer, int index) {
-		return buffer.get(getBufferPosition(index) + 12);
+	protected float getU(int index) {
+		return Float.intBitsToFloat(vertexData[getIntOffset(index) + 4]);
 	}
 
-	protected byte getG(ByteBuffer buffer, int index) {
-		return buffer.get(getBufferPosition(index) + 13);
+	protected float getV(int index) {
+		return Float.intBitsToFloat(vertexData[getIntOffset(index) + 5]);
 	}
 
-	protected byte getB(ByteBuffer buffer, int index) {
-		return buffer.get(getBufferPosition(index) + 14);
+	protected int getLightData(int index) {
+		return vertexData[getIntOffset(index) + 6];
 	}
 
-	protected byte getA(ByteBuffer buffer, int index) {
-		return buffer.get(getBufferPosition(index) + 15);
+	protected float getNX(int index) {
+		int packed = vertexData[getIntOffset(index) + 7];
+		return ((byte) (packed & 0xFF)) / 127f;
 	}
 
-	protected float getU(ByteBuffer buffer, int index) {
-		return buffer.getFloat(getBufferPosition(index) + 16);
+	protected float getNY(int index) {
+		int packed = vertexData[getIntOffset(index) + 7];
+		return ((byte) ((packed >> 8) & 0xFF)) / 127f;
 	}
 
-	protected float getV(ByteBuffer buffer, int index) {
-		return buffer.getFloat(getBufferPosition(index) + 20);
-	}
-
-	protected int getLight(ByteBuffer buffer, int index) {
-		return buffer.getInt(getBufferPosition(index) + 24);
-	}
-
-	protected byte getNX(ByteBuffer buffer, int index) {
-		return buffer.get(getBufferPosition(index) + 28);
-	}
-
-	protected byte getNY(ByteBuffer buffer, int index) {
-		return buffer.get(getBufferPosition(index) + 29);
-	}
-
-	protected byte getNZ(ByteBuffer buffer, int index) {
-		return buffer.get(getBufferPosition(index) + 30);
+	protected float getNZ(int index) {
+		int packed = vertexData[getIntOffset(index) + 7];
+		return ((byte) ((packed >> 16) & 0xFF)) / 127f;
 	}
 
 	private static int getLight(Level world, Vector4f lightPos) {

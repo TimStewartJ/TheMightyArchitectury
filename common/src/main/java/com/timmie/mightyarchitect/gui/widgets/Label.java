@@ -77,7 +77,7 @@ public class Label extends AbstractSimiWidget {
 	}
 
 	@Override
-	public void render(GuiGraphics matrixStack, int mouseX, int mouseY, float partialTicks) {
+	public void renderWidget(GuiGraphics matrixStack, int mouseX, int mouseY, float partialTicks) {
 		if (!visible)
 			return;
 		if (text == null || text.getString().isEmpty())
@@ -88,12 +88,7 @@ public class Label extends AbstractSimiWidget {
 		if (suffix != null && !suffix.isEmpty())
 			copy.append(suffix);
 
-		matrixStack.drawString(font, copy, x, y, color, hasShadow);
-	}
-
-	@Override
-	public void renderWidget(GuiGraphics poseStack, int i, int j, float f) {
-
+		matrixStack.drawString(font, copy, getX(), getY(), color, hasShadow);
 	}
 
 	@Override

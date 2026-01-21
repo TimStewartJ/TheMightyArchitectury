@@ -5,7 +5,6 @@ import com.timmie.mightyarchitect.control.design.DesignSlice.DesignSliceTrait;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction.Axis;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -43,11 +42,11 @@ public class SliceMarkerBlock extends Block {
 	}
 
 	@Override
-	public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn,
+	protected InteractionResult useWithoutItem(BlockState state, Level worldIn, BlockPos pos, Player player,
 			BlockHitResult hit) {
 		if (hit.getDirection().getAxis() == Axis.Y)
 			return InteractionResult.PASS;
-		if (AllItems.ARCHITECT_WAND.typeOf(player.getItemInHand(handIn)))
+		if (AllItems.ARCHITECT_WAND.typeOf(player.getMainHandItem()) || AllItems.ARCHITECT_WAND.typeOf(player.getOffhandItem()))
 			return InteractionResult.PASS;
 		if (worldIn.isClientSide)
 			return InteractionResult.SUCCESS;

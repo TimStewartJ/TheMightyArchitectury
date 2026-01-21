@@ -79,7 +79,7 @@ public enum ScreenResources {
 	}
 	
 	private ScreenResources(String location, int startX, int startY, int width, int height) {
-		this.location = new ResourceLocation(TheMightyArchitect.ID, "textures/gui/" + location);
+		this.location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "textures/gui/" + location);
 		this.width = width; this.height = height;
 		this.startX = startX; this.startY = startY;
 	}

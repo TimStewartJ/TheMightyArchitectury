@@ -27,7 +27,7 @@ public class Indicator extends AbstractSimiWidget {
 	}
 	
 	@Override
-	public void render(GuiGraphics ms, int mouseX, int mouseY, float partialTicks ) {
+	public void renderWidget(GuiGraphics ms, int mouseX, int mouseY, float partialTicks ) {
 		ScreenResources toDraw;
 		switch(state) {
 			case ON: toDraw = ScreenResources.INDICATOR_WHITE; break;
@@ -37,12 +37,7 @@ public class Indicator extends AbstractSimiWidget {
 			case GREEN: toDraw = ScreenResources.INDICATOR_GREEN; break;
 			default: toDraw = ScreenResources.INDICATOR; break;
 		}
-		toDraw.draw(ms, x, y);
-	}
-
-	@Override
-	public void renderWidget(GuiGraphics poseStack, int i, int j, float f) {
-
+		toDraw.draw(ms, getX(), getY());
 	}
 
 	@Override

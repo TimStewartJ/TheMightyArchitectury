@@ -24,6 +24,7 @@ import dev.architectury.event.events.client.ClientRawInputEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.event.events.common.InteractionEvent;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -272,11 +273,11 @@ public class ArchitectManager {
 
 	}
 
-	public static EventResult onMouseScrolled(Minecraft minecraft, double v) {
+	public static EventResult onMouseScrolled(Minecraft minecraft, double horizontalAmount, double verticalAmount) {
 		if (Minecraft.getInstance().screen != null)
 			return EventResult.pass();
 		if (phase.getPhaseHandler()
-			.onScroll((int) Math.signum(v)))
+			.onScroll((int) Math.signum(verticalAmount)))
 			return EventResult.interruptTrue();
 		return EventResult.pass();
 	}
@@ -333,10 +334,10 @@ public class ArchitectManager {
 			((IDrawBlockHighlights) phaseHandler).tickHighlightOutlines();
 	}
 
-	public static void onDrawGameOverlay(GuiGraphics poseStack, float partialTicks) {
+	public static void onDrawGameOverlay(GuiGraphics poseStack, DeltaTracker deltaTracker) {
 		IArchitectPhase phaseHandler = phase.getPhaseHandler();
 		if (phaseHandler instanceof IRenderGameOverlay) {
-			((IRenderGameOverlay) phaseHandler).renderGameOverlay(poseStack, partialTicks);
+			((IRenderGameOverlay) phaseHandler).renderGameOverlay(poseStack, deltaTracker.getGameTimeDeltaPartialTick(true));
 		}
 
 		menu.drawPassive();

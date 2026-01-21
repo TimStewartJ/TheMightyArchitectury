@@ -31,7 +31,7 @@ public enum AllSpecialTextures {
     private ResourceLocation location;
 
     private AllSpecialTextures(String filename) {
-        location = new ResourceLocation(TheMightyArchitect.ID,
+        location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID,
                 "textures/block/marker/" + filename);
     }
 

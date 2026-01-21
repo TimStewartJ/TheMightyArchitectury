@@ -1,7 +1,9 @@
 package com.timmie.mightyarchitect.control;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.timmie.mightyarchitect.MightyClient;
@@ -86,6 +88,7 @@ public class SchematicRenderer {
 		final BlockAndTintGetter blockAccess = schematic.getMaterializedSketch();
 		final BlockRenderDispatcher blockRendererDispatcher = minecraft.getBlockRenderer();
 
+		Map<RenderType, ByteBufferBuilder> byteBuffers = new HashMap<>();
 		Map<RenderType, BufferBuilder> buffers = new HashMap<>();
 		PoseStack ms = new PoseStack();
 
@@ -104,12 +107,14 @@ public class SchematicRenderer {
 
 					if (!buffers.containsKey(blockRenderLayer))
 					{
-						buffers.put(blockRenderLayer, new BufferBuilder(MightyClient.iris_presence?262144:DefaultVertexFormat.BLOCK.getIntegerSize()));
+						int bufferSize = MightyClient.iris_presence ? 262144 : 2097152;
+						ByteBufferBuilder byteBuffer = new ByteBufferBuilder(bufferSize);
+						byteBuffers.put(blockRenderLayer, byteBuffer);
+						buffers.put(blockRenderLayer, new BufferBuilder(byteBuffer, VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK));
+						startedBufferBuilders.add(blockRenderLayer);
 					}
 
 					BufferBuilder bufferBuilder = buffers.get(blockRenderLayer);
-					if (startedBufferBuilders.add(blockRenderLayer))
-						bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 
 					if (state.getRenderShape() == RenderShape.MODEL)
 					{
@@ -127,8 +132,15 @@ public class SchematicRenderer {
 			if (!startedBufferBuilders.contains(layer))
 				continue;
 			BufferBuilder buf = buffers.get(layer);
-			var renderedBuffer = buf.end();
-			bufferCache.put(layer, new SuperByteBuffer(renderedBuffer));
+			MeshData meshData = buf.build();
+			if (meshData != null) {
+				bufferCache.put(layer, new SuperByteBuffer(meshData));
+			}
+			// Close the ByteBufferBuilder to free memory
+			ByteBufferBuilder byteBuffer = byteBuffers.get(layer);
+			if (byteBuffer != null) {
+				byteBuffer.close();
+			}
 		}
 	}
 

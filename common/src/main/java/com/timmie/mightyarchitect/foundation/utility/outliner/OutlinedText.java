@@ -45,7 +45,7 @@ public class OutlinedText extends Outline {
 
 		var ms = guiGraphics.pose();
 		Minecraft mc = Minecraft.getInstance();
-		float pt = mc.getFrameTime();
+		float pt = mc.getTimer().getGameTimeDeltaPartialTick(true);
 		Vec3 vec = VecHelper.lerp(prevLocation, location, pt);
 		EntityRenderDispatcher renderManager = mc.getEntityRenderDispatcher();
 		float stringLength = mc.font.width(text);
@@ -55,7 +55,7 @@ public class OutlinedText extends Outline {
 		ms.mulPose(renderManager.cameraOrientation());
 
 //		if (scalesUp) {
-		double distance = mc.player.getEyePosition(mc.getFrameTime())
+		double distance = mc.player.getEyePosition(mc.getTimer().getGameTimeDeltaPartialTick(true))
 			.distanceToSqr(vec);
 		float scale = (float) (distance / 512f);
 		ms.scale(2 + scale, 2 + scale, 2 + scale);

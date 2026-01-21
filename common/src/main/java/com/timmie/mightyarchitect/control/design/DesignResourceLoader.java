@@ -5,6 +5,7 @@ import com.timmie.mightyarchitect.control.design.partials.Design;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 
 import java.io.IOException;
@@ -75,7 +76,7 @@ public class DesignResourceLoader {
 			try {
 				InputStream inputStream = Files.newInputStream(Paths.get("themes/" + theme.getFilePath()),
 						StandardOpenOption.READ);
-				importedThemeFile = NbtIo.readCompressed(inputStream);
+				importedThemeFile = NbtIo.readCompressed(inputStream, NbtAccounter.unlimitedHeap());
 				inputStream.close();
 			} catch (IOException e) {
 				e.printStackTrace();

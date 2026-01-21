@@ -2,6 +2,7 @@ package com.timmie.mightyarchitect.networking;
 
 import dev.architectury.networking.NetworkManager;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
@@ -18,12 +19,13 @@ public class SetHotbarItemPacket {
 	}
 	
 	public SetHotbarItemPacket(FriendlyByteBuf buffer) {
-		this(buffer.readInt(), buffer.readItem());
+		this.slot = buffer.readInt();
+		this.stack = ItemStack.STREAM_CODEC.decode((RegistryFriendlyByteBuf) buffer);
 	}
 
 	public void toBytes(FriendlyByteBuf buffer) {
 		buffer.writeInt(slot);
-		buffer.writeItem(stack);
+		ItemStack.STREAM_CODEC.encode((RegistryFriendlyByteBuf) buffer, stack);
 	}
 
 	public void handle(Supplier<NetworkManager.PacketContext> context) {

@@ -5,6 +5,7 @@ import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 
 import java.io.IOException;
@@ -204,7 +205,7 @@ public class ThemeStorage {
 						try {
 							InputStream inputStream = Files.newInputStream(Paths.get(folderPath + "/" + themeFolder),
 								StandardOpenOption.READ);
-							themeFile = NbtIo.readCompressed(inputStream);
+							themeFile = NbtIo.readCompressed(inputStream, NbtAccounter.unlimitedHeap());
 							inputStream.close();
 						} catch (IOException e) {
 							e.printStackTrace();

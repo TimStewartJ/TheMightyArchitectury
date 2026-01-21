@@ -3,7 +3,9 @@ package com.timmie.mightyarchitect.foundation;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
@@ -78,14 +80,16 @@ public class SuperByteBufferCache {
 	private SuperByteBuffer standardModelRender(BakedModel model, BlockState referenceState, PoseStack ms) {
 		BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
 		ModelBlockRenderer blockRenderer = dispatcher.getModelRenderer();
-		BufferBuilder builder = new BufferBuilder(DefaultVertexFormat.BLOCK.getIntegerSize());
+		ByteBufferBuilder byteBuffer = new ByteBufferBuilder(2097152);
+		BufferBuilder builder = new BufferBuilder(byteBuffer, VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 		RandomSource random = RandomSource.create();
-		builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 		blockRenderer.tesselateBlock(Minecraft.getInstance().level, model, referenceState, BlockPos.ZERO.above(255), ms,
 				builder, true, random, 42, OverlayTexture.NO_OVERLAY);
-		var renderedBuilder = builder.end();
+		MeshData meshData = builder.build();
 
-		return new SuperByteBuffer(renderedBuilder);
+		SuperByteBuffer result = meshData != null ? new SuperByteBuffer(meshData) : SuperByteBuffer.empty();
+		byteBuffer.close();
+		return result;
 	}
 
 	public void invalidate() {

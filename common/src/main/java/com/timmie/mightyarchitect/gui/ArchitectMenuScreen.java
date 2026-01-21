@@ -83,7 +83,7 @@ public class ArchitectMenuScreen extends Screen {
 
 		// NOT FOCUSED
 		draw(new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource()), Minecraft.getInstance()
-			.getFrameTime());
+			.getTimer().getGameTimeDeltaPartialTick(true));
 	}
 
 	@Override
@@ -131,7 +131,7 @@ public class ArchitectMenuScreen extends Screen {
 	private void draw(GuiGraphics ms, float partialTicks) {
 		Minecraft mc = Minecraft.getInstance();
 		Window mainWindow = mc.getWindow();
-		partialTicks = mc.getFrameTime();
+		partialTicks = mc.getTimer().getGameTimeDeltaPartialTick(true);
 
 		int x = mainWindow.getGuiScaledWidth() - menuWidth - 10;
 		int y = mainWindow.getGuiScaledHeight() - menuHeight;

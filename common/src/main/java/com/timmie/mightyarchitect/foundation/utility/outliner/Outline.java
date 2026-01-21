@@ -143,14 +143,13 @@ public abstract class Outline {
 		if (useFaceColor && params.faceRgb != null)
 			color = params.faceRgb;
 
-		builder.vertex(peek.pose(), (float) pos.x, (float) pos.y, (float) pos.z)
-			.color((float) color.x, (float) color.y, (float) color.z, params.alpha)
-			.uv(u, v)
-			.overlayCoords(OverlayTexture.NO_OVERLAY)
-			.uv2(params.lightMap)
+		builder.addVertex(peek.pose(), (float) pos.x, (float) pos.y, (float) pos.z)
+			.setColor((float) color.x, (float) color.y, (float) color.z, params.alpha)
+			.setUv(u, v)
+			.setOverlay(OverlayTexture.NO_OVERLAY)
+			.setLight(params.lightMap)
 			//.uv2(LightTexture.FULL_BRIGHT)
-			.normal(peek.normal(), xOffset, yOffset, zOffset)
-			.endVertex();
+			.setNormal(peek, xOffset, yOffset, zOffset);
 
 		transformNormals = null;
 	}

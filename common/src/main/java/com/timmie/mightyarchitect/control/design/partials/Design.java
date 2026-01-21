@@ -26,7 +26,7 @@ public abstract class Design {
 	public abstract Design fromNBT(CompoundTag compound);
 	
 	protected void applyNBT(CompoundTag compound) {
-		size = NbtUtils.readBlockPos(compound.getCompound("Size"));
+		size = NbtUtils.readBlockPos(compound, "Size").orElse(BlockPos.ZERO);
 		defaultWidth = size.getX();
 		slices = new DesignSlice[size.getY()];
 		

@@ -2,9 +2,9 @@ package com.timmie.mightyarchitect.foundation.utility;
 
 import joptsimple.internal.Strings;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.List;
@@ -130,7 +130,7 @@ public class LangBuilder {
 	}
 
 	public String json() {
-		return Component.Serializer.toJson(component());
+		return Component.Serializer.toJson(component(), Minecraft.getInstance().level.registryAccess());
 	}
 
 	public void sendStatus(Player player) {

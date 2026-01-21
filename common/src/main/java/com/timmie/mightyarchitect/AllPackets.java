@@ -11,7 +11,7 @@ public class AllPackets {
 	public static NetworkChannel channel;
 
 	public static void registerPackets() {
-		channel = NetworkChannel.create(new ResourceLocation(TheMightyArchitect.ID, "simple_channel"));
+		channel = NetworkChannel.create(ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "simple_channel"));
 
 		int i = 0;
 

@@ -11,7 +11,7 @@ public class AnimationTickHolder {
 	}
 
 	public static float getRenderTick() {
-		return ticks + Minecraft.getInstance().getFrameTime();
+		return ticks + Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
 	}
 
 }

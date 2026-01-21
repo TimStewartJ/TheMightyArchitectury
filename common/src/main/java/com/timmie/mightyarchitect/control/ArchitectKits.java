@@ -7,6 +7,7 @@ import com.timmie.mightyarchitect.control.design.DesignExporter;
 import com.timmie.mightyarchitect.control.palette.Palette;
 import com.timmie.mightyarchitect.networking.SetHotbarItemPacket;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -82,10 +83,10 @@ public class ArchitectKits {
 	private static void setHotbarBlock(int slot, Palette palette) {
 		BlockState state = DesignExporter.theme.getDefaultPalette().get(palette);
 		ItemStack stack = new ItemStack(state.getBlock().asItem());
-		setHotbarItem(slot,
-				stack.setHoverName(Component.literal(ChatFormatting.RESET + "" + ChatFormatting.GOLD
-						+ palette.getDisplayName() + ChatFormatting.WHITE + " (" + ChatFormatting.GRAY
-						+ stack.getHoverName().getString() + ChatFormatting.WHITE + ")")));
+		stack.set(DataComponents.CUSTOM_NAME, Component.literal(ChatFormatting.RESET + "" + ChatFormatting.GOLD
+				+ palette.getDisplayName() + ChatFormatting.WHITE + " (" + ChatFormatting.GRAY
+				+ stack.getHoverName().getString() + ChatFormatting.WHITE + ")"));
+		setHotbarItem(slot, stack);
 	}
 
 }
