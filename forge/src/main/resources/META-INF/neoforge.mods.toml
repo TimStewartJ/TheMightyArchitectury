@@ -1,5 +1,5 @@
 modLoader = "javafml"
-loaderVersion = "[46,)"
+loaderVersion = "[4,)"
 issueTrackerURL = "https://github.com/TimStewartJ/TheMightyArchitectury/issues"
 license = "MIT"
 
@@ -14,22 +14,22 @@ Architectury port of The Mighty Architect. Design elaborate buildings within a m
 #logoFile = ""
 
 [[dependencies.mightyarchitect]]
-modId = "forge"
-mandatory = true
-versionRange = "[46,)"
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.mightyarchitect]]
 modId = "minecraft"
-mandatory = true
-versionRange = "[1.20.0,)"
+type = "required"
+versionRange = "[1.21.1,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.mightyarchitect]]
 modId = "architectury"
-mandatory = true
-versionRange = "[9.0.8,)"
+type = "required"
+versionRange = "[13.0.0,)"
 ordering = "AFTER"
 side = "BOTH"
