@@ -3,6 +3,32 @@
   "configurations": [
     {
       "type": "java",
+      "name": "Minecraft Client (:fabric)",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/fabric/run",
+      "console": "integratedTerminal",
+      "stopOnEntry": false,
+      "mainClass": "dev.architectury.transformer.TransformerRuntime",
+      "vmArgs": "-Dfabric.dli.config\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\loom-cache\\launch.cfg -Dfabric.dli.env\u003dclient -Dfabric.dli.main\u003dnet.fabricmc.loader.impl.launch.knot.KnotClient -Darchitectury.main.class\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\architectury\\.main_class -Darchitectury.runtime.transformer\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\architectury\\.transforms -Darchitectury.properties\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\architectury\\.properties -Djdk.attach.allowAttachSelf\u003dtrue -javaagent:E:\\TheMightyArchitectury\\.gradle\\architectury\\architectury-transformer-agent.jar",
+      "args": "",
+      "env": {},
+      "projectName": "fabric"
+    },
+    {
+      "type": "java",
+      "name": "Minecraft Server (:fabric)",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/fabric/run",
+      "console": "integratedTerminal",
+      "stopOnEntry": false,
+      "mainClass": "dev.architectury.transformer.TransformerRuntime",
+      "vmArgs": "-Dfabric.dli.config\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\loom-cache\\launch.cfg -Dfabric.dli.env\u003dserver -Dfabric.dli.main\u003dnet.fabricmc.loader.impl.launch.knot.KnotServer -Darchitectury.main.class\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\architectury\\.main_class -Darchitectury.runtime.transformer\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\architectury\\.transforms -Darchitectury.properties\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\architectury\\.properties -Djdk.attach.allowAttachSelf\u003dtrue -javaagent:E:\\TheMightyArchitectury\\.gradle\\architectury\\architectury-transformer-agent.jar",
+      "args": "nogui",
+      "env": {},
+      "projectName": "fabric"
+    },
+    {
+      "type": "java",
       "name": "Minecraft Client (:forge)",
       "request": "launch",
       "cwd": "${workspaceFolder}/forge/run",
