@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.foundation.MatrixStacker;
 import com.timmie.mightyarchitect.foundation.SuperByteBuffer;
 import net.minecraft.client.Minecraft;
@@ -102,7 +103,9 @@ public class SchematicRenderer {
 						continue;
 
 					if (!buffers.containsKey(blockRenderLayer))
-						buffers.put(blockRenderLayer, new BufferBuilder(DefaultVertexFormat.BLOCK.getIntegerSize()));
+					{
+						buffers.put(blockRenderLayer, new BufferBuilder(MightyClient.iris_presence?262144:DefaultVertexFormat.BLOCK.getIntegerSize()));
+					}
 
 					BufferBuilder bufferBuilder = buffers.get(blockRenderLayer);
 					if (startedBufferBuilders.add(blockRenderLayer))
