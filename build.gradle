@@ -22,12 +22,11 @@ subprojects {
     }
 }
 
-// Generate version: base version + build number (commit count) + short SHA for CI builds
+// Generate version: base version + build number for CI builds
 def buildVersion = rootProject.mod_version
 if (System.getenv("CI")) {
     def commitCount = "git rev-list --count HEAD".execute().text.trim()
-    def shortSha = "git rev-parse --short HEAD".execute().text.trim()
-    buildVersion = "${rootProject.mod_version}+build.${commitCount}.${shortSha}"
+    buildVersion = "${rootProject.mod_version}+${commitCount}"
 }
 
 allprojects {
@@ -35,7 +34,7 @@ allprojects {
     apply plugin: "architectury-plugin"
     apply plugin: "maven-publish"
 
-    archivesBaseName = rootProject.archives_base_name
+    archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version}"
     version = buildVersion
     group = rootProject.maven_group
 
