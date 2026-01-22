@@ -12,7 +12,7 @@ import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.Property;
 
 import java.util.Collection;
@@ -148,14 +148,16 @@ public class PaletteDefinition {
 		Collection<Property<?>> properties = state.getProperties();
 
 		for (Property<?> property : properties) {
-			if (property instanceof DirectionProperty) {
-				Direction facing = (Direction) state.getValue(property);
+			if (property instanceof EnumProperty<?> enumProperty && enumProperty.getValueClass() == Direction.class) {
+				@SuppressWarnings("unchecked")
+				EnumProperty<Direction> directionProperty = (EnumProperty<Direction>) property;
+				Direction facing = state.getValue(directionProperty);
 				if (facing.getAxis() == Axis.Y)
 					continue;
 
 				if ((paletteInfo.mirrorZ && facing.getAxis() != Axis.Z)
 						|| (paletteInfo.mirrorX && facing.getAxis() != Axis.X))
-					state = state.setValue((DirectionProperty) property, facing.getOpposite());
+					state = state.setValue(directionProperty, facing.getOpposite());
 			}
 		}
 

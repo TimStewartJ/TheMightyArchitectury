@@ -2,7 +2,6 @@ package com.timmie.mightyarchitect.foundation.utility;
 
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.PostChain;
 import net.minecraft.resources.ResourceLocation;
 
 public enum Shaders {
@@ -16,29 +15,16 @@ public enum Shaders {
 	}
 
 	public boolean isActive() {
-		Minecraft mc = Minecraft.getInstance();
-		PostChain shaderGroup = mc.gameRenderer.currentEffect();
-		return shaderGroup != null && shaderGroup.getName()
-			.equals(location.toString());
+		// TODO: Post-processing shader API changed significantly in 1.21.4
+		// The GameRenderer no longer exposes currentEffect() directly
+		// This needs to be reimplemented using the new post-processing system
+		return false;
 	}
 
 	public void setActive(boolean active) {
-		Minecraft mc = Minecraft.getInstance();
-
-		if (this == None) {
-			mc.gameRenderer.shutdownEffect();
-			return;
-		}
-
-		if (active && !isActive()) {
-			mc.gameRenderer.loadEffect(location);
-			return;
-		}
-
-		if (!active && isActive()) {
-			mc.gameRenderer.shutdownEffect();
-			return;
-		}
+		// TODO: Post-processing shader API changed significantly in 1.21.4
+		// loadEffect(), shutdownEffect() no longer exist on GameRenderer
+		// This needs to be reimplemented using the new post-processing system
 	}
 
 }

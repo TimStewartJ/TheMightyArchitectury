@@ -34,6 +34,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import org.apache.commons.io.IOUtils;
 import org.lwjgl.glfw.GLFW;
@@ -344,7 +345,7 @@ public class ArchitectManager {
 		RenderSystem.enableBlend();
 	}
 
-	public static EventResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return EventResult.pass(); }
+	public static InteractionResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return InteractionResult.PASS; }
 
 	public static void resetSchematic() {
 		model = new Schematic();

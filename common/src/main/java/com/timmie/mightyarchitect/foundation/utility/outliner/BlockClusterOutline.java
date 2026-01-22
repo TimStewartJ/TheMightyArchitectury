@@ -54,7 +54,7 @@ public class BlockClusterOutline extends Outline {
 		VertexConsumer builder = buffer.getBuffer(translucentType);
 
 		Vec3 center = VecHelper.getCenterOf(pos);
-		Vec3 offset = Vec3.atLowerCornerOf(face.getNormal());
+		Vec3 offset = Vec3.atLowerCornerOf(face.getUnitVec3i());
 		Vec3 plane = VecHelper.axisAlingedPlaneOf(offset);
 		Axis axis = face.getAxis();
 

@@ -164,7 +164,7 @@ public class Outliner {
 				float lastAlpha = prevTicks >= 0 ? 1 : 1 + (prevTicks / fadeticks);
 				float currentAlpha = 1 + (entry.ticksTillRemoval / fadeticks);
 				float alpha = Mth.lerp(Minecraft.getInstance()
-					.getTimer().getGameTimeDeltaPartialTick(true), lastAlpha, currentAlpha);
+					.getDeltaTracker().getGameTimeDeltaPartialTick(true), lastAlpha, currentAlpha);
 
 				outline.params.alpha = alpha * alpha * alpha;
 				if (outline.params.alpha < 1 / 8f)

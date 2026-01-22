@@ -61,7 +61,7 @@ public class LineOutline extends Outline {
 		@Override
 		public void render(GuiGraphics ms, MultiBufferSource buffer) {
 			float pt = Minecraft.getInstance()
-				.getTimer().getGameTimeDeltaPartialTick(true);
+				.getDeltaTracker().getGameTimeDeltaPartialTick(true);
 			renderCuboidLine(ms.pose(), buffer, VecHelper.lerp(prevStart, start, pt), VecHelper.lerp(prevEnd, end, pt));
 		}
 
@@ -91,7 +91,7 @@ public class LineOutline extends Outline {
 		@Override
 		public void render(GuiGraphics ms, MultiBufferSource buffer) {
 			float pt = Minecraft.getInstance()
-				.getTimer().getGameTimeDeltaPartialTick(true);
+				.getDeltaTracker().getGameTimeDeltaPartialTick(true);
 			float distanceToTarget = 1 - Mth.lerp(pt, prevProgress, progress);
 			Vec3 start = end.add(this.start.subtract(end)
 				.scale(distanceToTarget));

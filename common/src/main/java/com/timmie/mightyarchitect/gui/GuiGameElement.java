@@ -15,9 +15,9 @@ import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
@@ -173,13 +173,13 @@ public class GuiGameElement {
 			BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
 			MultiBufferSource.BufferSource buffer = mc.renderBuffers()
 				.bufferSource();
-			RenderType renderType = blockState.getBlock() == Blocks.AIR ? Sheets.translucentCullBlockSheet()
-				: ItemBlockRenderTypes.getRenderType(blockState, true);
+			RenderType renderType = blockState.getBlock() == Blocks.AIR ? Sheets.translucentItemSheet()
+				: ItemBlockRenderTypes.getRenderType(blockState);
 			VertexConsumer vb = buffer.getBuffer(renderType);
 
 			transformMatrix(ms);
 
-			RenderSystem.setShaderTexture(0, InventoryMenu.BLOCK_ATLAS);
+			RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
 			renderModel(blockRenderer, buffer, renderType, vb, ms);
 
 			cleanUpMatrix(ms);
@@ -252,11 +252,12 @@ public class GuiGameElement {
 
 		public static void renderItemIntoGUI(PoseStack matrixStack, ItemStack stack, boolean useDefaultLighting) {
 			ItemRenderer renderer = Minecraft.getInstance().getItemRenderer();
-			BakedModel bakedModel = renderer.getModel(stack, null, null, 0);
+			var modelManager = Minecraft.getInstance().getModelManager();
+			var itemModels = Minecraft.getInstance().getItemModelResolver();
 
 			// maybe should use renderer.textureManager
-			Minecraft.getInstance().getTextureManager().getTexture(InventoryMenu.BLOCK_ATLAS).setFilter(false, false);
-			RenderSystem.setShaderTexture(0, InventoryMenu.BLOCK_ATLAS);
+			Minecraft.getInstance().getTextureManager().getTexture(TextureAtlas.LOCATION_BLOCKS).setFilter(false, false);
+			RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
 			RenderSystem.enableBlend();
 			RenderSystem.blendFunc(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA);
 			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -265,15 +266,14 @@ public class GuiGameElement {
 			matrixStack.translate(8.0F, -8.0F, 0.0F);
 			matrixStack.scale(16.0F, 16.0F, 16.0F);
 			MultiBufferSource.BufferSource buffer = Minecraft.getInstance().renderBuffers().bufferSource();
-			boolean flatLighting = !bakedModel.usesBlockLight();
-			if (useDefaultLighting && flatLighting) {
+			if (useDefaultLighting) {
 				Lighting.setupForFlatItems();
 			}
 
-			renderer.render(stack, ItemDisplayContext.GUI, false, matrixStack, buffer, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, bakedModel);
+			renderer.renderStatic(stack, ItemDisplayContext.GUI, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, matrixStack, buffer, null, 0);
 			buffer.endBatch();
 			RenderSystem.enableDepthTest();
-			if (useDefaultLighting && flatLighting) {
+			if (useDefaultLighting) {
 				Lighting.setupFor3DItems();
 			}
 

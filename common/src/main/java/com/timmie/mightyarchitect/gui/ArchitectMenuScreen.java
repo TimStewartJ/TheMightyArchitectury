@@ -13,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import org.lwjgl.glfw.GLFW;
@@ -83,7 +84,7 @@ public class ArchitectMenuScreen extends Screen {
 
 		// NOT FOCUSED
 		draw(new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource()), Minecraft.getInstance()
-			.getTimer().getGameTimeDeltaPartialTick(true));
+			.getDeltaTracker().getGameTimeDeltaPartialTick(true));
 	}
 
 	@Override
@@ -131,7 +132,7 @@ public class ArchitectMenuScreen extends Screen {
 	private void draw(GuiGraphics ms, float partialTicks) {
 		Minecraft mc = Minecraft.getInstance();
 		Window mainWindow = mc.getWindow();
-		partialTicks = mc.getTimer().getGameTimeDeltaPartialTick(true);
+		partialTicks = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
 
 		int x = mainWindow.getGuiScaledWidth() - menuWidth - 10;
 		int y = mainWindow.getGuiScaledHeight() - menuHeight;
@@ -157,7 +158,7 @@ public class ArchitectMenuScreen extends Screen {
 		RenderSystem.enableBlend();
 		RenderSystem.setShaderColor(1, 1, 1, 3 / 4f);
 
-		ms.blit(gray.location, x, y, gray.startX, gray.startY, menuWidth, menuHeight, gray.width, gray.height);
+		ms.blit(RenderType::guiTextured, gray.location, x, y, gray.startX, gray.startY, menuWidth, menuHeight, gray.width, gray.height);
 		RenderSystem.setShaderColor(1, 1, 1, 1);
 
 		int yPos = y + 4;

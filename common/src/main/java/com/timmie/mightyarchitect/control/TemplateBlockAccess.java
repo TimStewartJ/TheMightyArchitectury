@@ -59,11 +59,7 @@ public class TemplateBlockAccess extends WrappedWorld {
 		});
 	}
 
-	@Override
-	// revert to original neighbor shape behavior
-	public void neighborShapeChanged(Direction direction, BlockState blockState, BlockPos blockPos, BlockPos blockPos2, int i, int j) {
-		NeighborUpdater.executeShapeUpdate(this, direction, blockState, blockPos, blockPos2, i, j - 1);
-	}
+	// neighborShapeChanged method removed in 1.21.4 - the method no longer exists in LevelAccessor
 
 	public Set<BlockPos> getAllPositions() {
 		return blocks.keySet();
@@ -90,7 +86,7 @@ public class TemplateBlockAccess extends WrappedWorld {
 
 	@Override
 	public Holder<Biome> getBiome(BlockPos pos) {
-		return Holder.direct(registryAccess().registryOrThrow(Registries.BIOME).get(Biomes.THE_VOID));
+		return Holder.direct(registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.THE_VOID).value());
 	}
 
 	@Override

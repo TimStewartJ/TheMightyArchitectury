@@ -1,9 +1,9 @@
 package com.timmie.mightyarchitect.foundation;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.InventoryMenu;
 
 import java.util.function.Function;
 
@@ -20,7 +20,7 @@ public class SpriteShiftEntry {
 
 	protected void loadTextures() {
 		Function<ResourceLocation, TextureAtlasSprite> textureMap = Minecraft.getInstance()
-			.getTextureAtlas(InventoryMenu.BLOCK_ATLAS);
+			.getTextureAtlas(TextureAtlas.LOCATION_BLOCKS);
 		original = textureMap.apply(originalTextureLocation);
 		target = textureMap.apply(targetTextureLocation);
 	}

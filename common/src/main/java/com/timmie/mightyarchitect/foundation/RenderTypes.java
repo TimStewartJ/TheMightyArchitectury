@@ -7,8 +7,9 @@ import com.timmie.mightyarchitect.AllSpecialTextures;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.util.TriState;
 
 public class RenderTypes extends RenderStateShard {
 
@@ -18,7 +19,7 @@ public class RenderTypes extends RenderStateShard {
 		return RenderType.create(createLayerName("outline_solid"), DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, true,
 				false, RenderType.CompositeState.builder()
 						.setShaderState(RenderStateShard.RENDERTYPE_ENTITY_CUTOUT_SHADER)
-						.setTextureState(new TextureStateShard(texture, false, false))
+						.setTextureState(new TextureStateShard(texture, TriState.FALSE, false))
 						.setLightmapState(LIGHTMAP)
 						.setOverlayState(OVERLAY)
 						.createCompositeState(true));
@@ -35,7 +36,7 @@ public class RenderTypes extends RenderStateShard {
 		return RenderType.create(createLayerName("outline_translucent" + (cull ? "_cull" : "")),
 				DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, true, true, RenderType.CompositeState.builder()
 						.setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_SHADER)
-						.setTextureState(new TextureStateShard(texture, false, false))
+						.setTextureState(new TextureStateShard(texture, TriState.FALSE, false))
 						.setTransparencyState(TRANSLUCENT_TRANSPARENCY)
 						.setCullState(cull ? CULL : NO_CULL)
 						.setLightmapState(LIGHTMAP)
@@ -48,13 +49,13 @@ public class RenderTypes extends RenderStateShard {
 		return RenderType.create(createLayerName("glowing_solid"), DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256,
 				true, false, RenderType.CompositeState.builder()
 						.setShaderState(RENDERTYPE_ENTITY_SOLID_SHADER)
-						.setTextureState(new TextureStateShard(texture, false, false))
+						.setTextureState(new TextureStateShard(texture, TriState.FALSE, false))
 						.setLightmapState(LIGHTMAP)
 						.setOverlayState(OVERLAY)
 						.createCompositeState(true));
 	}
 
-	private static final RenderType GLOWING_SOLID_DEFAULT = getGlowingSolid(InventoryMenu.BLOCK_ATLAS);
+	private static final RenderType GLOWING_SOLID_DEFAULT = getGlowingSolid(TextureAtlas.LOCATION_BLOCKS);
 
 	public static RenderType getGlowingSolid() {
 		return GLOWING_SOLID_DEFAULT;
@@ -64,7 +65,7 @@ public class RenderTypes extends RenderStateShard {
 		return RenderType.create(createLayerName("glowing_translucent"), DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS,
 				256, true, true, RenderType.CompositeState.builder()
 						.setShaderState(RENDERTYPE_ENTITY_SOLID_SHADER)
-						.setTextureState(new TextureStateShard(texture, false, false))
+						.setTextureState(new TextureStateShard(texture, TriState.FALSE, false))
 						.setTransparencyState(TRANSLUCENT_TRANSPARENCY)
 						.setCullState(NO_CULL)
 						.setLightmapState(LIGHTMAP)
@@ -72,7 +73,7 @@ public class RenderTypes extends RenderStateShard {
 						.createCompositeState(true));
 	}
 
-	private static final RenderType GLOWING_TRANSLUCENT_DEFAULT = getGlowingTranslucent(InventoryMenu.BLOCK_ATLAS);
+	private static final RenderType GLOWING_TRANSLUCENT_DEFAULT = getGlowingTranslucent(TextureAtlas.LOCATION_BLOCKS);
 
 	public static RenderType getGlowingTranslucent() {
 		return GLOWING_TRANSLUCENT_DEFAULT;

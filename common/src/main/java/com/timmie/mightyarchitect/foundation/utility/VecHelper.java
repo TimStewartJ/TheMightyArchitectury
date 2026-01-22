@@ -57,7 +57,7 @@ public class VecHelper {
 	}
 
 	public static boolean isVecPointingTowards(Vec3 vec, Direction direction) {
-		return Vec3.atLowerCornerOf(direction.getNormal()).distanceTo(vec.normalize()) < .75;
+		return Vec3.atLowerCornerOf(direction.getUnitVec3i()).distanceTo(vec.normalize()) < .75;
 	}
 
 	public static Vec3 getCenterOf(Vec3i pos) {
@@ -77,7 +77,7 @@ public class VecHelper {
 	}
 	
 	public static Vec3 axisAlingedPlaneOf(Direction face) {
-		return axisAlingedPlaneOf(Vec3.atLowerCornerOf(face.getNormal()));
+		return axisAlingedPlaneOf(Vec3.atLowerCornerOf(face.getUnitVec3i()));
 	}
 
 	public static ListTag writeNBT(Vec3 vec) {

@@ -62,7 +62,7 @@ public class SuperRenderTypeBuffer implements MultiBufferSource {
 			put(map, Sheets.solidBlockSheet());
 			put(map, Sheets.cutoutBlockSheet());
 			put(map, Sheets.bannerSheet());
-			put(map, Sheets.translucentCullBlockSheet());
+			put(map, Sheets.translucentItemSheet());
 			put(map, Sheets.shieldSheet());
 			put(map, Sheets.bedSheet());
 			put(map, Sheets.shulkerBoxSheet());
@@ -73,7 +73,6 @@ public class SuperRenderTypeBuffer implements MultiBufferSource {
 			put(map, RenderType.glint());
 			put(map, RenderType.glintTranslucent());
 			put(map, RenderType.entityGlint());
-			put(map, RenderType.entityGlintDirect());
 			put(map, RenderType.waterMask());
 			put(map, RenderTypes.getOutlineSolid());
 			ModelBakery.DESTROY_TYPES.forEach((p_173062_) -> {

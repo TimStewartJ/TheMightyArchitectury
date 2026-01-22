@@ -11,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
@@ -71,7 +72,7 @@ public class ToolSelectionScreen extends Screen {
 		float toolTipAlpha = yOffset.getValue(partialTicks) / 10;
 
 		// render main box
-		ms.blit(gray.location, x - 15, y, gray.startX, gray.startY, w, h, gray.width, gray.height);
+		ms.blit(RenderType::guiTextured, gray.location, x - 15, y, gray.startX, gray.startY, w, h, gray.width, gray.height);
 
 		// render tools
 		List<String> toolTip = tools.get(selection)
@@ -81,7 +82,7 @@ public class ToolSelectionScreen extends Screen {
 		if (toolTipAlpha > 0.25f) {
 			RenderSystem.setShaderTexture(0, gray.location);
 			RenderSystem.setShaderColor(.7f, .7f, .8f, toolTipAlpha);
-			ms.blit(gray.location, x - 15, y + 30, gray.startX, gray.startY, w, h + 22, gray.width, gray.height);
+			ms.blit(RenderType::guiTextured, gray.location, x - 15, y + 30, gray.startX, gray.startY, w, h + 22, gray.width, gray.height);
 			RenderSystem.setShaderColor(1, 1, 1, 1);
 
 			if (toolTip.size() > 0)

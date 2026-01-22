@@ -94,7 +94,7 @@ public abstract class ComposerToolBase implements IComposerTool {
 		Window mainWindow = mc.getWindow();
 		ms.pose().translate(mainWindow.getGuiScaledWidth() / 2, mainWindow.getGuiScaledHeight() / 2 - 3, 0);
 		ms.pose().translate(25,
-				-Mth.lerp(mc.getTimer().getGameTimeDeltaPartialTick(true), lastToolModeYOffset, toolModeYOffset),
+				-Mth.lerp(mc.getDeltaTracker().getGameTimeDeltaPartialTick(true), lastToolModeYOffset, toolModeYOffset),
 				0);
 
 		if (toolModeNoCtrl != null) {

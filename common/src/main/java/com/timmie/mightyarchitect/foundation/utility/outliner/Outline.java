@@ -63,7 +63,7 @@ public abstract class Outline {
 		Vec3 extension = diff.normalize()
 			.scale(lineWidth / 2);
 		Vec3 plane = VecHelper.axisAlingedPlaneOf(diff);
-		Direction face = Direction.getNearest(diff.x, diff.y, diff.z);
+		Direction face = Direction.getNearest((int) Math.signum(diff.x), (int) Math.signum(diff.y), (int) Math.signum(diff.z), Direction.UP);
 		Axis axis = face.getAxis();
 
 		start = start.subtract(extension);
@@ -96,16 +96,16 @@ public abstract class Outline {
 		putQuad(ms, builder, b4, b3, b2, b1, face);
 		putQuad(ms, builder, a1, a2, a3, a4, face.getOpposite());
 		Vec3 vec = a1.subtract(a4);
-		face = Direction.getNearest(vec.x, vec.y, vec.z);
+		face = Direction.getNearest((int) Math.signum(vec.x), (int) Math.signum(vec.y), (int) Math.signum(vec.z), Direction.UP);
 		putQuad(ms, builder, a1, b1, b2, a2, face);
 		vec = VecHelper.rotate(vec, -90, axis);
-		face = Direction.getNearest(vec.x, vec.y, vec.z);
+		face = Direction.getNearest((int) Math.signum(vec.x), (int) Math.signum(vec.y), (int) Math.signum(vec.z), Direction.UP);
 		putQuad(ms, builder, a2, b2, b3, a3, face);
 		vec = VecHelper.rotate(vec, -90, axis);
-		face = Direction.getNearest(vec.x, vec.y, vec.z);
+		face = Direction.getNearest((int) Math.signum(vec.x), (int) Math.signum(vec.y), (int) Math.signum(vec.z), Direction.UP);
 		putQuad(ms, builder, a3, b3, b4, a4, face);
 		vec = VecHelper.rotate(vec, -90, axis);
-		face = Direction.getNearest(vec.x, vec.y, vec.z);
+		face = Direction.getNearest((int) Math.signum(vec.x), (int) Math.signum(vec.y), (int) Math.signum(vec.z), Direction.UP);
 		putQuad(ms, builder, a4, b4, b1, a1, face);
 	}
 

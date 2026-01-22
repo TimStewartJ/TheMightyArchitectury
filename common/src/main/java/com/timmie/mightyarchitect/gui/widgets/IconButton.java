@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.gui.ScreenResources;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 
 public class IconButton extends AbstractSimiWidget {
@@ -28,7 +29,7 @@ public class IconButton extends AbstractSimiWidget {
 
 			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 			ScreenResources.BUTTON.bind();
-			ms.blit(ScreenResources.GRAY.location, x, y, button.startX, button.startY, button.width, button.height);
+			ms.blit(RenderType::guiTextured, ScreenResources.GRAY.location, x, y, button.startX, button.startY, button.width, button.height, 256, 256);
 			icon.draw(ms, x + 1, y + 1);
 		}
 	}

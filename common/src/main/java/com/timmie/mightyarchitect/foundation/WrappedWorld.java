@@ -11,11 +11,12 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.item.alchemy.PotionBrewing;
-import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.crafting.RecipeAccess;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.FuelValues;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkSource;
 import net.minecraft.world.level.entity.EntityTypeTest;
@@ -78,7 +79,7 @@ public class WrappedWorld extends Level {
 
 	public WrappedWorld(Level world) {
 		super((WritableLevelData) world.getLevelData(), world.dimension(), world.registryAccess(), world.dimensionTypeRegistration(),
-			() -> world.getProfiler(), world.isClientSide, false, 0, 0);
+			world.isClientSide, false, 0L, 0);
 		this.world = world;
 	}
 
@@ -198,8 +199,18 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
-	public RecipeManager getRecipeManager() {
-		return world.getRecipeManager();
+	public RecipeAccess recipeAccess() {
+		return world.recipeAccess();
+	}
+
+	@Override
+	public FuelValues fuelValues() {
+		return world.fuelValues();
+	}
+
+	@Override
+	public java.util.Collection<net.minecraft.world.entity.boss.EnderDragonPart> dragonParts() {
+		return world.dragonParts();
 	}
 
 	@Override
@@ -230,6 +241,25 @@ public class WrappedWorld extends Level {
 	@Override
 	public TickRateManager tickRateManager() {
 		return world.tickRateManager();
+	}
+
+	@Override
+	public void explode(
+			net.minecraft.world.entity.Entity entity,
+			net.minecraft.world.damagesource.DamageSource damageSource,
+			net.minecraft.world.level.ExplosionDamageCalculator calculator,
+			double x, double y, double z,
+			float radius, boolean fire,
+			Level.ExplosionInteraction interaction,
+			net.minecraft.core.particles.ParticleOptions smallParticle,
+			net.minecraft.core.particles.ParticleOptions largeParticle,
+			net.minecraft.core.Holder<net.minecraft.sounds.SoundEvent> sound) {
+		world.explode(entity, damageSource, calculator, x, y, z, radius, fire, interaction, smallParticle, largeParticle, sound);
+	}
+
+	@Override
+	public int getSeaLevel() {
+		return world.getSeaLevel();
 	}
 
 	@Override

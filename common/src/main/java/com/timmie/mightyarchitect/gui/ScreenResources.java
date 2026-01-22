@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 
 public enum ScreenResources {
@@ -85,7 +86,7 @@ public enum ScreenResources {
 	}
 	
 	public void draw(GuiGraphics screen, int i, int j) {
-		screen.blit(location, i, j, startX, startY, width, height);
+		screen.blit(RenderType::guiTextured, location, i, j, startX, startY, width, height, 256, 256);
 	}
 
 	public void bind() {

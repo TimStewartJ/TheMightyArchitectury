@@ -16,7 +16,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -52,7 +51,7 @@ public class ArchitectWandItem extends Item {
 				() -> () -> handleUseOnDesignAnchor(player, world, anchor, blockState));
 
 		player.getCooldowns()
-			.addCooldown(this, 5);
+			.addCooldown(context.getItemInHand(), 5);
 		return InteractionResult.SUCCESS;
 	}
 
@@ -80,13 +79,13 @@ public class ArchitectWandItem extends Item {
 	}
 
 	@Override
-	public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
+	public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
 		if (worldIn.isClientSide) {
 			EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> handleRightClick(worldIn, playerIn, handIn));
 			playerIn.getCooldowns()
-				.addCooldown(this, 5);
+				.addCooldown(playerIn.getItemInHand(handIn), 5);
 		}
-		return super.use(worldIn, playerIn, handIn);
+		return InteractionResult.SUCCESS;
 	}
 
 	@Environment(EnvType.CLIENT)

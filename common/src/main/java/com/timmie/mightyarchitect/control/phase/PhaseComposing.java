@@ -123,7 +123,7 @@ public class PhaseComposing extends PhaseBase implements IRenderGameOverlay {
 			return;
 
 		toolSelection.renderPassive(ms, Minecraft.getInstance()
-			.getTimer().getGameTimeDeltaPartialTick(true));
+			.getDeltaTracker().getGameTimeDeltaPartialTick(true));
 		activeTool.getTool()
 			.renderOverlay(ms);
 	}
