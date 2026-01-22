@@ -7,6 +7,6 @@ import net.minecraft.client.gui.GuiGraphics;
 
 public class OnRenderWorld {
     public static void RegisterRenderEvent() {
-        WorldRenderEvents.AFTER_TRANSLUCENT.register((context) -> MightyClient.onRenderWorld(new GuiGraphics(Minecraft.getInstance(), context.matrixStack(), Minecraft.getInstance().renderBuffers().bufferSource())));
+        WorldRenderEvents.LAST.register((context) -> MightyClient.onRenderWorld(new GuiGraphics(Minecraft.getInstance(), context.matrixStack(), Minecraft.getInstance().renderBuffers().bufferSource())));
     }
 }

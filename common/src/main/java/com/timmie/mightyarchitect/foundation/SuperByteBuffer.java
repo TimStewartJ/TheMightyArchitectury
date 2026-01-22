@@ -8,6 +8,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector4f;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
@@ -44,14 +45,15 @@ public class SuperByteBuffer {
 	private int r, g, b, a;
 	private float sheetSize;
 
-	// Standard vertex format size in bytes (position + color + uv + overlay + light + normal)
-	private static final int VERTEX_SIZE = 32; // bytes per vertex
-	private static final int INTS_PER_VERTEX = VERTEX_SIZE / 4;
+	// Vertex format info - BLOCK format is 32 bytes (8 ints): pos(3 floats) + color(1 int) + uv(2 floats) + light(1 int) + normal(1 int)
+	private static final int DEFAULT_VERTEX_SIZE = 32;
+	private int intsPerVertex;
 
 	public SuperByteBuffer(int[] vertexData, int vertexCount) {
 		this.vertexData = vertexData;
 		this.vertexCount = vertexCount;
-		this.formatSize = VERTEX_SIZE;
+		this.formatSize = DEFAULT_VERTEX_SIZE;
+		this.intsPerVertex = DEFAULT_VERTEX_SIZE / 4;
 		this.transforms = new PoseStack();
 	}
 
@@ -62,7 +64,8 @@ public class SuperByteBuffer {
 		if (meshData == null) {
 			this.vertexData = new int[0];
 			this.vertexCount = 0;
-			this.formatSize = VERTEX_SIZE;
+			this.formatSize = DEFAULT_VERTEX_SIZE;
+			this.intsPerVertex = DEFAULT_VERTEX_SIZE / 4;
 			this.transforms = new PoseStack();
 			return;
 		}
@@ -70,9 +73,9 @@ public class SuperByteBuffer {
 		MeshData.DrawState drawState = meshData.drawState();
 		this.vertexCount = drawState.vertexCount();
 		this.formatSize = drawState.format().getVertexSize();
+		this.intsPerVertex = formatSize / 4;
 		
 		ByteBuffer vertexBuffer = meshData.vertexBuffer();
-		int intsPerVertex = formatSize / 4;
 		this.vertexData = new int[vertexCount * intsPerVertex];
 		
 		if (vertexBuffer != null) {
@@ -144,6 +147,8 @@ public class SuperByteBuffer {
 				builder.setUv(targetU, targetV);
 			} else
 				builder.setUv(u, v);
+
+			builder.setOverlay(OverlayTexture.NO_OVERLAY);
 
 			if (shouldLight) {
 				int light = packedLightCoords;
@@ -228,7 +233,7 @@ public class SuperByteBuffer {
 	}
 
 	protected int getIntOffset(int vertexIndex) {
-		return vertexIndex * INTS_PER_VERTEX;
+		return vertexIndex * intsPerVertex;
 	}
 
 	protected float getX(int index) {
