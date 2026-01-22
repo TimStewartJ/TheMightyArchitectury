@@ -1,24 +1,22 @@
 package com.timmie.mightyarchitect.networking;
 
+import com.timmie.mightyarchitect.AllPackets;
 import dev.architectury.networking.NetworkManager;
+import dev.architectury.networking.simple.BaseC2SMessage;
+import dev.architectury.networking.simple.MessageType;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.entity.SignText;
 
-import java.util.function.Supplier;
-
-public class PlaceSignPacket {
+public class PlaceSignPacket extends BaseC2SMessage {
 	
-	public String text1;
-	public String text2;
-	public BlockPos position;
-
-	public PlaceSignPacket() {
-	}
+	private final String text1;
+	private final String text2;
+	private final BlockPos position;
 	
 	public PlaceSignPacket(String textLine1, String textLine2, BlockPos position) {
 		this.text1 = textLine1;
@@ -26,23 +24,32 @@ public class PlaceSignPacket {
 		this.position = position;
 	}
 	
-	public PlaceSignPacket(FriendlyByteBuf buffer) {
+	public PlaceSignPacket(RegistryFriendlyByteBuf buffer) {
 		this(buffer.readUtf(128), buffer.readUtf(128), buffer.readBlockPos());
 	}
 
-	public void toBytes(FriendlyByteBuf buffer) {
+	@Override
+	public MessageType getType() {
+		return AllPackets.PLACE_SIGN;
+	}
+
+	@Override
+	public void write(RegistryFriendlyByteBuf buffer) {
 		buffer.writeUtf(text1);
 		buffer.writeUtf(text2);
 		buffer.writeBlockPos(position);
 	}
 	
-	public void handle(Supplier<NetworkManager.PacketContext> context) {
-		context.get().queue(() -> {
-			Level entityWorld = context.get().getPlayer().getCommandSenderWorld();
+	@Override
+	public void handle(NetworkManager.PacketContext context) {
+		context.queue(() -> {
+			Level entityWorld = context.getPlayer().level();
 			entityWorld.setBlockAndUpdate(position, Blocks.SPRUCE_SIGN.defaultBlockState());
 			SignBlockEntity sign = (SignBlockEntity) entityWorld.getBlockEntity(position);
 
-			sign.setText(new SignText().setMessage(0, Component.literal(text1)).setMessage(1, Component.literal(text2)), true);
+			if (sign != null) {
+				sign.setText(new SignText().setMessage(0, Component.literal(text1)).setMessage(1, Component.literal(text2)), true);
+			}
 		});
 	}
 	

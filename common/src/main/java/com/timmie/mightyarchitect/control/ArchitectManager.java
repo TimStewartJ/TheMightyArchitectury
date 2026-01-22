@@ -133,7 +133,7 @@ public class ArchitectManager {
 
 		if (mc.hasSingleplayerServer()) {
 			for (InstantPrintPacket packet : getModel().getPackets())
-				AllPackets.channel.sendToServer(packet);
+				packet.sendToServer();
 			MightyClient.renderer.setActive(false);
 			status("Printed result into world.");
 			unload();

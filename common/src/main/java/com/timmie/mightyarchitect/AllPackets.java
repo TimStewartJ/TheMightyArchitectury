@@ -3,24 +3,19 @@ package com.timmie.mightyarchitect;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
 import com.timmie.mightyarchitect.networking.PlaceSignPacket;
 import com.timmie.mightyarchitect.networking.SetHotbarItemPacket;
-import dev.architectury.networking.NetworkChannel;
-import net.minecraft.resources.ResourceLocation;
+import dev.architectury.networking.simple.MessageType;
+import dev.architectury.networking.simple.SimpleNetworkManager;
 
 public class AllPackets {
 
-	public static NetworkChannel channel;
+	public static final SimpleNetworkManager NET = SimpleNetworkManager.create(TheMightyArchitect.ID);
 
-	public static void registerPackets() {
-		channel = NetworkChannel.create(ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "simple_channel"));
+	public static final MessageType INSTANT_PRINT = NET.registerC2S("instant_print", InstantPrintPacket::new);
+	public static final MessageType PLACE_SIGN = NET.registerC2S("place_sign", PlaceSignPacket::new);
+	public static final MessageType SET_HOTBAR_ITEM = NET.registerC2S("set_hotbar_item", SetHotbarItemPacket::new);
 
-		int i = 0;
-
-		channel.register(InstantPrintPacket.class, InstantPrintPacket::toBytes, InstantPrintPacket::new,
-				InstantPrintPacket::handle);
-		channel.register(PlaceSignPacket.class, PlaceSignPacket::toBytes, PlaceSignPacket::new,
-				PlaceSignPacket::handle);
-		channel.register(SetHotbarItemPacket.class, SetHotbarItemPacket::toBytes, SetHotbarItemPacket::new,
-				SetHotbarItemPacket::handle);
+	public static void init() {
+		// Force class loading to trigger static initialization and packet registration
 	}
 
 }
