@@ -9,6 +9,26 @@ architectury {
 
 loom {
     accessWidenerPath = project(":common").loom.accessWidenerPath
+
+    runs {
+        clientWithSodium {
+            client()
+            configName = "Minecraft Client with Sodium (:fabric)"
+            runDir = "run"
+            ideConfigGenerated = true
+        }
+    }
+}
+
+// Conditional test mod dependencies - use -PwithSodium to include Sodium and Iris
+if (project.hasProperty('withSodium') || System.getProperty('withSodium') != null) {
+    dependencies {
+        modLocalRuntime "maven.modrinth:sodium:mc1.20.1-0.5.13-fabric"
+        modLocalRuntime "maven.modrinth:iris:1.7.6+1.20.1"
+        // Iris shaded dependencies that aren't pulled transitively from Modrinth
+        localRuntime "org.anarres:jcpp:1.4.14"
+        localRuntime "io.github.douira:glsl-transformer:2.0.1"
+    }
 }
 
 configurations {
@@ -22,6 +42,14 @@ configurations {
 configurations.all {
     resolutionStrategy {
         force "net.fabricmc:fabric-loader:$fabric_loader_version"
+        // Force LWJGL 3.3.1 for Sodium compatibility
+        force "org.lwjgl:lwjgl:3.3.1"
+        force "org.lwjgl:lwjgl-opengl:3.3.1"
+        force "org.lwjgl:lwjgl-glfw:3.3.1"
+        force "org.lwjgl:lwjgl-openal:3.3.1"
+        force "org.lwjgl:lwjgl-stb:3.3.1"
+        force "org.lwjgl:lwjgl-tinyfd:3.3.1"
+        force "org.lwjgl:lwjgl-jemalloc:3.3.1"
     }
 }
 
