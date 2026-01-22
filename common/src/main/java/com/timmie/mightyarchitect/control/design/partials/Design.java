@@ -26,7 +26,15 @@ public abstract class Design {
 	public abstract Design fromNBT(CompoundTag compound);
 	
 	protected void applyNBT(CompoundTag compound) {
-		size = NbtUtils.readBlockPos(compound, "Size").orElse(BlockPos.ZERO);
+		// Handle both old format (CompoundTag with X,Y,Z) and new format (IntArrayTag)
+		if (compound.contains("Size", 11)) { // 11 = IntArrayTag (new format)
+			size = NbtUtils.readBlockPos(compound, "Size").orElse(BlockPos.ZERO);
+		} else if (compound.contains("Size", 10)) { // 10 = CompoundTag (old format)
+			CompoundTag sizeTag = compound.getCompound("Size");
+			size = new BlockPos(sizeTag.getInt("X"), sizeTag.getInt("Y"), sizeTag.getInt("Z"));
+		} else {
+			size = BlockPos.ZERO;
+		}
 		defaultWidth = size.getX();
 		slices = new DesignSlice[size.getY()];
 		
