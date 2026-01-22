@@ -47,7 +47,7 @@ shadowJar {
 remapJar {
     inputFile.set shadowJar.archiveFile
     dependsOn shadowJar
-    archiveClassifier.set("NEOFORGE")
+    archiveClassifier.set("neoforge")
 }
 
 jar {

@@ -5,6 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -19,11 +21,11 @@ jobs:
       - name: Upload NeoForge build
         uses: actions/upload-artifact@v4
         with:
-          name: MightyArchitect-NEOFORGE
-          path: neoforge/build/libs/*NEOFORGE.jar
+          name: MightyArchitect-neoforge
+          path: neoforge/build/libs/*neoforge.jar
 
       - name: Upload Fabric Build
         uses: actions/upload-artifact@v4
         with:
-          name: MightyArchitect-FABRIC
-          path: fabric/build/libs/*FABRIC.jar
+          name: MightyArchitect-fabric
+          path: fabric/build/libs/*fabric.jar
