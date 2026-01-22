@@ -3,10 +3,13 @@ package com.timmie.mightyarchitect.foundation;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -14,6 +17,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class SuperByteBuffer {
 
@@ -45,9 +49,22 @@ public class SuperByteBuffer {
 	public SuperByteBuffer(BufferBuilder.RenderedBuffer renderedBuffer) {
 		formatSize = renderedBuffer.drawState().format().getVertexSize();
 
-		template = renderedBuffer.vertexBuffer();
+		// Defensive copy: allocate our own buffer and copy data to avoid stale references
+		// Use direct buffer for better performance with large schematics
+		ByteBuffer original = renderedBuffer.vertexBuffer();
+		int size = original.remaining();
+		template = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
+		template.put(original);
+		template.flip();
 
 		transforms = new PoseStack();
+	}
+
+	/**
+	 * Returns true if this buffer contains no vertex data.
+	 */
+	public boolean isEmpty() {
+		return template == null || template.limit() == 0;
 	}
 
 	public static float getUnInterpolatedU(TextureAtlasSprite sprite, float u) {
@@ -61,63 +78,94 @@ public class SuperByteBuffer {
 	}
 
 	public void renderInto(PoseStack input, VertexConsumer builder) {
-		ByteBuffer buffer = template;
-		if (buffer.limit() == 0)
+		renderInto(input, builder, OverlayTexture.NO_OVERLAY);
+	}
+
+	public void renderInto(PoseStack input, VertexConsumer builder, int overlay) {
+		if (isEmpty())
 			return;
+		
+		ByteBuffer buffer = template;
 		buffer.rewind();
 
-		Matrix4f t = new Matrix4f(input.last()
-			.pose());
-		Matrix4f localTransforms = transforms.last()
-			.pose();
-		t.mul(localTransforms);
+		Matrix4f modelMat = input.last().pose();
+		Matrix3f normalMat = input.last().normal();
+		
+		Matrix4f localTransforms = transforms.last().pose();
+		Matrix3f localNormalMat = transforms.last().normal();
+		
+		// Combined transforms
+		Matrix4f combinedPose = new Matrix4f(modelMat).mul(localTransforms);
+		Matrix3f combinedNormal = new Matrix3f(normalMat).mul(localNormalMat);
 
-		for (int i = 0; i < vertexCount(buffer); i++) {
+		int vertexCount = vertexCount(buffer);
+		for (int i = 0; i < vertexCount; i++) {
 			float x = getX(buffer, i);
 			float y = getY(buffer, i);
 			float z = getZ(buffer, i);
 
 			Vector4f pos = new Vector4f(x, y, z, 1F);
-			Vector4f lightPos = new Vector4f(x, y, z, 1F);
-			pos.mul(t);
-			lightPos.mul(localTransforms);
+			pos.mul(combinedPose);
 
-			builder.vertex(pos.x(), pos.y(), pos.z());
-
-			byte r = getR(buffer, i);
-			byte g = getG(buffer, i);
-			byte b = getB(buffer, i);
-			byte a = getA(buffer, i);
-
+			// Color handling
+			int r, g, b, a;
 			if (shouldColor) {
-				float lum = (r < 0 ? 255 + r : r) / 256f;
-				builder.color((int) (this.r * lum), (int) (this.g * lum), (int) (this.b * lum), this.a);
-			} else
-				builder.color(r, g, b, a);
+				byte origR = getR(buffer, i);
+				float lum = (origR < 0 ? 255 + origR : origR) / 256f;
+				r = (int) (this.r * lum);
+				g = (int) (this.g * lum);
+				b = (int) (this.b * lum);
+				a = this.a;
+			} else {
+				r = Byte.toUnsignedInt(getR(buffer, i));
+				g = Byte.toUnsignedInt(getG(buffer, i));
+				b = Byte.toUnsignedInt(getB(buffer, i));
+				a = Byte.toUnsignedInt(getA(buffer, i));
+			}
 
-			float u = getU(buffer, i);
-			float v = getV(buffer, i);
-
+			// UV handling
+			float u, v;
 			if (shouldShiftUV) {
-				float targetU = spriteShift.getTarget()
-					.getU((getUnInterpolatedU(spriteShift.getOriginal(), u) / sheetSize) + uTarget * 16);
-				float targetV = spriteShift.getTarget()
-					.getV((getUnInterpolatedV(spriteShift.getOriginal(), v) / sheetSize) + vTarget * 16);
-				builder.uv(targetU, targetV);
-			} else
-				builder.uv(u, v);
+				float origU = getU(buffer, i);
+				float origV = getV(buffer, i);
+				u = spriteShift.getTarget()
+					.getU((getUnInterpolatedU(spriteShift.getOriginal(), origU) / sheetSize) + uTarget * 16);
+				v = spriteShift.getTarget()
+					.getV((getUnInterpolatedV(spriteShift.getOriginal(), origV) / sheetSize) + vTarget * 16);
+			} else {
+				u = getU(buffer, i);
+				v = getV(buffer, i);
+			}
 
+			// Light handling
+			int light;
 			if (shouldLight) {
-				int light = packedLightCoords;
 				if (lightTransform != null) {
+					Vector4f lightPos = new Vector4f(x, y, z, 1F);
+					lightPos.mul(localTransforms);
 					lightPos.mul(lightTransform);
 					light = getLight(Minecraft.getInstance().level, lightPos);
+				} else {
+					light = packedLightCoords;
 				}
-				builder.uv2(light);
-			} else
-				builder.uv2(getLight(buffer, i));
+			} else {
+				light = getLight(buffer, i);
+			}
 
-			builder.normal(getNX(buffer, i), getNY(buffer, i), getNZ(buffer, i))
+			// Normal handling - convert signed bytes to floats
+			float nx = getNX(buffer, i) / 127f;
+			float ny = getNY(buffer, i) / 127f;
+			float nz = getNZ(buffer, i) / 127f;
+			Vector3f normal = new Vector3f(nx, ny, nz);
+			normal.mul(combinedNormal);
+
+			// Atomic vertex submission - compatible with Sodium
+			builder.vertex(pos.x(), pos.y(), pos.z())
+				.color(r, g, b, a)
+				.uv(u, v)
+				.overlayCoords(overlay)
+				.uv2(light)
+				.normal(normal.x(), normal.y(), normal.z())
 				.endVertex();
 		}
 

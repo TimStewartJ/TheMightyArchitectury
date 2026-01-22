@@ -26,8 +26,6 @@ public class MightyClient {
 	public static SchematicRenderer renderer = new SchematicRenderer();
 	public static Outliner outliner = new Outliner();
 
-	public static boolean iris_presence;
-
 	public static void init() {
 		AllItems.initColorHandlers();
 		String modName = TheMightyArchitect.NAME;
