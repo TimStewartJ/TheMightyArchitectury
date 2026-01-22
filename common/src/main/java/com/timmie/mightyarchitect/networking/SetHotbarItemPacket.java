@@ -20,12 +20,12 @@ public class SetHotbarItemPacket {
 	
 	public SetHotbarItemPacket(FriendlyByteBuf buffer) {
 		this.slot = buffer.readInt();
-		this.stack = ItemStack.STREAM_CODEC.decode((RegistryFriendlyByteBuf) buffer);
+		this.stack = ItemStack.OPTIONAL_STREAM_CODEC.decode((RegistryFriendlyByteBuf) buffer);
 	}
 
 	public void toBytes(FriendlyByteBuf buffer) {
 		buffer.writeInt(slot);
-		ItemStack.STREAM_CODEC.encode((RegistryFriendlyByteBuf) buffer, stack);
+		ItemStack.OPTIONAL_STREAM_CODEC.encode((RegistryFriendlyByteBuf) buffer, stack);
 	}
 
 	public void handle(Supplier<NetworkManager.PacketContext> context) {
