@@ -7,8 +7,35 @@ architectury {
     fabric()
 }
 
+repositories {
+    maven { url "https://maven.cafeteria.dev/releases/" }   // Sodium / Iris snapshots
+    maven { url "https://api.modrinth.com/maven" }          // Modrinth releases
+}
+
 loom {
     accessWidenerPath = project(":common").loom.accessWidenerPath
+    
+    runs {
+        clientWithSodium {
+            client()
+            name = "Fabric Client (Sodium + Iris)"
+            source sourceSets.main
+            vmArgs "-Dfabric.development=true"
+        }
+    }
+}
+
+// Sodium/Iris testing - enable with: ./gradlew runClientWithSodium -PwithSodium
+if (project.hasProperty("withSodium")) {
+    dependencies {
+        // Sodium 0.6.0 for 1.21.1
+        modRuntimeOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-fabric"
+        // Iris 1.8.0 for 1.21.1
+        modRuntimeOnly "maven.modrinth:iris:1.8.8+1.21.1-fabric"
+        // Iris transitive dependencies (not pulled from Modrinth maven)
+        runtimeOnly "org.anarres:jcpp:1.4.14"
+        runtimeOnly "io.github.douira:glsl-transformer:2.0.1"
+    }
 }
 
 configurations {
