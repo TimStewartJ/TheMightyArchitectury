@@ -14,7 +14,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 
 public class SliceMarkerBlock extends Block {
@@ -23,8 +22,8 @@ public class SliceMarkerBlock extends Block {
 	public static final EnumProperty<DesignSliceTrait> VARIANT = EnumProperty.<DesignSliceTrait>create("variant",
 			DesignSliceTrait.class);
 
-	public SliceMarkerBlock() {
-		super(Properties.of().mapColor(MapColor.STONE));
+	public SliceMarkerBlock(Properties properties) {
+		super(properties);
 		this.registerDefaultState(defaultBlockState().setValue(VARIANT, DesignSliceTrait.Standard));
 	}
 
