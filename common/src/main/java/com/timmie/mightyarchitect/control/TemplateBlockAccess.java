@@ -49,14 +49,45 @@ public class TemplateBlockAccess extends WrappedWorld {
 		this.localMode = local;
 	}
 
+	/**
+	 * Updates block states to reflect their neighbors (e.g., fence connections, wall alignment).
+	 * Uses direct updateShape() calls instead of updateNeighbourShapes() to avoid cascading
+	 * neighbor update notifications that trigger "Too many chained neighbor updates" errors.
+	 */
 	private void updateBlockstates() {
-		Set<BlockPos> keySet = new HashSet<>(blocks.keySet());
-		keySet.forEach(pos -> {
-			BlockState blockState = blocks.get(pos);
-			if (blockState == null)
-				return;
-			blockState.updateNeighbourShapes(this, pos.offset(anchor), 16);
-		});
+		Direction[] directions = Direction.values();
+		
+		// Multiple passes - blocks may depend on neighbors that haven't been updated yet
+		for (int pass = 0; pass < 2; pass++) {
+			Map<BlockPos, BlockState> updates = new HashMap<>();
+			
+			for (BlockPos pos : blocks.keySet()) {
+				BlockState state = blocks.get(pos);
+				if (state == null || state.isAir())
+					continue;
+				
+				BlockPos worldPos = pos.offset(anchor);
+				BlockState newState = state;
+				
+				// For each direction, compute what this block should look like based on its neighbor
+				for (Direction direction : directions) {
+					BlockPos neighborWorldPos = worldPos.relative(direction);
+					BlockState neighborState = getBlockState(neighborWorldPos);
+					
+					// updateShape returns the potentially modified state based on the neighbor
+					// This does NOT trigger cascading notifications
+					// 1.21.4 signature: (LevelReader, ScheduledTickAccess, BlockPos, Direction, BlockPos, BlockState, RandomSource)
+					newState = newState.updateShape(this, this, worldPos, direction, neighborWorldPos, neighborState, this.getRandom());
+				}
+				
+				if (newState != state) {
+					updates.put(pos, newState);
+				}
+			}
+			
+			// Apply all updates at once (batch)
+			blocks.putAll(updates);
+		}
 	}
 
 	// neighborShapeChanged method removed in 1.21.4 - the method no longer exists in LevelAccessor
