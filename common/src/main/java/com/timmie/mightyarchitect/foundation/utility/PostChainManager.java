@@ -59,7 +59,7 @@ public class PostChainManager {
             );
             activeShaderLocation = shaderLocation;
 
-            LOGGER.info("Loaded post-processing shader: {}", shaderLocation);
+            LOGGER.debug("Loaded post-processing shader: {}", shaderLocation);
             return true;
         } catch (Exception e) {
             LOGGER.error("Failed to load post-processing shader: {}", shaderLocation, e);
@@ -77,7 +77,7 @@ public class PostChainManager {
             // In 1.21.4, PostChain doesn't have a close() method - just null the reference
             activePostChain = null;
             activeShaderLocation = null;
-            LOGGER.info("Shutdown post-processing shader");
+            LOGGER.debug("Shutdown post-processing shader");
         }
     }
 
@@ -108,12 +108,8 @@ public class PostChainManager {
         Minecraft mc = Minecraft.getInstance();
         RenderTarget mainTarget = mc.getMainRenderTarget();
 
-        LOGGER.info("Processing shader on target {}x{}, frameBufferId={}", mainTarget.width, mainTarget.height, mainTarget.frameBufferId);
-
         // Apply the post-processing effect using the provided resource allocator (like vanilla does)
         activePostChain.process(mainTarget, resourceAllocator);
-
-        LOGGER.info("Post chain processed");
 
         // Bind the main framebuffer back for subsequent rendering
         mainTarget.bindWrite(false);
