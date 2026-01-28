@@ -31,7 +31,7 @@ public class PostChainManager {
     /**
      * Loads and activates a post-processing shader.
      *
-     * @param shaderLocation The resource location of the shader JSON (e.g., "mightyarchitect:shaders/post/blueprint.json")
+     * @param shaderLocation The resource location of the shader (e.g., "mightyarchitect:blueprint")
      * @return true if the shader was loaded successfully, false otherwise
      */
     public static boolean loadShader(ResourceLocation shaderLocation) {
@@ -74,7 +74,6 @@ public class PostChainManager {
      */
     public static void shutdownShader() {
         if (activePostChain != null) {
-            // In 1.21.4, PostChain doesn't have a close() method - just null the reference
             activePostChain = null;
             activeShaderLocation = null;
             LOGGER.debug("Shutdown post-processing shader");
@@ -85,7 +84,7 @@ public class PostChainManager {
      * Processes the active post-processing shader using UNPOOLED resource allocator.
      * For optimal performance, prefer the overload that accepts a GraphicsResourceAllocator.
      *
-     * @param partialTicks The partial tick time (unused in 1.21.4 API but kept for compatibility)
+     * @param partialTicks The partial tick time
      * @deprecated Use {@link #processShader(float, GraphicsResourceAllocator)} with GameRenderer's resourcePool
      */
     @Deprecated
@@ -97,7 +96,7 @@ public class PostChainManager {
      * Processes the active post-processing shader.
      * This should be called after the world has been rendered to the main framebuffer.
      *
-     * @param partialTicks The partial tick time (unused in 1.21.4 API but kept for compatibility)
+     * @param partialTicks The partial tick time
      * @param resourceAllocator The graphics resource allocator (use GameRenderer's resourcePool)
      */
     public static void processShader(float partialTicks, GraphicsResourceAllocator resourceAllocator) {

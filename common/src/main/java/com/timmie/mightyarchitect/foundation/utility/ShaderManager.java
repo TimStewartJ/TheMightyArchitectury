@@ -5,7 +5,6 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 
-// client only (obviously lol)
 public class ShaderManager {
 
 	private static Shaders activeShader = Shaders.None;
