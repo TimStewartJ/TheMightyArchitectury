@@ -1,30 +1,67 @@
 package com.timmie.mightyarchitect.foundation.utility;
 
 import com.timmie.mightyarchitect.TheMightyArchitect;
-import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 
+/**
+ * Post-processing shader effects for the mod.
+ * Uses the PostChainManager to handle the 1.21.4+ post-processing API.
+ */
 public enum Shaders {
 
-	Blueprint("blueprint.json"), None("");
+	Blueprint("blueprint"), 
+	None("");
 
-	private ResourceLocation location;
+	private final ResourceLocation location;
 
-	private Shaders(String filename) {
-		location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "shaders/post/" + filename);
+	private Shaders(String name) {
+		if (name.isEmpty()) {
+			location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "");
+		} else {
+			// In 1.21.4+, post chains are loaded from post_effect/<name>.json
+			// ResourceLocation should just be namespace:name without path prefix or extension
+			location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, name);
+		}
 	}
 
+	/**
+	 * Checks if this shader is currently active.
+	 *
+	 * @return true if this shader is the currently active post-processing shader
+	 */
 	public boolean isActive() {
-		// TODO: Post-processing shader API changed significantly in 1.21.4
-		// The GameRenderer no longer exposes currentEffect() directly
-		// This needs to be reimplemented using the new post-processing system
-		return false;
+		if (this == None) {
+			return !PostChainManager.isShaderActive();
+		}
+		return PostChainManager.isShaderActive(location);
 	}
 
+	/**
+	 * Activates or deactivates this shader.
+	 *
+	 * @param active true to activate, false to deactivate
+	 */
 	public void setActive(boolean active) {
-		// TODO: Post-processing shader API changed significantly in 1.21.4
-		// loadEffect(), shutdownEffect() no longer exist on GameRenderer
-		// This needs to be reimplemented using the new post-processing system
+		if (active) {
+			if (this == None) {
+				PostChainManager.shutdownShader();
+			} else {
+				PostChainManager.loadShader(location);
+			}
+		} else {
+			// Only shutdown if this shader is currently active
+			if (isActive()) {
+				PostChainManager.shutdownShader();
+			}
+		}
 	}
 
+	/**
+	 * Gets the resource location of this shader.
+	 *
+	 * @return The shader's resource location
+	 */
+	public ResourceLocation getLocation() {
+		return location;
+	}
 }

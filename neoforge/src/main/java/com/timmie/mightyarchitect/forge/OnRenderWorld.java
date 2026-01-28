@@ -12,9 +12,14 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 public class OnRenderWorld {
     @SubscribeEvent
     public static void onRenderWorld(RenderLevelStageEvent event) {
-        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES)
-        {
+        // Render outlines and schematics after particles
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
             MightyClient.onRenderWorld(new GuiGraphics(Minecraft.getInstance(), event.getPoseStack(), Minecraft.getInstance().renderBuffers().bufferSource()));
+        }
+
+        // Apply post-processing shaders after level rendering is complete
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
+            MightyClient.onPostRender(event.getPartialTick().getGameTimeDeltaPartialTick(false));
         }
     }
 }

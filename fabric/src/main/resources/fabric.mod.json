@@ -25,5 +25,8 @@
     "minecraft": ">=1.21.4",
     "java": ">=21",
     "architectury": ">=15.0.0"
-  }
+  },
+  "mixins": [
+    "mightyarchitect.mixins.json"
+  ]
 }
