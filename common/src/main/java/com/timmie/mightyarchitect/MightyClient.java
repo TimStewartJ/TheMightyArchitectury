@@ -6,6 +6,7 @@ import com.timmie.mightyarchitect.control.SchematicRenderer;
 import com.timmie.mightyarchitect.foundation.SuperRenderTypeBuffer;
 import com.timmie.mightyarchitect.foundation.utility.AnimationTickHolder;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
+import com.timmie.mightyarchitect.foundation.utility.PostChainManager;
 import com.timmie.mightyarchitect.foundation.utility.ShaderManager;
 import com.timmie.mightyarchitect.foundation.utility.outliner.Outliner;
 import com.timmie.mightyarchitect.gui.ScreenHelper;
@@ -79,6 +80,16 @@ public class MightyClient {
 
 	protected static boolean isGameActive() {
 		return !(Minecraft.getInstance().level == null || Minecraft.getInstance().player == null);
+	}
+
+	/**
+	 * Processes post-processing shader effects.
+	 * This should be called after the world has been rendered to apply effects like the blueprint shader.
+	 *
+	 * @param partialTicks The partial tick time for smooth animation
+	 */
+	public static void onPostRender(float partialTicks) {
+		PostChainManager.processShader(partialTicks);
 	}
 
 }

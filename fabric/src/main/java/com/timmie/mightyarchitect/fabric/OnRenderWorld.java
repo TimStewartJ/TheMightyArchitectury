@@ -7,6 +7,12 @@ import net.minecraft.client.gui.GuiGraphics;
 
 public class OnRenderWorld {
     public static void RegisterRenderEvent() {
-        WorldRenderEvents.LAST.register((context) -> MightyClient.onRenderWorld(new GuiGraphics(Minecraft.getInstance(), context.matrixStack(), Minecraft.getInstance().renderBuffers().bufferSource())));
+        // Register world rendering for outlines and schematics
+        WorldRenderEvents.LAST.register((context) -> {
+            MightyClient.onRenderWorld(new GuiGraphics(Minecraft.getInstance(), context.matrixStack(), Minecraft.getInstance().renderBuffers().bufferSource()));
+        });
+
+        // Note: Post-processing shader is now handled via GameRendererMixin
+        // to ensure correct timing in the render pipeline
     }
 }

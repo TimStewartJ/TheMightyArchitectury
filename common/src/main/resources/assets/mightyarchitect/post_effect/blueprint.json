@@ -1,0 +1,25 @@
+{
+    "targets": {
+        "swap": {}
+    },
+    "passes": [
+        {
+            "program": "mightyarchitect:post/blueprint",
+            "inputs": [
+                {"sampler_name": "In", "target": "minecraft:main"}
+            ],
+            "output": "swap",
+            "uniforms": [
+                {"name": "LumaRamp", "values": [16.0]},
+                {"name": "LumaLevel", "values": [16.0]}
+            ]
+        },
+        {
+            "program": "minecraft:post/blit",
+            "inputs": [
+                {"sampler_name": "In", "target": "swap"}
+            ],
+            "output": "minecraft:main"
+        }
+    ]
+}
