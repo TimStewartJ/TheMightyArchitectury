@@ -14,21 +14,40 @@ import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
+import net.minecraft.client.renderer.block.model.BlockModelPart;
+import net.minecraft.client.renderer.block.model.BlockStateModel;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class SchematicRenderer {
 
-	private final Map<RenderType, SuperByteBuffer> bufferCache = new HashMap<>(getLayerCount());
-	private final Set<RenderType> usedBlockRenderLayers = new HashSet<>(getLayerCount());
-	private final Set<RenderType> startedBufferBuilders = new HashSet<>(getLayerCount());
+	// In 1.21.6, ChunkSectionLayer enum replaces chunk render layer RenderTypes
+	private static final ChunkSectionLayer[] CHUNK_SECTION_LAYERS = ChunkSectionLayer.values();
+
+	// Map ChunkSectionLayer to RenderType for buffer rendering
+	private static RenderType layerToRenderType(ChunkSectionLayer layer) {
+		return switch (layer) {
+			case SOLID -> RenderType.solid();
+			case CUTOUT -> RenderType.cutout();
+			case CUTOUT_MIPPED -> RenderType.cutoutMipped();
+			case TRANSLUCENT -> RenderType.tripwire(); // translucent() removed, use tripwire()
+			case TRIPWIRE -> RenderType.tripwire();
+		};
+	}
+
+	private final Map<ChunkSectionLayer, SuperByteBuffer> bufferCache = new HashMap<>(CHUNK_SECTION_LAYERS.length);
+	private final Set<ChunkSectionLayer> usedBlockRenderLayers = new HashSet<>(CHUNK_SECTION_LAYERS.length);
+	private final Set<ChunkSectionLayer> startedBufferBuilders = new HashSet<>(CHUNK_SECTION_LAYERS.length);
 	private boolean active;
 	private boolean changed;
 	private Schematic schematic;
@@ -71,11 +90,11 @@ public class SchematicRenderer {
 		ms.pushPose();
 		ms.translate(anchor.getX(), anchor.getY(), anchor.getZ());
 		buffer.getBuffer(RenderType.solid());
-		for (RenderType layer : RenderType.chunkBufferLayers()) {
+		for (ChunkSectionLayer layer : CHUNK_SECTION_LAYERS) {
 			if (!usedBlockRenderLayers.contains(layer))
 				continue;
 			SuperByteBuffer superByteBuffer = bufferCache.get(layer);
-			superByteBuffer.renderInto(ms, buffer.getBuffer(layer));
+			superByteBuffer.renderInto(ms, buffer.getBuffer(layerToRenderType(layer)));
 		}
 
 		ms.popPose();
@@ -87,9 +106,10 @@ public class SchematicRenderer {
 
 		final BlockAndTintGetter blockAccess = schematic.getMaterializedSketch();
 		final BlockRenderDispatcher blockRendererDispatcher = minecraft.getBlockRenderer();
+		final RandomSource random = RandomSource.create();
 
-		Map<RenderType, ByteBufferBuilder> byteBuffers = new HashMap<>();
-		Map<RenderType, BufferBuilder> buffers = new HashMap<>();
+		Map<ChunkSectionLayer, ByteBufferBuilder> byteBuffers = new HashMap<>();
+		Map<ChunkSectionLayer, BufferBuilder> buffers = new HashMap<>();
 		PoseStack ms = new PoseStack();
 
 		BlockPos.betweenClosedStream(schematic.getLocalBounds()
@@ -101,8 +121,9 @@ public class SchematicRenderer {
 				BlockPos pos = localPos.offset(anchor);
 				BlockState state = blockAccess.getBlockState(pos);
 
-				for (RenderType blockRenderLayer : RenderType.chunkBufferLayers()) {
-					if (blockRenderLayer != ItemBlockRenderTypes.getChunkRenderType(state))
+				ChunkSectionLayer stateLayer = ItemBlockRenderTypes.getChunkRenderType(state);
+				for (ChunkSectionLayer blockRenderLayer : CHUNK_SECTION_LAYERS) {
+					if (blockRenderLayer != stateLayer)
 						continue;
 
 					if (!buffers.containsKey(blockRenderLayer))
@@ -118,8 +139,11 @@ public class SchematicRenderer {
 
 					if (state.getRenderShape() == RenderShape.MODEL)
 					{
+						// In 1.21.6, renderBatched takes List<BlockModelPart> instead of RandomSource
+						BlockStateModel model = blockRendererDispatcher.getBlockModel(state);
+						List<BlockModelPart> parts = model.collectParts(random);
 						blockRendererDispatcher.renderBatched(state, pos, blockAccess, ms,
-								bufferBuilder, true, minecraft.level.random);
+								bufferBuilder, true, parts);
 						usedBlockRenderLayers.add(blockRenderLayer);
 					}
 				}
@@ -128,7 +152,7 @@ public class SchematicRenderer {
 			});
 
 		// finishDrawing
-		for (RenderType layer : RenderType.chunkBufferLayers()) {
+		for (ChunkSectionLayer layer : CHUNK_SECTION_LAYERS) {
 			if (!startedBufferBuilders.contains(layer))
 				continue;
 			BufferBuilder buf = buffers.get(layer);
@@ -142,11 +166,6 @@ public class SchematicRenderer {
 				byteBuffer.close();
 			}
 		}
-	}
-
-	private static int getLayerCount() {
-		return RenderType.chunkBufferLayers()
-			.size();
 	}
 
 }

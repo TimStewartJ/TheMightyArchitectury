@@ -17,7 +17,7 @@ public class FlatRoof extends Design {
 		FlatRoof flatRoof = new FlatRoof();
 		flatRoof.applyNBT(compound);
 		
-		flatRoof.margin = compound.getInt("Margin");
+		flatRoof.margin = compound.getInt("Margin").orElse(0);
 		flatRoof.defaultWidth = (flatRoof.defaultWidth - flatRoof.margin) * 2 - 1;
 		
 		return flatRoof;

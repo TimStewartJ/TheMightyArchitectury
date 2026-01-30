@@ -235,14 +235,13 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 	protected void renderWindow(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
 		ScreenResources.EXPORTER.draw(ms, topLeftX, topLeftY);
 
-		ms.pose().pushPose();
-		ms.pose().translate(0, 0, -200);
-		ms.pose().translate((this.width - this.sWidth) / 2 + 150, 120, 0);
-		ms.pose().scale(10, 10, 10);
+		// In 1.21.6, GuiGraphics.pose() returns Matrix3x2fStack for 2D GUI.
+		// Use GuiGameElement's positioning methods for 3D rendering instead
 		GuiGameElement.of(minecraft.player.getMainHandItem())
+			.at((this.width - this.sWidth) / 2 + 150, 120, -200)
+			.scale(10)
 			.rotate(-1, 0, 20)
 			.render(ms);
-		ms.pose().popPose();
 
 		int color = ScreenResources.FONT_COLOR;
 		ms.drawString(font, "Export custom Designs", topLeftX + 10, topLeftY + 10, color);

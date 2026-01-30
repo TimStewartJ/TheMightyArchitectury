@@ -10,16 +10,15 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.block.ModelBlockRenderer;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.renderer.block.model.BlockModelPart;
+import net.minecraft.client.renderer.block.model.BlockStateModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -69,22 +68,20 @@ public class SuperByteBufferCache {
 	}
 
 	private SuperByteBuffer standardBlockRender(BlockState renderedState) {
-		BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
-		return standardModelRender(dispatcher.getBlockModel(renderedState), renderedState);
+		return standardBlockRender(renderedState, new PoseStack());
 	}
 
-	private SuperByteBuffer standardModelRender(BakedModel model, BlockState referenceState) {
-		return standardModelRender(model, referenceState, new PoseStack());
-	}
-
-	private SuperByteBuffer standardModelRender(BakedModel model, BlockState referenceState, PoseStack ms) {
+	private SuperByteBuffer standardBlockRender(BlockState referenceState, PoseStack ms) {
 		BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
-		ModelBlockRenderer blockRenderer = dispatcher.getModelRenderer();
 		ByteBufferBuilder byteBuffer = new ByteBufferBuilder(2097152);
 		BufferBuilder builder = new BufferBuilder(byteBuffer, VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 		RandomSource random = RandomSource.create();
-		blockRenderer.tesselateBlock(Minecraft.getInstance().level, model, referenceState, BlockPos.ZERO.above(255), ms,
-				builder, true, random, 42, OverlayTexture.NO_OVERLAY);
+		
+		// In 1.21.6, renderBatched takes List<BlockModelPart> instead of RandomSource
+		BlockStateModel model = dispatcher.getBlockModel(referenceState);
+		List<BlockModelPart> parts = model.collectParts(random);
+		dispatcher.renderBatched(referenceState, BlockPos.ZERO.above(255), Minecraft.getInstance().level, ms,
+				builder, true, parts);
 		MeshData meshData = builder.build();
 
 		SuperByteBuffer result = meshData != null ? new SuperByteBuffer(meshData) : SuperByteBuffer.empty();

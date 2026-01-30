@@ -4,8 +4,12 @@ import joptsimple.internal.Strings;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.entity.player.Player;
+
+import com.google.gson.JsonElement;
+import com.mojang.serialization.JsonOps;
 
 import java.util.List;
 
@@ -130,7 +134,10 @@ public class LangBuilder {
 	}
 
 	public String json() {
-		return Component.Serializer.toJson(component(), Minecraft.getInstance().level.registryAccess());
+		return ComponentSerialization.CODEC.encodeStart(JsonOps.INSTANCE, component())
+			.result()
+			.map(JsonElement::toString)
+			.orElse("");
 	}
 
 	public void sendStatus(Player player) {

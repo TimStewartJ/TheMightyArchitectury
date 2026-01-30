@@ -169,16 +169,16 @@ public class DesignTheme {
 		if (compound == null)
 			return null;
 
-		DesignTheme theme = new DesignTheme(compound.getString("Name"), compound.getString("Designer"));
+		DesignTheme theme = new DesignTheme(compound.getString("Name").orElse(""), compound.getString("Designer").orElse(""));
 
 		theme.layers = new ArrayList<>();
 		theme.types = new ArrayList<>();
 
 		if (compound.contains("Maximum Room Height"))
-			theme.maxFloorHeight = compound.getInt("Maximum Room Height");
+			theme.maxFloorHeight = compound.getInt("Maximum Room Height").orElse(10);
 
-		compound.getList("Layers", 8).forEach(s -> theme.layers.add(DesignLayer.valueOf(((StringTag) s).getAsString())));
-		compound.getList("Types", 8).forEach(s -> theme.types.add(DesignType.valueOf(((StringTag) s).getAsString())));
+		compound.getList("Layers").orElse(new ListTag()).forEach(s -> theme.layers.add(DesignLayer.valueOf(((StringTag) s).value())));
+		compound.getList("Types").orElse(new ListTag()).forEach(s -> theme.types.add(DesignType.valueOf(((StringTag) s).value())));
 
 		theme.updateRoomLayers();
 		return theme;

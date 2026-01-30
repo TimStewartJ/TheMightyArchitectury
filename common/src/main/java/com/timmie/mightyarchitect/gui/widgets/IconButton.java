@@ -1,11 +1,10 @@
 package com.timmie.mightyarchitect.gui.widgets;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.gui.ScreenResources;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 
 public class IconButton extends AbstractSimiWidget {
@@ -27,9 +26,8 @@ public class IconButton extends AbstractSimiWidget {
 			ScreenResources button = (pressed || !active) ? button = ScreenResources.BUTTON_DOWN
 				: (isHovered) ? ScreenResources.BUTTON_HOVER : ScreenResources.BUTTON;
 
-			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-			ScreenResources.BUTTON.bind();
-			ms.blit(RenderType::guiTextured, ScreenResources.GRAY.location, x, y, button.startX, button.startY, button.width, button.height, 256, 256);
+			// In 1.21.6, use RenderPipelines.GUI_TEXTURED for GUI texture rendering
+			ms.blit(RenderPipelines.GUI_TEXTURED, ScreenResources.BUTTON.location, x, y, (float) button.startX, (float) button.startY, button.width, button.height, 256, 256);
 			icon.draw(ms, x + 1, y + 1);
 		}
 	}

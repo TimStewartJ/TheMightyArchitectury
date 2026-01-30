@@ -1,8 +1,6 @@
 package com.timmie.mightyarchitect.control.compose.planner;
 
 import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.Schematic;
 import com.timmie.mightyarchitect.control.compose.GroundPlan;
@@ -88,30 +86,26 @@ public abstract class ComposerToolBase implements IComposerTool {
 	}
 	
 	@Override
-	public void renderOverlay(GuiGraphics ms) {
-		ms.pose().pushPose();
+	public void renderOverlay(GuiGraphics graphics) {
 		Minecraft mc = Minecraft.getInstance();
 		Window mainWindow = mc.getWindow();
-		ms.pose().translate(mainWindow.getGuiScaledWidth() / 2, mainWindow.getGuiScaledHeight() / 2 - 3, 0);
-		ms.pose().translate(25,
-				-Mth.lerp(mc.getDeltaTracker().getGameTimeDeltaPartialTick(true), lastToolModeYOffset, toolModeYOffset),
-				0);
+		
+		int baseX = mainWindow.getGuiScaledWidth() / 2 + 25;
+		int baseY = (int)(mainWindow.getGuiScaledHeight() / 2 - 3 - 
+				Mth.lerp(mc.getDeltaTracker().getGameTimeDeltaPartialTick(true), lastToolModeYOffset, toolModeYOffset));
 
 		if (toolModeNoCtrl != null) {
 			int color = 0xFFFFFFFF;
 			if (Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL))
 				color = 0x66AACCFF;
-			ms.drawString(mc.font, toolModeNoCtrl, 0, 0, color);
+			graphics.drawString(mc.font, toolModeNoCtrl, baseX, baseY, color);
 		}
 		if (toolModeCtrl != null) {
 			int color = 0xFFFFFFFF;
 			if (!Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL))
 				color = 0x66AACCFF;
-			ms.drawString(mc.font, toolModeCtrl, 0, 12, color);
+			graphics.drawString(mc.font, toolModeCtrl, baseX, baseY + 12, color);
 		}
-
-		RenderSystem.setShaderColor(1, 1, 1, 1);
-		ms.pose().popPose();
 	}
 	
 	protected void status(String message) {

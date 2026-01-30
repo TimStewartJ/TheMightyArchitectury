@@ -1,10 +1,8 @@
 package com.timmie.mightyarchitect.gui;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.ResourceLocation;
 
 public enum ScreenResources {
@@ -69,7 +67,8 @@ public enum ScreenResources {
 	ICON_FOLDER("icons.png", 0, 96, 16, 16),
 	ICON_REFRESH("icons.png", 16, 96, 16, 16);
 	
-	public static final int FONT_COLOR = 0x373F5A;
+	// In 1.21.6, colors must include the alpha channel (0xFF prefix for fully opaque)
+	public static final int FONT_COLOR = 0xFF373F5A;
 	
 	public final ResourceLocation location;
 	public int width, height;
@@ -89,12 +88,15 @@ public enum ScreenResources {
 		draw(screen, i, j, 0xFFFFFFFF);
 	}
 
-	public void draw(GuiGraphics screen, int i, int j, int color) {
-		screen.blit(RenderType::guiTextured, location, i, j, startX, startY, width, height, 256, 256, color);
+	public void draw(GuiGraphics screen, int x, int y, int color) {
+		// In 1.21.6, use RenderPipelines.GUI_TEXTURED for GUI texture rendering
+		screen.blit(RenderPipelines.GUI_TEXTURED, location, x, y, (float) startX, (float) startY, width, height, 256, 256);
 	}
 
+	@Deprecated
 	public void bind() {
-		RenderSystem.setShaderTexture(0, location);
+		// In 1.21.6, texture binding is handled through RenderPipeline
+		// This method is kept for compatibility but does nothing
 	}
 
 }

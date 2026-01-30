@@ -8,8 +8,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -22,7 +20,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraft.world.level.redstone.NeighborUpdater;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.ticks.BlackholeTickAccess;
 import net.minecraft.world.ticks.LevelTickAccess;
@@ -204,15 +201,11 @@ public class TemplateBlockAccess extends WrappedWorld {
 	public void sendBlockUpdated(BlockPos pos, BlockState oldState, BlockState newState, int flags) {}
 
 	@Override
-	public void playSound(Player player, BlockPos pos, SoundEvent soundIn, SoundSource category, float volume,
-		float pitch) {}
-
-	@Override
 	public void addParticle(ParticleOptions particleData, double x, double y, double z, double xSpeed, double ySpeed,
 		double zSpeed) {}
 
 	@Override
-	public void levelEvent(Player player, int type, BlockPos pos, int data) {}
+	public void levelEvent(Entity entity, int type, BlockPos pos, int data) {}
 
 	public Cuboid getBounds() {
 		return bounds;

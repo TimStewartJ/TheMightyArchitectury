@@ -30,11 +30,23 @@ public abstract class AbstractSimiScreen extends Screen {
 
 	@Override
 	public void render(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
-		renderBackground(ms, mouseX, mouseY, partialTicks);
+		// In 1.21.6, renderBackground renders a dark overlay which blocks the game view
+		// Only call it for screens that should have a darkened background
+		if (shouldRenderDarkBackground()) {
+			renderBackground(ms, mouseX, mouseY, partialTicks);
+		}
 		renderWindow(ms, mouseX, mouseY, partialTicks);
 		for (AbstractWidget widget : widgets)
 			widget.render(ms, mouseX, mouseY, partialTicks);
 		renderWindowForeground(ms, mouseX, mouseY, partialTicks);
+	}
+
+	/**
+	 * Override this to return true for screens that need a darkened/blurred background.
+	 * Default is false since these screens have their own texture backgrounds.
+	 */
+	protected boolean shouldRenderDarkBackground() {
+		return false;
 	}
 
 	@Override
@@ -93,8 +105,14 @@ public abstract class AbstractSimiScreen extends Screen {
 			if (!widget.isHoveredOrFocused())
 				continue;
 			if (widget instanceof AbstractSimiWidget && !((AbstractSimiWidget) widget).getToolTip()
-				.isEmpty())
-				ms.renderComponentTooltip(Minecraft.getInstance().font, ((AbstractSimiWidget) widget).getToolTip(), mouseX, mouseY);
+				.isEmpty()) {
+				// In 1.21.6, convert Component list to FormattedCharSequence list
+				java.util.List<net.minecraft.util.FormattedCharSequence> tooltipLines = ((AbstractSimiWidget) widget).getToolTip()
+					.stream()
+					.map(Component::getVisualOrderText)
+					.collect(java.util.stream.Collectors.toList());
+				ms.setTooltipForNextFrame(Minecraft.getInstance().font, tooltipLines, mouseX, mouseY);
+			}
 		}
 	}
 

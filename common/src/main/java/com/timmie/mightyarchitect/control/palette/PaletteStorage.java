@@ -3,7 +3,6 @@ package com.timmie.mightyarchitect.control.palette;
 import com.google.gson.JsonElement;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import net.minecraft.nbt.CompoundTag;
@@ -64,8 +63,8 @@ public class PaletteStorage {
 			JsonReader reader = new JsonReader(Files.newBufferedReader(path));
 			reader.setLenient(true);
 			JsonElement element = Streams.parse(reader);
-			return PaletteDefinition.fromNBT(TagParser.parseTag(element.toString()));
-		} catch (IOException | CommandSyntaxException e) {
+			return PaletteDefinition.fromNBT(TagParser.create(net.minecraft.nbt.NbtOps.INSTANCE).parseCompoundFully(element.toString()));
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return null;

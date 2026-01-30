@@ -93,7 +93,7 @@ public class DesignExporter {
 
 		// Assemble nbt
 		CompoundTag compound = new CompoundTag();
-		compound.put("Size", NbtUtils.writeBlockPos(size));
+		compound.putIntArray("Size", new int[] { size.getX(), size.getY(), size.getZ() });
 
 		ListTag layers = new ListTag();
 

@@ -18,7 +18,7 @@ public class Wall extends Design {
 	public Design fromNBT(CompoundTag compound) {
 		Wall wall = new Wall();
 		wall.applyNBT(compound);
-		wall.expandBehaviour = ExpandBehaviour.valueOf(compound.getString("ExpandBehaviour"));
+		wall.expandBehaviour = ExpandBehaviour.valueOf(compound.getString("ExpandBehaviour").orElse("None"));
 		return wall;
 	}
 

@@ -91,7 +91,7 @@ public class VecHelper {
 	public static Vec3 readNBT(ListTag list) {
 		if (list.isEmpty())
 			return Vec3.ZERO;
-		return new Vec3(list.getDouble(0), list.getDouble(1), list.getDouble(2));
+		return new Vec3(list.getDoubleOr(0, 0.0), list.getDoubleOr(1, 0.0), list.getDoubleOr(2, 0.0));
 	}
 
 	public static Vec3 voxelSpace(double x, double y, double z) {

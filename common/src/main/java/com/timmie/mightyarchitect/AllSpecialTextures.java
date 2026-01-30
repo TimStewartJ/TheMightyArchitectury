@@ -1,6 +1,5 @@
 package com.timmie.mightyarchitect;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.resources.ResourceLocation;
 
 public enum AllSpecialTextures {
@@ -35,8 +34,10 @@ public enum AllSpecialTextures {
                 "textures/block/marker/" + filename);
     }
 
+    @Deprecated
     public void bind() {
-	    RenderSystem.setShaderTexture(0, location);
+	    // In 1.21.6, texture binding is handled through RenderType
+	    // This method is kept for compatibility but should use getLocation() in new code
     }
     
     public ResourceLocation getLocation() {

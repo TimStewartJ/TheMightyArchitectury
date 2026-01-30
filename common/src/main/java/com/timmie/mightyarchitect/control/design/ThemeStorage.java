@@ -214,10 +214,10 @@ public class ThemeStorage {
 						themeFile = FilesHelper.loadJsonAsNBT("themes/" + themeFolder);
 					}
 
-					themeCompound = themeFile.getCompound("Theme");
-					paletteCompound = themeFile.getCompound("Palette");
+					themeCompound = themeFile.getCompound("Theme").orElse(new CompoundTag());
+					paletteCompound = themeFile.getCompound("Palette").orElse(new CompoundTag());
 					if (themeFile.contains("SecondaryPalette"))
-						secondaryPaletteCompound = themeFile.getCompound("SecondaryPalette");
+						secondaryPaletteCompound = themeFile.getCompound("SecondaryPalette").orElse(new CompoundTag());
 
 				} else {
 					themeCompound = FilesHelper.loadJsonAsNBT(folderPath + "/" + themeFolder + "/theme.json");

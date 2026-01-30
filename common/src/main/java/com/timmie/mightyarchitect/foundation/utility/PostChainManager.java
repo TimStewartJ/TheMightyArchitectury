@@ -110,8 +110,7 @@ public class PostChainManager {
         // Apply the post-processing effect using the provided resource allocator (like vanilla does)
         activePostChain.process(mainTarget, resourceAllocator);
 
-        // Bind the main framebuffer back for subsequent rendering
-        mainTarget.bindWrite(false);
+        // In 1.21.6, framebuffer binding is handled internally by the pipeline
     }
 
     /**

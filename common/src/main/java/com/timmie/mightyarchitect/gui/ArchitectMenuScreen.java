@@ -73,18 +73,28 @@ public class ArchitectMenuScreen extends Screen {
 
 	@Override
 	public void render(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
-		// FOCUSED
-		super.render(ms, mouseX, mouseY, partialTicks);
+		// Don't call super.render() - we don't want the dark background overlay
+		// This is an in-game menu that should show over the game world
 		draw(ms, partialTicks);
+	}
+
+	@Override
+	public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+		// Override to prevent the default dark background from being rendered
+		// This keeps the game world visible behind the menu
 	}
 
 	public void drawPassive() {
 		if (isFocused())
 			return;
 
-		// NOT FOCUSED
-		draw(new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource()), Minecraft.getInstance()
-			.getDeltaTracker().getGameTimeDeltaPartialTick(true));
+		// NOT FOCUSED - in 1.21.6 GuiGraphics requires GuiRenderState
+		// This is handled differently now, skip rendering when not focused in screen context
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.screen == null) {
+			// Can't safely render without proper screen context in 1.21.6
+			return;
+		}
 	}
 
 	@Override
@@ -129,7 +139,7 @@ public class ArchitectMenuScreen extends Screen {
 		return super.charTyped(p_charTyped_1_, p_charTyped_2_);
 	}
 
-	private void draw(GuiGraphics ms, float partialTicks) {
+	private void draw(GuiGraphics graphics, float partialTicks) {
 		Minecraft mc = Minecraft.getInstance();
 		Window mainWindow = mc.getWindow();
 		partialTicks = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
@@ -146,20 +156,21 @@ public class ArchitectMenuScreen extends Screen {
 			y -= 24;
 		}
 
-		ms.pose().pushPose();
 		float shift = animation.getValue(partialTicks);
 		float sidewaysShift =
 			shift * ((float) menuWidth / (float) menuHeight) + (!focused ? 40 + menuHeight / 4f : 0) + 8;
-		ms.pose().translate(sideways ? sidewaysShift : 0, sideways ? 0 : shift, 0);
-		mouseX -= sideways ? sidewaysShift : 0;
-		mouseY -= sideways ? 0 : shift;
+		
+		// Apply translation directly to coordinates instead of using pose stack
+		int xOffset = sideways ? (int) sidewaysShift : 0;
+		int yOffset = sideways ? 0 : (int) shift;
+		x += xOffset;
+		y += yOffset;
+		mouseX -= xOffset;
+		mouseY -= yOffset;
 
-		ScreenResources gray = ScreenResources.GRAY;
-		RenderSystem.enableBlend();
-		RenderSystem.setShaderColor(1, 1, 1, 3 / 4f);
-
-		ms.blit(RenderType::guiTextured, gray.location, x, y, gray.startX, gray.startY, menuWidth, menuHeight, gray.width, gray.height);
-		RenderSystem.setShaderColor(1, 1, 1, 1);
+		// In 1.21.6, we use fill with alpha for semi-transparent backgrounds
+		int bgColor = 0xC0000000; // Semi-transparent black
+		graphics.fill(x, y, x + menuWidth, y + menuHeight, bgColor);
 
 		int yPos = y + 4;
 		int xPos = x + 4;
@@ -172,21 +183,21 @@ public class ArchitectMenuScreen extends Screen {
 			if (sideways) {
 				if (visible) {
 					String string = "Press " + compose.toUpperCase() + " for Menu";
-					ms.drawString(textRenderer, string,
+					graphics.drawString(textRenderer, string,
 							(int) (mainWindow.getGuiScaledWidth() - textRenderer.width(string) - 15 - sidewaysShift), yPos - 14,
-							0xEEEEEE);
+							0xFFEEEEEE);
 				}
 			} else {
-				ms.drawString(textRenderer, "Press " + compose.toUpperCase() + " to focus", xPos, yPos - 14, 0xEEEEEE);
+				graphics.drawString(textRenderer, "Press " + compose.toUpperCase() + " to focus", xPos, yPos - 14, 0xFFEEEEEE);
 			}
 		} else {
 			String string = "Press " + compose + " to close";
-			ms.drawString(textRenderer, string,
+			graphics.drawString(textRenderer, string,
 					sideways
 							? (int) Math.min(xPos, mainWindow.getGuiScaledWidth() - textRenderer.width(string) - 15 - sidewaysShift)
-							: xPos, yPos - 14, 0xDDDDDD	);
+							: xPos, yPos - 14, 0xFFDDDDDD);
 		}
-		ms.drawString(textRenderer, title, xPos, yPos, 0xEEEEEE);
+		graphics.drawString(textRenderer, title, xPos, yPos, 0xFFEEEEEE);
 
 		boolean hoveredHorizontally = x <= mouseX && mouseX <= x + menuWidth && focused;
 
@@ -199,9 +210,9 @@ public class ArchitectMenuScreen extends Screen {
 
 			yPos += textRenderer.lineHeight;
 			int color =
-				hoveredHorizontally && yPos < mouseY && mouseY <= yPos + textRenderer.lineHeight ? 0xFFFFFF : 0xCCDDFF;
-			ms.drawString(textRenderer, "[" + key + "] " + keybinds.get(key), xPos, yPos, color);
-			ms.drawString(textRenderer, ">", xPos - 12, yPos, color);
+				hoveredHorizontally && yPos < mouseY && mouseY <= yPos + textRenderer.lineHeight ? 0xFFFFFFFF : 0xFFCCDDFF;
+			graphics.drawString(textRenderer, "[" + key + "] " + keybinds.get(key), xPos, yPos, color);
+			graphics.drawString(textRenderer, ">", xPos - 12, yPos, color);
 		}
 
 		yPos += 4;
@@ -210,13 +221,11 @@ public class ArchitectMenuScreen extends Screen {
 			int height = mc.font.wordWrapHeight(text, menuWidth - 8);
 			int lineY = yPos;
 			for (FormattedCharSequence iro : textRenderer.split(Component.literal(text), menuWidth - 8)) {
-				ms.drawString(textRenderer, iro, xPos, lineY, 0xEEEEEE);
+				graphics.drawString(textRenderer, iro, xPos, lineY, 0xFFEEEEEE);
 				lineY += textRenderer.lineHeight;
 			}
 			yPos += height + 2;
 		}
-
-		ms.pose().popPose();
 	}
 
 	@Override

@@ -6,8 +6,11 @@ in vec2 texCoord;
 
 out vec4 fragColor;
 
-uniform float LumaRamp;
-uniform float LumaLevel;
+// 1.21.6: Custom uniforms must be in uniform blocks
+layout(std140) uniform BlueprintConfig {
+    float LumaRamp;
+    float LumaLevel;
+};
 
 void main(){
     vec4 center = texture(InSampler, texCoord);

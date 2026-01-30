@@ -50,9 +50,9 @@ public class DesignSlice {
 	
 	public static DesignSlice fromNBT(CompoundTag sliceTag) {
 		DesignSlice slice = new DesignSlice();
-		slice.trait = DesignSliceTrait.valueOf(sliceTag.getString("Trait"));
+		slice.trait = DesignSliceTrait.valueOf(sliceTag.getString("Trait").orElse("Standard"));
 
-		String[] strips = sliceTag.getString("Blocks").split(",");
+		String[] strips = sliceTag.getString("Blocks").orElse("").split(",");
 		int width = strips[0].length();
 		int length = strips.length;
 		slice.blocks = new Palette[length][width];
@@ -68,7 +68,7 @@ public class DesignSlice {
 		
 		slice.orientations = new BlockOrientation[length][width];
 		if (sliceTag.contains("Facing")) {
-			strips = sliceTag.getString("Facing").split(",");
+			strips = sliceTag.getString("Facing").orElse("").split(",");
 			
 			for (int z = 0; z < length; z++) {
 				String strip = strips[z];

@@ -27,11 +27,12 @@ public abstract class Design {
 	
 	protected void applyNBT(CompoundTag compound) {
 		// Handle both old format (CompoundTag with X,Y,Z) and new format (IntArrayTag)
-		if (compound.contains("Size", 11)) { // 11 = IntArrayTag (new format)
-			size = NbtUtils.readBlockPos(compound, "Size").orElse(BlockPos.ZERO);
-		} else if (compound.contains("Size", 10)) { // 10 = CompoundTag (old format)
-			CompoundTag sizeTag = compound.getCompound("Size");
-			size = new BlockPos(sizeTag.getInt("X"), sizeTag.getInt("Y"), sizeTag.getInt("Z"));
+		if (compound.get("Size") instanceof net.minecraft.nbt.IntArrayTag intArrayTag) { // IntArrayTag (new format)
+			int[] arr = intArrayTag.getAsIntArray();
+			size = arr.length >= 3 ? new BlockPos(arr[0], arr[1], arr[2]) : BlockPos.ZERO;
+		} else if (compound.get("Size") instanceof CompoundTag) { // CompoundTag (old format)
+			CompoundTag sizeTag = compound.getCompound("Size").orElse(new CompoundTag());
+			size = new BlockPos(sizeTag.getInt("X").orElse(0), sizeTag.getInt("Y").orElse(0), sizeTag.getInt("Z").orElse(0));
 		} else {
 			size = BlockPos.ZERO;
 		}
@@ -41,10 +42,10 @@ public abstract class Design {
 		defaultHeight = 0;
 		yShift = 0;
 		heights = ImmutableSet.of(0);
-		ListTag sliceTagList = compound.getList("Layers", 10);
+		ListTag sliceTagList = compound.getList("Layers").orElse(new ListTag());
 		
 		for (int sliceIndex = 0; sliceIndex < slices.length; sliceIndex++) {
-			DesignSlice slice = DesignSlice.fromNBT(sliceTagList.getCompound(sliceIndex));
+			DesignSlice slice = DesignSlice.fromNBT(sliceTagList.getCompound(sliceIndex).orElse(new CompoundTag()));
 			defaultHeight = slice.adjustDefaultHeight(defaultHeight);
 			heights = slice.adjustHeigthsList(heights);
 			slices[sliceIndex] = slice;

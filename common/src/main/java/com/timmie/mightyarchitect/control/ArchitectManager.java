@@ -342,7 +342,6 @@ public class ArchitectManager {
 		}
 
 		menu.drawPassive();
-		RenderSystem.enableBlend();
 	}
 
 	public static InteractionResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return InteractionResult.PASS; }

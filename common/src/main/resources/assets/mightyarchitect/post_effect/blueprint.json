@@ -9,10 +9,12 @@
                 {"sampler_name": "In", "target": "minecraft:main"}
             ],
             "output": "swap",
-            "uniforms": [
-                {"name": "LumaRamp", "values": [16.0]},
-                {"name": "LumaLevel", "values": [16.0]}
-            ]
+            "uniforms": {
+                "BlueprintConfig": [
+                    {"type": "float", "value": 16.0},
+                    {"type": "float", "value": 16.0}
+                ]
+            }
         },
         {
             "program": "minecraft:post/blit",

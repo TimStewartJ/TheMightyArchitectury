@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.FuelValues;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkSource;
+import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.entity.LevelEntityGetter;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -32,7 +33,6 @@ import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.ticks.LevelTickAccess;
 import net.minecraft.world.TickRateManager;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -88,19 +88,16 @@ public class WrappedWorld extends Level {
 		return world.getBlockState(pos);
 	}
 
-	@Override
-	public void playSeededSound(@org.jetbrains.annotations.Nullable Player player, double d, double e, double f, Holder<SoundEvent> holder, SoundSource soundSource, float g, float h, long l) {
+	// In 1.21.6, Level requires these playSeededSound implementations with Entity as first parameter (source/excluded entity)
 
+	@Override
+	public void playSeededSound(@Nullable Entity source, @Nullable Entity entity, Holder<SoundEvent> holder, SoundSource soundSource, float f, float g, long l) {
+		// No-op for wrapped world
 	}
 
 	@Override
-	public void playSeededSound(@org.jetbrains.annotations.Nullable Player player, double d, double e, double f, SoundEvent soundEvent, SoundSource soundSource, float g, float h, long l) {
-
-	}
-
-	@Override
-	public void playSeededSound(@org.jetbrains.annotations.Nullable Player player, Entity entity, Holder<SoundEvent> holder, SoundSource soundSource, float f, float g, long l) {
-
+	public void playSeededSound(@Nullable Entity source, double x, double y, double z, Holder<SoundEvent> holder, SoundSource soundSource, float volume, float pitch, long seed) {
+		// No-op for wrapped world
 	}
 
 	@Override
@@ -139,7 +136,7 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
-	public void levelEvent(@Nullable Player player, int type, BlockPos pos, int data) {}
+	public void levelEvent(@Nullable Entity entity, int type, BlockPos pos, int data) {}
 
 	@Override
 	public void gameEvent(Holder<GameEvent> gameEvent, Vec3 vec3, GameEvent.Context context) {
@@ -157,14 +154,16 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
-	public void playSound(@Nullable Player player, double x, double y, double z, Holder<SoundEvent> soundIn, SoundSource category,
+	public void playSound(@Nullable Entity source, double x, double y, double z, Holder<SoundEvent> soundIn, SoundSource category,
 		float volume, float pitch) {}
 
-	public void playSound(@Nullable Player player, Entity entity, Holder<SoundEvent> sound,
+	@Override
+	public void playSound(@Nullable Entity source, Entity entity, SoundEvent sound,
 		SoundSource category, float volume, float pitch) {}
 
+	@Override
 	public String gatherChunkSourceStats() {
-		return null;
+		return world.gatherChunkSourceStats();
 	}
 
 	@Override
@@ -182,13 +181,7 @@ public class WrappedWorld extends Level {
 		return world.addFreshEntity(entityIn);
 	}
 
-	@Override
-	public void setMapData(MapId mapId, MapItemSavedData mapDataIn) {}
-
-	@Override
-	public MapId getFreeMapId() {
-		return new MapId(0);
-	}
+	// In 1.21.6, setMapData and getFreeMapId are on ServerLevel, not Level
 
 	@Override
 	public void destroyBlockProgress(int breakerId, BlockPos pos, int progress) {}

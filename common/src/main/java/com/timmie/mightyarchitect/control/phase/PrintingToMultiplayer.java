@@ -32,11 +32,11 @@ public class PrintingToMultiplayer extends PhaseBase {
 
 		// todo: /me doesn't work anymore
 		// String cmd = "me is printing a structure created by the Mighty Architect.";
-		// Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+		// Minecraft.getInstance().player.connection.sendCommand(cmd);
 		String cmd = "gamerule sendCommandFeedback false";
-		Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+		Minecraft.getInstance().player.connection.sendCommand(cmd);
 		cmd = "gamerule logAdminCommands false";
-		Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+		Minecraft.getInstance().player.connection.sendCommand(cmd);
 
 		remaining = new LinkedList<>(getModel().getMaterializedSketch().getAllPositions());
 		remaining.sort((o1, o2) -> Integer.compare(o1.getY(), o2.getY()));
@@ -68,7 +68,7 @@ public class PrintingToMultiplayer extends PhaseBase {
 				String blockstring = state.toString().replaceFirst("Block\\{", "").replaceFirst("\\}", "");
 
 				String cmd = "setblock " + pos.getX() + " " + pos.getY() + " " + pos.getZ() + " " + blockstring;
-				Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+				Minecraft.getInstance().player.connection.sendCommand(cmd);
 			} else {
 				ArchitectManager.unload();
 				break;
@@ -86,9 +86,9 @@ public class PrintingToMultiplayer extends PhaseBase {
 			Minecraft.getInstance().player.displayClientMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"),
 					false);
 			String cmd = "gamerule logAdminCommands true";
-			Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+			Minecraft.getInstance().player.connection.sendCommand(cmd);
 			cmd = "gamerule sendCommandFeedback true";
-			Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+			Minecraft.getInstance().player.connection.sendCommand(cmd);
 		}
 	}
 

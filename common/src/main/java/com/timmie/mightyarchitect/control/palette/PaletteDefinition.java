@@ -127,11 +127,11 @@ public class PaletteDefinition {
 
 		if (compound != null) {
 			if (compound.contains("Palette")) {
-				CompoundTag paletteTag = compound.getCompound("Palette");
-				palette.name = paletteTag.getString("Name");
+				CompoundTag paletteTag = compound.getCompound("Palette").orElse(new CompoundTag());
+				palette.name = paletteTag.getString("Name").orElse("");
 				for (Palette key : Palette.values()) {
 					if (paletteTag.contains(key.name())) {
-						palette.put(key, NbtUtils.readBlockState(holderGetter, paletteTag.getCompound(key.name())));
+						palette.put(key, NbtUtils.readBlockState(holderGetter, paletteTag.getCompound(key.name()).orElse(new CompoundTag())));
 					}
 				}
 			}

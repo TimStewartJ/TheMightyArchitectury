@@ -94,11 +94,11 @@ public class DesignResourceLoader {
 				theme.getTypes().forEach(type -> {
 
 					Set<CompoundTag> designs = new HashSet<>();
-					CompoundTag tagLayers = themeFile.getCompound("Designs");
+					CompoundTag tagLayers = themeFile.getCompound("Designs").orElse(new CompoundTag());
 					if (tagLayers.contains(layer.name())) {
-						CompoundTag tagTypes = tagLayers.getCompound(layer.name());
+						CompoundTag tagTypes = tagLayers.getCompound(layer.name()).orElse(new CompoundTag());
 						if (tagTypes.contains(type.name())) {
-							ListTag tagDesigns = tagTypes.getList(type.name(), 10);
+							ListTag tagDesigns = tagTypes.getList(type.name()).orElse(new ListTag());
 							tagDesigns.forEach(tag -> designs.add((CompoundTag) tag));
 						}
 					}
