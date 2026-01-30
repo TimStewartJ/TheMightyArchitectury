@@ -1,7 +1,0 @@
-{
-    "vertex": "minecraft:post/blit",
-    "fragment": "mightyarchitect:post/blueprint",
-    "samplers": [
-        { "name": "InSampler" }
-    ]
-}

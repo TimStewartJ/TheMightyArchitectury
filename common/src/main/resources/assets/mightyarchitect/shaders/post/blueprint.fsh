@@ -2,15 +2,14 @@
 
 uniform sampler2D InSampler;
 
-in vec2 texCoord;
-
-out vec4 fragColor;
-
-// 1.21.6: Custom uniforms must be in uniform blocks
 layout(std140) uniform BlueprintConfig {
     float LumaRamp;
     float LumaLevel;
 };
+
+in vec2 texCoord;
+
+out vec4 fragColor;
 
 void main(){
     vec4 center = texture(InSampler, texCoord);
