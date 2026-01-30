@@ -103,33 +103,35 @@ public class ToolSelectionScreen extends Screen {
 			.getGuiScaledWidth();
 		if (!focused)
 			ms.drawCenteredString(minecraft.font, "Hold [" + translationKey + "] to focus", width / 2, y - 10,
-				0xCCDDFF);
+				0xFFCCDDFF);
 		else
-			ms.drawCenteredString(minecraft.font, "[SCROLL] to Cycle", width / 2, y - 10, 0xCCDDFF);
+			ms.drawCenteredString(minecraft.font, "[SCROLL] to Cycle", width / 2, y - 10, 0xFFCCDDFF);
 
 		for (int i = 0; i < tools.size(); i++) {
 			ms.pose().pushPose();
 
 			float alpha = focused ? 1 : .2f;
+
 			if (i == selection) {
 				ms.pose().translate(0, -10, 0);
 				ms.drawCenteredString(minecraft.font, tools.get(i)
-					.getDisplayName(), x + i * 50 + 24, y + 28, 0xCCDDFF);
+					.getDisplayName(), x + i * 50 + 24, y + 28, 0xFFCCDDFF);
 				alpha = 1;
 			}
-			RenderSystem.setShaderColor(0, 0, 0, alpha);
+			int alphaInt = (int) (alpha * 255);
+			int shadowColor = alphaInt << 24;  // black with alpha
+			int iconColor = (alphaInt << 24) | 0xFFFFFF;  // white with alpha
 			tools.get(i)
 				.getIcon()
-				.draw(ms, x + i * 50 + 16, y + 12);
-			RenderSystem.setShaderColor(1, 1, 1, alpha);
+				.draw(ms, x + i * 50 + 16, y + 12, shadowColor);
 			tools.get(i)
 				.getIcon()
-				.draw(ms, x + i * 50 + 16, y + 11);
+				.draw(ms, x + i * 50 + 16, y + 11, iconColor);
 
 			if (focused && i != selection) {
 				KeyMapping keyMapping = minecraft.options.keyHotbarSlots[i];
 				ms.drawCenteredString(minecraft.font, "[" + keyMapping.getTranslatedKeyMessage()
-					.getString() + "]", x + i * 50 + 24, y + 3, 0xCCDDFF);
+					.getString() + "]", x + i * 50 + 24, y + 3, 0xFFCCDDFF);
 			}
 
 			ms.pose().popPose();

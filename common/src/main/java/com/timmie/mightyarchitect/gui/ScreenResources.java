@@ -86,7 +86,11 @@ public enum ScreenResources {
 	}
 	
 	public void draw(GuiGraphics screen, int i, int j) {
-		screen.blit(RenderType::guiTextured, location, i, j, startX, startY, width, height, 256, 256);
+		draw(screen, i, j, 0xFFFFFFFF);
+	}
+
+	public void draw(GuiGraphics screen, int i, int j, int color) {
+		screen.blit(RenderType::guiTextured, location, i, j, startX, startY, width, height, 256, 256, color);
 	}
 
 	public void bind() {
