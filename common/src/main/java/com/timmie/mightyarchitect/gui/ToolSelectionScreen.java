@@ -103,7 +103,7 @@ public class ToolSelectionScreen extends Screen {
 			if (i == selection) {
 				yToolOffset = -10;
 				graphics.drawCenteredString(minecraft.font, tools.get(i)
-					.getDisplayName(), x + i * 50 + 24, y + 28, 0xFFCCDDFF);
+					.getDisplayName(), x + i * 50 + 24, y + 20, 0xFFCCDDFF);
 				alpha = 1;
 			}
 			int alphaInt = (int) (alpha * 255);
