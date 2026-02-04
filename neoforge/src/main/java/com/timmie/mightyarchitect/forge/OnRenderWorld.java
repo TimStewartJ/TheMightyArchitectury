@@ -4,12 +4,12 @@ import com.timmie.mightyarchitect.MightyClient;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent.AfterParticles;
 
 @EventBusSubscriber(value = Dist.CLIENT)
 public class OnRenderWorld {
     @SubscribeEvent
-    public static void onRenderWorld(RenderLevelStageEvent event) {
+    public static void onRenderWorld(AfterParticles event) {
         // Render outlines and schematics
         MightyClient.onRenderWorld();
         
