@@ -26,7 +26,7 @@ public enum ScreenResources {
 	INDICATOR_GREEN("widgets.png", 0, 23, 18, 5),
 	INDICATOR_YELLOW("widgets.png", 18, 23, 18, 5),
 	INDICATOR_RED("widgets.png", 36, 23, 18, 5),
-	GRAY("background.png", 0, 0, 16, 16),
+	GRAY("background.png", 0, 0, 16, 16, 16, 16),  // 16x16 texture file
 	
 	SCROLLBAR_AXIS("widgets.png", 224, 0, 32, 256),
 	SCROLLBAR_CAP("widgets.png", 0, 87, 40, 6),
@@ -73,15 +73,22 @@ public enum ScreenResources {
 	public final ResourceLocation location;
 	public int width, height;
 	public int startX, startY;
+	public int textureWidth, textureHeight; // Actual texture file dimensions
 	
 	private ScreenResources(String location, int width, int height) {
-		this(location, 0, 0, width, height);
+		this(location, 0, 0, width, height, 256, 256);
 	}
 	
 	private ScreenResources(String location, int startX, int startY, int width, int height) {
+		this(location, startX, startY, width, height, 256, 256);
+	}
+	
+	private ScreenResources(String location, int startX, int startY, int width, int height, int textureWidth, int textureHeight) {
 		this.location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "textures/gui/" + location);
 		this.width = width; this.height = height;
 		this.startX = startX; this.startY = startY;
+		this.textureWidth = textureWidth;
+		this.textureHeight = textureHeight;
 	}
 	
 	public void draw(GuiGraphics screen, int i, int j) {
@@ -89,8 +96,42 @@ public enum ScreenResources {
 	}
 
 	public void draw(GuiGraphics screen, int x, int y, int color) {
-		// In 1.21.6, use RenderPipelines.GUI_TEXTURED for GUI texture rendering
-		screen.blit(RenderPipelines.GUI_TEXTURED, location, x, y, (float) startX, (float) startY, width, height, 256, 256);
+		// In 1.21.6, RenderSystem color methods are removed
+		// Just draw the texture - color parameter kept for API compatibility
+		screen.blit(RenderPipelines.GUI_TEXTURED, location, x, y, (float) startX, (float) startY, width, height, textureWidth, textureHeight);
+	}
+	
+	/**
+	 * Draw this resource tiled across the specified area.
+	 * In 1.21.6, color tinting is not supported via RenderSystem.
+	 * Use drawTiledWithBackground() for semi-transparent backgrounds.
+	 */
+	public void drawTiled(GuiGraphics screen, int x, int y, int areaWidth, int areaHeight) {
+		for (int tileY = 0; tileY < areaHeight; tileY += height) {
+			for (int tileX = 0; tileX < areaWidth; tileX += width) {
+				int w = Math.min(width, areaWidth - tileX);
+				int h = Math.min(height, areaHeight - tileY);
+				screen.blit(RenderPipelines.GUI_TEXTURED, location, x + tileX, y + tileY, 
+					(float) startX, (float) startY, w, h, textureWidth, textureHeight);
+			}
+		}
+	}
+	
+	/**
+	 * Draw a tiled texture with a semi-transparent overlay to create a subtle effect.
+	 * The texture is drawn first, then a colored overlay is applied on top.
+	 * @param screen The GuiGraphics context
+	 * @param x Starting X position
+	 * @param y Starting Y position
+	 * @param areaWidth Total width to fill
+	 * @param areaHeight Total height to fill
+	 * @param overlayColor ARGB color for the overlay (higher alpha = more subtle texture)
+	 */
+	public void drawTiledWithBackground(GuiGraphics screen, int x, int y, int areaWidth, int areaHeight, int overlayColor) {
+		// Draw the texture tiles first
+		drawTiled(screen, x, y, areaWidth, areaHeight);
+		// Then overlay a semi-transparent fill to create subtlety/tinting
+		screen.fill(x, y, x + areaWidth, y + areaHeight, overlayColor);
 	}
 
 	@Deprecated

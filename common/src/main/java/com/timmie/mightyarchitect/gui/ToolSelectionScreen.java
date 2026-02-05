@@ -62,9 +62,9 @@ public class ToolSelectionScreen extends Screen {
 		ScreenResources gray = ScreenResources.GRAY;
 		float toolTipAlpha = yOffset.getValue(partialTicks) / 10;
 
-		// render main box using fill for background
-		int bgAlpha = focused ? 0xE0 : 0x80;
-		graphics.fill(x - 15, y, x - 15 + w, y + h, (bgAlpha << 24));
+		// render main box using tiled texture background with dark overlay
+		int bgAlpha = focused ? 0xB0 : 0x60;
+		gray.drawTiledWithBackground(graphics, x - 15, y, w, h, (bgAlpha << 24) | 0x202030);
 
 		// render tools
 		List<String> toolTip = tools.get(selection)
@@ -72,8 +72,8 @@ public class ToolSelectionScreen extends Screen {
 		int stringAlphaComponent = ((int) (toolTipAlpha * 0xFF)) << 24;
 
 		if (toolTipAlpha > 0.25f) {
-			int tooltipBgAlpha = (int)(toolTipAlpha * 0xE0);
-			graphics.fill(x - 15, y + 30, x - 15 + w, y + 30 + h + 22, (tooltipBgAlpha << 24) | 0x333344);
+			int tooltipBgAlpha = (int)(toolTipAlpha * 0xB0);
+			gray.drawTiledWithBackground(graphics, x - 15, y + 30, w, h + 22, (tooltipBgAlpha << 24) | 0x202030);
 
 			if (toolTip.size() > 0)
 				graphics.drawString(font, toolTip.get(0), x - 10, y + 35, 0xEEEEEE + stringAlphaComponent);

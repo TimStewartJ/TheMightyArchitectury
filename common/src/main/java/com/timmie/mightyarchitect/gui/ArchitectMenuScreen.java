@@ -168,9 +168,8 @@ public class ArchitectMenuScreen extends Screen {
 		mouseX -= xOffset;
 		mouseY -= yOffset;
 
-		// In 1.21.6, we use fill with alpha for semi-transparent backgrounds
-		int bgColor = 0xC0000000; // Semi-transparent black
-		graphics.fill(x, y, x + menuWidth, y + menuHeight, bgColor);
+		// Render textured background with dark blue-gray overlay for subtlety
+		ScreenResources.GRAY.drawTiledWithBackground(graphics, x, y, menuWidth, menuHeight, 0xA0202030);
 
 		int yPos = y + 4;
 		int xPos = x + 4;
