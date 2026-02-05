@@ -7,7 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -26,7 +26,7 @@ public class AABBOutline extends Outline {
 
 	public void renderBB(PoseStack ms, MultiBufferSource buffer, AABB bb) {
 		Vec3 projectedView = Minecraft.getInstance().gameRenderer.getMainCamera()
-			.getPosition();
+			.position();
 		boolean noCull = bb.contains(projectedView);
 		bb = bb.inflate(noCull ? -1 / 128d : 1 / 128d);
 		noCull |= params.disableCull;
@@ -76,7 +76,7 @@ public class AABBOutline extends Outline {
 		if (params.isFaceHidden(direction))
 			return;
 
-		ResourceLocation faceTexture = params.faceTexture.get()
+		Identifier faceTexture = params.faceTexture.get()
 			.getLocation();
 		float alphaBefore = params.alpha;
 		params.alpha =

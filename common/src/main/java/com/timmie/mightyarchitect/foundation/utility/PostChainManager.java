@@ -6,7 +6,7 @@ import com.timmie.mightyarchitect.TheMightyArchitect;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelTargetBundle;
 import net.minecraft.client.renderer.PostChain;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +26,7 @@ public class PostChainManager {
     private static PostChain activePostChain = null;
 
     @Nullable
-    private static ResourceLocation activeShaderLocation = null;
+    private static Identifier activeShaderLocation = null;
 
     /**
      * Loads and activates a post-processing shader.
@@ -34,7 +34,7 @@ public class PostChainManager {
      * @param shaderLocation The resource location of the shader (e.g., "mightyarchitect:blueprint")
      * @return true if the shader was loaded successfully, false otherwise
      */
-    public static boolean loadShader(ResourceLocation shaderLocation) {
+    public static boolean loadShader(Identifier shaderLocation) {
         Minecraft mc = Minecraft.getInstance();
 
         // Don't reload if the same shader is already active
@@ -128,7 +128,7 @@ public class PostChainManager {
      * @param shaderLocation The shader location to check
      * @return true if the specified shader is active
      */
-    public static boolean isShaderActive(ResourceLocation shaderLocation) {
+    public static boolean isShaderActive(Identifier shaderLocation) {
         return activePostChain != null && shaderLocation.equals(activeShaderLocation);
     }
 
@@ -138,7 +138,7 @@ public class PostChainManager {
      * @return The active shader location, or null if no shader is active
      */
     @Nullable
-    public static ResourceLocation getActiveShaderLocation() {
+    public static Identifier getActiveShaderLocation() {
         return activeShaderLocation;
     }
 }

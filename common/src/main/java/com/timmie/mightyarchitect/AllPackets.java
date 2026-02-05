@@ -7,16 +7,16 @@ import dev.architectury.networking.NetworkManager;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class AllPackets {
 
 	public static final CustomPacketPayload.Type<InstantPrintPacket> INSTANT_PRINT_TYPE = 
-		new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "instant_print"));
+		new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, "instant_print"));
 	public static final CustomPacketPayload.Type<PlaceSignPacket> PLACE_SIGN_TYPE = 
-		new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "place_sign"));
+		new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, "place_sign"));
 	public static final CustomPacketPayload.Type<SetHotbarItemPacket> SET_HOTBAR_ITEM_TYPE = 
-		new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "set_hotbar_item"));
+		new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, "set_hotbar_item"));
 
 	public static final StreamCodec<RegistryFriendlyByteBuf, InstantPrintPacket> INSTANT_PRINT_CODEC = 
 		StreamCodec.of(InstantPrintPacket::write, InstantPrintPacket::new);

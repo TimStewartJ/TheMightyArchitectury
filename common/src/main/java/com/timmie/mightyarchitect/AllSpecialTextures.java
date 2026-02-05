@@ -1,6 +1,6 @@
 package com.timmie.mightyarchitect;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public enum AllSpecialTextures {
 
@@ -27,10 +27,10 @@ public enum AllSpecialTextures {
     
     Trim("trim.png");
 
-    private ResourceLocation location;
+    private Identifier location;
 
     private AllSpecialTextures(String filename) {
-        location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID,
+        location = Identifier.fromNamespaceAndPath(TheMightyArchitect.ID,
                 "textures/block/marker/" + filename);
     }
 
@@ -40,7 +40,7 @@ public enum AllSpecialTextures {
 	    // This method is kept for compatibility but should use getLocation() in new code
     }
     
-    public ResourceLocation getLocation() {
+    public Identifier getLocation() {
 		return location;
 	}
 

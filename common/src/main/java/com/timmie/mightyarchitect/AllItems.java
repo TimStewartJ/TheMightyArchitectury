@@ -5,7 +5,7 @@ import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Item.Properties;
 import net.minecraft.world.item.ItemStack;
@@ -25,7 +25,7 @@ public class AllItems {
 
 	private static Properties itemProps(String id) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM,
-				ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, id));
+				Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, id));
 		return new Properties().setId(key);
 	}
 

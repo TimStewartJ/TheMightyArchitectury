@@ -16,7 +16,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 
 public class MightyClient {
@@ -24,7 +24,7 @@ public class MightyClient {
 	public static KeyMapping COMPOSE;
 	public static KeyMapping TOOL_MENU;
 
-	public static final KeyMapping.Category CATEGORY = new KeyMapping.Category(ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "keys"));
+	public static final KeyMapping.Category CATEGORY = new KeyMapping.Category(Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, "keys"));
 
 	public static SchematicRenderer renderer = new SchematicRenderer();
 	public static Outliner outliner = new Outliner();
@@ -61,7 +61,7 @@ public class MightyClient {
 		// In 1.21.6, world rendering uses PoseStack directly, not GuiGraphics
 		PoseStack ms = new PoseStack();
 		Camera info = Minecraft.getInstance().gameRenderer.getMainCamera();
-		Vec3 view = info.getPosition();
+		Vec3 view = info.position();
 
 		ms.pushPose();
 		ms.translate(-view.x(), -view.y(), -view.z());

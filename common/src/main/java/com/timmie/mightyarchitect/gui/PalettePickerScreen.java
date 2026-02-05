@@ -9,7 +9,7 @@ import com.timmie.mightyarchitect.control.palette.PaletteStorage;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import com.timmie.mightyarchitect.gui.widgets.IconButton;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -35,7 +35,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 
 	public PalettePickerScreen(boolean scanPicker) {
 		super();
-		minecraft = Minecraft.getInstance();
+
 		this.scanPicker = scanPicker;
 
 	}

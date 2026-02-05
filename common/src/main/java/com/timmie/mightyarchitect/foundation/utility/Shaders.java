@@ -1,7 +1,7 @@
 package com.timmie.mightyarchitect.foundation.utility;
 
 import com.timmie.mightyarchitect.TheMightyArchitect;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Post-processing shader effects for the mod.
@@ -12,15 +12,15 @@ public enum Shaders {
 	Blueprint("blueprint"), 
 	None("");
 
-	private final ResourceLocation location;
+	private final Identifier location;
 
 	private Shaders(String name) {
 		if (name.isEmpty()) {
-			location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "");
+			location = Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, "");
 		} else {
 			// In 1.21.4+, post chains are loaded from post_effect/<name>.json
 			// ResourceLocation should just be namespace:name without path prefix or extension
-			location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, name);
+			location = Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, name);
 		}
 	}
 
@@ -61,7 +61,7 @@ public enum Shaders {
 	 *
 	 * @return The shader's resource location
 	 */
-	public ResourceLocation getLocation() {
+	public Identifier getLocation() {
 		return location;
 	}
 }

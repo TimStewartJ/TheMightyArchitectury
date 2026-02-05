@@ -28,8 +28,7 @@ public class ToolSelectionScreen extends Screen {
 	protected int h;
 
 	public ToolSelectionScreen(List<Tools> tools, Consumer<Tools> callback) {
-		super(Component.literal("Tool Selection"));
-		this.minecraft = Minecraft.getInstance();
+		super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.literal("Tool Selection"));
 		this.tools = tools;
 		this.callback = callback;
 		focused = false;

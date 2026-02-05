@@ -67,7 +67,7 @@ public class ArchitectMenuScreen extends Screen {
 
 		menuHeight += 4;
 		for (String s : tooltip)
-			menuHeight += Minecraft.getInstance().font.wordWrapHeight(s, menuWidth - 8) + 2;
+			menuHeight += Minecraft.getInstance().font.wordWrapHeight(Component.literal(s), menuWidth - 8) + 2;
 
 		adjustTarget();
 	}
@@ -219,7 +219,7 @@ public class ArchitectMenuScreen extends Screen {
 		yPos += 4;
 		yPos += textRenderer.lineHeight;
 		for (String text : tooltip) {
-			int height = mc.font.wordWrapHeight(text, menuWidth - 8);
+			int height = mc.font.wordWrapHeight(Component.literal(text), menuWidth - 8);
 			int lineY = yPos;
 			for (FormattedCharSequence iro : textRenderer.split(Component.literal(text), menuWidth - 8)) {
 				graphics.drawString(textRenderer, iro, xPos, lineY, 0xFFEEEEEE);

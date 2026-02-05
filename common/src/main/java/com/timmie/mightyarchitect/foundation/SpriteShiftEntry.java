@@ -3,15 +3,15 @@ package com.timmie.mightyarchitect.foundation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class SpriteShiftEntry {
-	protected ResourceLocation originalTextureLocation;
-	protected ResourceLocation targetTextureLocation;
+	protected Identifier originalTextureLocation;
+	protected Identifier targetTextureLocation;
 	protected TextureAtlasSprite original;
 	protected TextureAtlasSprite target;
 
-	public void set(ResourceLocation originalTextureLocation, ResourceLocation targetTextureLocation) {
+	public void set(Identifier originalTextureLocation, Identifier targetTextureLocation) {
 		this.originalTextureLocation = originalTextureLocation;
 		this.targetTextureLocation = targetTextureLocation;
 	}
@@ -22,7 +22,7 @@ public class SpriteShiftEntry {
 		target = atlas.getSprite(targetTextureLocation);
 	}
 
-	public ResourceLocation getTargetResourceLocation() {
+	public Identifier getTargetResourceLocation() {
 		return targetTextureLocation;
 	}
 

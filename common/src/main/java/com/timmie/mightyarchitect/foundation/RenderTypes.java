@@ -1,18 +1,22 @@
 package com.timmie.mightyarchitect.foundation;
 
 import com.timmie.mightyarchitect.AllSpecialTextures;
-import net.minecraft.client.renderer.RenderStateShard;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.texture.TextureAtlas;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
-public class RenderTypes extends RenderStateShard {
+/**
+ * In 1.21.11, RenderType static factory methods moved to
+ * net.minecraft.client.renderer.rendertype.RenderTypes (MC's RenderTypes).
+ * RenderStateShard was removed entirely.
+ * This class delegates to MC's RenderTypes to avoid name conflicts.
+ */
+public class RenderTypes {
 
-	// In 1.21.6, use the built-in RenderType factory methods instead of custom composite states
-	// The CompositeState.builder() methods are now protected
+	private static final net.minecraft.client.renderer.rendertype.RenderTypes MC_RENDER_TYPES = null; // not instantiated, static only
 
-	public static RenderType getOutlineSolid(ResourceLocation texture) {
-		return RenderType.entityCutout(texture);
+	public static RenderType getOutlineSolid(Identifier texture) {
+		return net.minecraft.client.renderer.rendertype.RenderTypes.entityCutout(texture);
 	}
 
 	private static final RenderType DEFAULT_OUTLINE_SOLID =
@@ -22,13 +26,12 @@ public class RenderTypes extends RenderStateShard {
 		return DEFAULT_OUTLINE_SOLID;
 	}
 
-	public static RenderType getOutlineTranslucent(ResourceLocation texture, boolean cull) {
-		// Use entityTranslucent for translucent outline rendering
-		return RenderType.entityTranslucent(texture, !cull);
+	public static RenderType getOutlineTranslucent(Identifier texture, boolean cull) {
+		return net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucent(texture, !cull);
 	}
 
-	public static RenderType getGlowingSolid(ResourceLocation texture) {
-		return RenderType.entitySolid(texture);
+	public static RenderType getGlowingSolid(Identifier texture) {
+		return net.minecraft.client.renderer.rendertype.RenderTypes.entitySolid(texture);
 	}
 
 	@SuppressWarnings("deprecation")
@@ -38,8 +41,8 @@ public class RenderTypes extends RenderStateShard {
 		return GLOWING_SOLID_DEFAULT;
 	}
 
-	public static RenderType getGlowingTranslucent(ResourceLocation texture) {
-		return RenderType.entityTranslucent(texture);
+	public static RenderType getGlowingTranslucent(Identifier texture) {
+		return net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucent(texture);
 	}
 
 	@SuppressWarnings("deprecation")
@@ -51,7 +54,7 @@ public class RenderTypes extends RenderStateShard {
 
 	@SuppressWarnings("deprecation")
 	private static final RenderType ITEM_PARTIAL_SOLID =
-			RenderType.entitySolid(TextureAtlas.LOCATION_BLOCKS);
+			net.minecraft.client.renderer.rendertype.RenderTypes.entitySolid(TextureAtlas.LOCATION_BLOCKS);
 
 	public static RenderType getItemPartialSolid() {
 		return ITEM_PARTIAL_SOLID;
@@ -59,7 +62,7 @@ public class RenderTypes extends RenderStateShard {
 
 	@SuppressWarnings("deprecation")
 	private static final RenderType ITEM_PARTIAL_TRANSLUCENT =
-			RenderType.entityTranslucent(TextureAtlas.LOCATION_BLOCKS);
+			net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucent(TextureAtlas.LOCATION_BLOCKS);
 
 	public static RenderType getItemPartialTranslucent() {
 		return ITEM_PARTIAL_TRANSLUCENT;
@@ -67,14 +70,9 @@ public class RenderTypes extends RenderStateShard {
 
 	@SuppressWarnings("deprecation")
 	private static final RenderType FLUID =
-			RenderType.entityTranslucent(TextureAtlas.LOCATION_BLOCKS);
+			net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucent(TextureAtlas.LOCATION_BLOCKS);
 
 	public static RenderType getFluid() {
 		return FLUID;
-	}
-
-	// Mmm gimme those protected fields
-	public RenderTypes() {
-		super(null, null, null);
 	}
 }

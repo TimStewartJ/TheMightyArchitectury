@@ -3,7 +3,7 @@ package com.timmie.mightyarchitect.gui;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public enum ScreenResources {
 	
@@ -70,7 +70,7 @@ public enum ScreenResources {
 	// In 1.21.6, colors must include the alpha channel (0xFF prefix for fully opaque)
 	public static final int FONT_COLOR = 0xFF373F5A;
 	
-	public final ResourceLocation location;
+	public final Identifier location;
 	public int width, height;
 	public int startX, startY;
 	public int textureWidth, textureHeight; // Actual texture file dimensions
@@ -84,7 +84,7 @@ public enum ScreenResources {
 	}
 	
 	private ScreenResources(String location, int startX, int startY, int width, int height, int textureWidth, int textureHeight) {
-		this.location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "textures/gui/" + location);
+		this.location = Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, "textures/gui/" + location);
 		this.width = width; this.height = height;
 		this.startX = startX; this.startY = startY;
 		this.textureWidth = textureWidth;

@@ -12,7 +12,7 @@ import com.timmie.mightyarchitect.foundation.SuperByteBuffer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.model.BlockModelPart;
 import net.minecraft.client.renderer.block.model.BlockStateModel;
@@ -37,11 +37,10 @@ public class SchematicRenderer {
 	// Map ChunkSectionLayer to RenderType for buffer rendering
 	private static RenderType layerToRenderType(ChunkSectionLayer layer) {
 		return switch (layer) {
-			case SOLID -> RenderType.solid();
-			case CUTOUT -> RenderType.cutout();
-			case CUTOUT_MIPPED -> RenderType.cutoutMipped();
-			case TRANSLUCENT -> RenderType.tripwire(); // translucent() removed, use tripwire()
-			case TRIPWIRE -> RenderType.tripwire();
+			case SOLID -> net.minecraft.client.renderer.rendertype.RenderTypes.solidMovingBlock();
+			case CUTOUT -> net.minecraft.client.renderer.rendertype.RenderTypes.cutoutMovingBlock();
+			case TRANSLUCENT -> net.minecraft.client.renderer.rendertype.RenderTypes.translucentMovingBlock();
+			case TRIPWIRE -> net.minecraft.client.renderer.rendertype.RenderTypes.tripwireMovingBlock();
 		};
 	}
 
@@ -89,7 +88,7 @@ public class SchematicRenderer {
 
 		ms.pushPose();
 		ms.translate(anchor.getX(), anchor.getY(), anchor.getZ());
-		buffer.getBuffer(RenderType.solid());
+		buffer.getBuffer(net.minecraft.client.renderer.rendertype.RenderTypes.solidMovingBlock());
 		for (ChunkSectionLayer layer : CHUNK_SECTION_LAYERS) {
 			if (!usedBlockRenderLayers.contains(layer))
 				continue;

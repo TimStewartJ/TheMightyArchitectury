@@ -22,7 +22,7 @@ public class PrintingToMultiplayer extends PhaseBase {
 	@Override
 	public void whenEntered() {
 		// check for permissions for the setblock command
-		if (!Minecraft.getInstance().player.hasPermissions(2)) {
+		if (!Minecraft.getInstance().player.permissions().hasPermission(net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER)) {
 			success = false;
 
 			return;

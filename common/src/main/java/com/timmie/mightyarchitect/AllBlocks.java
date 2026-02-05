@@ -5,7 +5,7 @@ import com.timmie.mightyarchitect.block.SliceMarkerBlock;
 import dev.architectury.registry.registries.DeferredRegister;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
@@ -26,13 +26,13 @@ public class AllBlocks {
 
 	private static BlockBehaviour.Properties blockProps(String id) {
 		ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK,
-				ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, id));
+				Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, id));
 		return BlockBehaviour.Properties.of().mapColor(MapColor.STONE).setId(key);
 	}
 
 	private static Item.Properties blockItemProps(String id) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM,
-				ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, id));
+				Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, id));
 		return new Item.Properties().setId(key).useBlockDescriptionPrefix();
 	}
 

@@ -202,8 +202,13 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
-	public java.util.Collection<net.minecraft.world.entity.boss.EnderDragonPart> dragonParts() {
+	public java.util.Collection<net.minecraft.world.entity.boss.enderdragon.EnderDragonPart> dragonParts() {
 		return world.dragonParts();
+	}
+
+	@Override
+	public net.minecraft.world.attribute.EnvironmentAttributeSystem environmentAttributes() {
+		return world.environmentAttributes();
 	}
 
 	@Override

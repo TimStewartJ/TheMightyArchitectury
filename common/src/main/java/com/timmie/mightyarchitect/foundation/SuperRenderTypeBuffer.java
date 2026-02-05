@@ -3,9 +3,9 @@ package com.timmie.mightyarchitect.foundation;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.resources.model.ModelBakery;
 
@@ -69,11 +69,11 @@ public class SuperRenderTypeBuffer implements MultiBufferSource {
 			put(map, Sheets.signSheet());
 			put(map, Sheets.hangingSignSheet());
 			put(map, Sheets.chestSheet());
-			put(map, RenderType.armorEntityGlint());
-			put(map, RenderType.glint());
-			put(map, RenderType.glintTranslucent());
-			put(map, RenderType.entityGlint());
-			put(map, RenderType.waterMask());
+			put(map, net.minecraft.client.renderer.rendertype.RenderTypes.armorEntityGlint());
+			put(map, net.minecraft.client.renderer.rendertype.RenderTypes.glint());
+			put(map, net.minecraft.client.renderer.rendertype.RenderTypes.glintTranslucent());
+			put(map, net.minecraft.client.renderer.rendertype.RenderTypes.entityGlint());
+			put(map, net.minecraft.client.renderer.rendertype.RenderTypes.waterMask());
 			put(map, RenderTypes.getOutlineSolid());
 			ModelBakery.DESTROY_TYPES.forEach((p_173062_) -> {
 				put(map, p_173062_);
