@@ -23,6 +23,8 @@ import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.event.events.client.ClientRawInputEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.event.events.common.InteractionEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -134,7 +136,7 @@ public class ArchitectManager {
 
 		if (mc.hasSingleplayerServer()) {
 			for (InstantPrintPacket packet : getModel().getPackets())
-				packet.sendToServer();
+				AllPackets.sendToServer(packet);
 			MightyClient.renderer.setActive(false);
 			status("Printed result into world.");
 			unload();
@@ -289,17 +291,18 @@ public class ArchitectManager {
 				.render(ms, buffer);
 	}
 
-	public static EventResult onClick(Minecraft minecraft, int button, int action, int modifiers) {
+	public static EventResult onClick(Minecraft minecraft, MouseButtonInfo buttonInfo, int action) {
 		if (Minecraft.getInstance().screen != null)
 			return EventResult.pass();
 		if (action != Keyboard.PRESS)
 			return EventResult.pass();
 		phase.getPhaseHandler()
-			.onClick(button);
+			.onClick(buttonInfo.button());
 		return EventResult.pass();
 	}
 
-	public static EventResult onKeyTyped(Minecraft minecraft, int keyCode, int scanCode, int action, int modifiers) {
+	public static EventResult onKeyTyped(Minecraft minecraft, int action, KeyEvent event) {
+		int keyCode = event.key();
 		if (keyCode == GLFW.GLFW_KEY_ESCAPE && action == Keyboard.PRESS) {
 			if (inPhase(ArchitectPhases.Composing) || inPhase(ArchitectPhases.Previewing)) {
 				enterPhase(ArchitectPhases.Paused);

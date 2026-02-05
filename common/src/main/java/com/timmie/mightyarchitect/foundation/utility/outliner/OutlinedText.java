@@ -3,9 +3,9 @@ package com.timmie.mightyarchitect.foundation.utility.outliner;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.foundation.RenderTypes;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.world.phys.Vec3;
 
 public class OutlinedText extends Outline {
@@ -45,12 +45,12 @@ public class OutlinedText extends Outline {
 		Minecraft mc = Minecraft.getInstance();
 		float pt = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
 		Vec3 vec = VecHelper.lerp(prevLocation, location, pt);
-		EntityRenderDispatcher renderManager = mc.getEntityRenderDispatcher();
+		Camera camera = mc.gameRenderer.getMainCamera();
 		float stringLength = mc.font.width(text);
 
 		ms.pushPose();
 		ms.translate(vec.x, vec.y, vec.z);
-		ms.mulPose(renderManager.cameraOrientation());
+		ms.mulPose(camera.rotation());
 
 //		if (scalesUp) {
 		double distance = mc.player.getEyePosition(mc.getDeltaTracker().getGameTimeDeltaPartialTick(true))

@@ -1,9 +1,9 @@
 package com.timmie.mightyarchitect.gui.widgets;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.timmie.mightyarchitect.gui.ScreenResources;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 
@@ -33,14 +33,14 @@ public class IconButton extends AbstractSimiWidget {
 	}
 
 	@Override
-	public void onClick(double p_onClick_1_, double p_onClick_3_) {
-		super.onClick(p_onClick_1_, p_onClick_3_);
+	public void onClick(MouseButtonEvent event, boolean flag) {
+		super.onClick(event, flag);
 		this.pressed = true;
 	}
 
 	@Override
-	public void onRelease(double p_onRelease_1_, double p_onRelease_3_) {
-		super.onRelease(p_onRelease_1_, p_onRelease_3_);
+	public void onRelease(MouseButtonEvent event) {
+		super.onRelease(event);
 		this.pressed = false;
 	}
 

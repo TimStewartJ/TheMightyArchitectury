@@ -1,6 +1,7 @@
 package com.timmie.mightyarchitect.forge;
 
 import com.timmie.mightyarchitect.MightyClient;
+import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -14,6 +15,6 @@ public class OnRenderWorld {
         MightyClient.onRenderWorld();
         
         // Apply post-processing shaders after level rendering
-        MightyClient.onPostRender(event.getPartialTick().getGameTimeDeltaPartialTick(false));
+        MightyClient.onPostRender(Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false));
     }
 }

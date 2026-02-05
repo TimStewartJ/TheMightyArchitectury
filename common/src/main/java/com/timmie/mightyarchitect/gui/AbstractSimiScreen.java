@@ -5,6 +5,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -50,33 +53,33 @@ public abstract class AbstractSimiScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseClicked(double x, double y, int button) {
+	public boolean mouseClicked(MouseButtonEvent event, boolean flag) {
 		boolean result = false;
 		for (AbstractWidget widget : widgets) {
-			if (widget.mouseClicked(x, y, button))
+			if (widget.mouseClicked(event, flag))
 				result = true;
 		}
 		return result;
 	}
 
 	@Override
-	public boolean keyPressed(int code, int p_keyPressed_2_, int p_keyPressed_3_) {
+	public boolean keyPressed(KeyEvent event) {
 		for (AbstractWidget widget : widgets) {
-			if (widget.keyPressed(code, p_keyPressed_2_, p_keyPressed_3_))
+			if (widget.keyPressed(event))
 				return true;
 		}
-		return super.keyPressed(code, p_keyPressed_2_, p_keyPressed_3_);
+		return super.keyPressed(event);
 	}
 
 	@Override
-	public boolean charTyped(char character, int code) {
+	public boolean charTyped(CharacterEvent event) {
 		for (AbstractWidget widget : widgets) {
-			if (widget.charTyped(character, code))
+			if (widget.charTyped(event))
 				return true;
 		}
-		if (character == 'e')
+		if ((char) event.codepoint() == 'e')
 			onClose();
-		return super.charTyped(character, code);
+		return super.charTyped(event);
 	}
 
 	@Override

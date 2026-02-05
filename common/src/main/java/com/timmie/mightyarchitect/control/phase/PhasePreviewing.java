@@ -8,6 +8,7 @@ import com.timmie.mightyarchitect.gui.ToolSelectionScreen;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -57,7 +58,8 @@ public class PhasePreviewing extends PhaseBase implements IRenderGameOverlay {
 
 	@Override
 	public void onKey(int key, boolean released) {
-		if (MightyClient.TOOL_MENU.matches(key, 0)) {
+		KeyEvent keyEvent = new KeyEvent(key, 0, 0);
+		if (MightyClient.TOOL_MENU.matches(keyEvent)) {
 			if (released && toolSelection.focused) {
 				toolSelection.focused = false;
 				toolSelection.onClose();
@@ -73,7 +75,7 @@ public class PhasePreviewing extends PhaseBase implements IRenderGameOverlay {
 			return;
 
 		if (toolSelection.focused) {
-			Optional<KeyMapping> mapping = Arrays.stream(Minecraft.getInstance().options.keyHotbarSlots).filter(keyMapping -> keyMapping.matches(key, 0)).findFirst();
+			Optional<KeyMapping> mapping = Arrays.stream(Minecraft.getInstance().options.keyHotbarSlots).filter(keyMapping -> keyMapping.matches(keyEvent)).findFirst();
 			if (mapping.isEmpty())
 				return;
 

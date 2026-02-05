@@ -1,11 +1,11 @@
 package com.timmie.mightyarchitect.gui.widgets;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.function.Consumer;
 
@@ -79,7 +79,7 @@ public class ScrollInput extends AbstractSimiWidget {
 			return false;
 
 		int priorState = state;
-		boolean shifted = Screen.hasShiftDown();
+		boolean shifted = Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_SHIFT) || Keyboard.isKeyDown(GLFW.GLFW_KEY_RIGHT_SHIFT);
 		int step = (int) Math.signum(verticalAmount);
 
 		state += step;

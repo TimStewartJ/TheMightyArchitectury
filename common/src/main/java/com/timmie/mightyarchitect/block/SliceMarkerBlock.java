@@ -47,7 +47,7 @@ public class SliceMarkerBlock extends Block {
 			return InteractionResult.PASS;
 		if (AllItems.ARCHITECT_WAND.typeOf(player.getMainHandItem()) || AllItems.ARCHITECT_WAND.typeOf(player.getOffhandItem()))
 			return InteractionResult.PASS;
-		if (worldIn.isClientSide)
+		if (worldIn.isClientSide())
 			return InteractionResult.SUCCESS;
 
 		DesignSliceTrait currentTrait = state.getValue(VARIANT);

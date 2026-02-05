@@ -8,10 +8,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Blocks;
@@ -188,30 +186,20 @@ public class GuiGameElement {
 
 		@Override
 		public void render(GuiGraphics guiGraphics) {
-			// In 1.21.6, guiGraphics.pose() returns Matrix3x2fStack for 2D GUI.
-			// For 3D item rendering, create a new PoseStack
-			PoseStack ms = new PoseStack();
-			prepareMatrix(ms);
-//			matrixStack.translate(0, 80, 0);
-			transformMatrix(ms);
-			renderItemIntoGUI(ms, stack, true);
-			cleanUpMatrix(ms);
-		}
-
-		public static void renderItemIntoGUI(PoseStack matrixStack, ItemStack stack, boolean useDefaultLighting) {
-			ItemRenderer renderer = Minecraft.getInstance().getItemRenderer();
-
-			// In 1.21.6, texture filter and blend state are handled by pipeline
-			matrixStack.pushPose();
-			matrixStack.translate(0, 0, 100.0F);
-			matrixStack.translate(8.0F, -8.0F, 0.0F);
-			matrixStack.scale(16.0F, 16.0F, 16.0F);
-			MultiBufferSource.BufferSource buffer = Minecraft.getInstance().renderBuffers().bufferSource();
-
-			renderer.renderStatic(stack, ItemDisplayContext.GUI, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, matrixStack, buffer, null, 0);
-			buffer.endBatch();
-
-			matrixStack.popPose();
+			// In 1.21, guiGraphics.pose() returns Matrix3x2fStack for 2D transformations
+			// For simple item rendering with position offset, use renderItem directly
+			int renderX = (int) xBeforeScale;
+			int renderY = (int) yBeforeScale;
+			
+			// Apply 2D scale transform using matrix stack
+			guiGraphics.pose().pushMatrix();
+			guiGraphics.pose().translate((float) xBeforeScale, (float) yBeforeScale);
+			guiGraphics.pose().scale((float) scale, (float) scale);
+			
+			// Render the item at origin (transforms applied via matrix)
+			guiGraphics.renderItem(stack, 0, 0);
+			
+			guiGraphics.pose().popMatrix();
 		}
 
 	}

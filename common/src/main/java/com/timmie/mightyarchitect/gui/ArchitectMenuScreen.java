@@ -1,7 +1,6 @@
 package com.timmie.mightyarchitect.gui;
 
 import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.ArchitectMenu;
@@ -13,7 +12,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import org.lwjgl.glfw.GLFW;
@@ -98,19 +99,19 @@ public class ArchitectMenuScreen extends Screen {
 	}
 
 	@Override
-	public boolean keyPressed(int keyCode, int p_keyPressed_2_, int p_keyPressed_3_) {
-		super.keyPressed(keyCode, p_keyPressed_2_, p_keyPressed_3_);
+	public boolean keyPressed(KeyEvent event) {
+		super.keyPressed(event);
 		boolean hideOnClose =
 			ArchitectManager.inPhase(ArchitectPhases.Empty) || ArchitectManager.inPhase(ArchitectPhases.Paused);
 
-		if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+		if (event.key() == GLFW.GLFW_KEY_ESCAPE) {
 			if (hideOnClose)
 				setVisible(false);
 			minecraft.setScreen(null);
 			return true;
 		}
 
-		if (MightyClient.COMPOSE.matches(keyCode, 0)) {
+		if (MightyClient.COMPOSE.matches(event)) {
 			if (hideOnClose)
 				setVisible(false);
 			minecraft.setScreen(null);
@@ -120,23 +121,24 @@ public class ArchitectMenuScreen extends Screen {
 	}
 
 	@Override
-	public boolean charTyped(char p_charTyped_1_, int p_charTyped_2_) {
+	public boolean charTyped(CharacterEvent event) {
 		boolean hideOnClose =
 			ArchitectManager.inPhase(ArchitectPhases.Empty) || ArchitectManager.inPhase(ArchitectPhases.Paused);
-		if (ArchitectMenu.handleMenuInput(p_charTyped_1_)) {
+		char character = (char) event.codepoint();
+		if (ArchitectMenu.handleMenuInput(character)) {
 			if (ArchitectManager.inPhase(ArchitectPhases.Paused))
 				setVisible(false);
 			minecraft.setScreen(null);
 			return true;
 		}
-		if (p_charTyped_1_ == 'e') {
+		if (character == 'e') {
 			if (hideOnClose)
 				setVisible(false);
 			minecraft.setScreen(null);
 			return true;
 		}
 
-		return super.charTyped(p_charTyped_1_, p_charTyped_2_);
+		return super.charTyped(event);
 	}
 
 	private void draw(GuiGraphics graphics, float partialTicks) {
@@ -228,14 +230,17 @@ public class ArchitectMenuScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseClicked(double mouseX, double mouseY, int button) {
-		if (button != 0 || !visible || !focused)
-			return super.mouseClicked(mouseX, mouseY, button);
+	public boolean mouseClicked(MouseButtonEvent event, boolean flag) {
+		if (event.button() != 0 || !visible || !focused)
+			return super.mouseClicked(event, flag);
 
 		Window mainWindow = Minecraft.getInstance()
 			.getWindow();
 		int x = mainWindow.getGuiScaledWidth() - menuWidth - 10;
 		int y = mainWindow.getGuiScaledHeight() - menuHeight;
+
+		double mouseX = event.x();
+		double mouseY = event.y();
 
 		boolean sideways = false;
 		if ((mainWindow.getGuiScaledWidth() - 182) / 2 < menuWidth + 20) {
@@ -259,8 +264,7 @@ public class ArchitectMenuScreen extends Screen {
 
 			yPos += font.lineHeight;
 			if (hoveredHorizontally && yPos < mouseY && mouseY <= yPos + font.lineHeight) {
-				charTyped(key.toLowerCase()
-					.charAt(0), GLFW.GLFW_PRESS);
+				charTyped(new CharacterEvent(key.toLowerCase().charAt(0), 0));
 			}
 		}
 

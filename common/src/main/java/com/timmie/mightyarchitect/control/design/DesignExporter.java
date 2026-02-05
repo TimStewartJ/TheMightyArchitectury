@@ -201,8 +201,8 @@ public class DesignExporter {
 			}
 		}
 
-		new PlaceSignPacket(layer.getDisplayName()
-			.substring(0, 1) + ". " + type.getDisplayName(), filename, signPos).sendToServer();
+		AllPackets.sendToServer(new PlaceSignPacket(layer.getDisplayName()
+			.substring(0, 1) + ". " + type.getDisplayName(), filename, signPos));
 		FilesHelper.saveTagCompoundAsJson(compound, designPath);
 		return designPath;
 		//

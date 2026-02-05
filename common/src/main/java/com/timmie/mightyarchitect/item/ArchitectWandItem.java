@@ -11,7 +11,6 @@ import dev.architectury.platform.Platform;
 import dev.architectury.utils.Env;
 import dev.architectury.utils.EnvExecutor;
 import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
@@ -36,7 +35,7 @@ public class ArchitectWandItem extends Item {
 		Player player = context.getPlayer();
 		Level world = context.getLevel();
 
-		if (!world.isClientSide)
+		if (!world.isClientSide())
 			return InteractionResult.SUCCESS;
 
 		if (player.isShiftKeyDown()) {
@@ -55,12 +54,10 @@ public class ArchitectWandItem extends Item {
 		return InteractionResult.SUCCESS;
 	}
 
-	@Environment(EnvType.CLIENT)
 	protected void resetVisualization() {
 		PhaseEditTheme.resetVisualization();
 	}
 
-	@Environment(EnvType.CLIENT)
 	protected void handleUseOnDesignAnchor(Player player, Level world, BlockPos anchor, BlockState blockState) {
 		if (AllBlocks.DESIGN_ANCHOR.typeOf(blockState)) {
 			if (!ArchitectManager.inPhase(ArchitectPhases.EditingThemes))
@@ -80,7 +77,7 @@ public class ArchitectWandItem extends Item {
 
 	@Override
 	public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
-		if (worldIn.isClientSide) {
+		if (worldIn.isClientSide()) {
 			EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> handleRightClick(worldIn, playerIn, handIn));
 			playerIn.getCooldowns()
 				.addCooldown(playerIn.getItemInHand(handIn), 5);
@@ -88,7 +85,6 @@ public class ArchitectWandItem extends Item {
 		return InteractionResult.SUCCESS;
 	}
 
-	@Environment(EnvType.CLIENT)
 	protected void handleRightClick(Level worldIn, Player playerIn, InteractionHand handIn) {
 		if (!ArchitectManager.inPhase(ArchitectPhases.EditingThemes))
 			return;
@@ -101,7 +97,6 @@ public class ArchitectWandItem extends Item {
 		}
 	}
 
-	@Environment(EnvType.CLIENT)
 	private void openGui() {
 		if (!ArchitectManager.inPhase(ArchitectPhases.EditingThemes))
 			return;

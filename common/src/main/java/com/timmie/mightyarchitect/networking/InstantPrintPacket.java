@@ -2,18 +2,17 @@ package com.timmie.mightyarchitect.networking;
 
 import com.timmie.mightyarchitect.AllPackets;
 import dev.architectury.networking.NetworkManager;
-import dev.architectury.networking.simple.BaseC2SMessage;
-import dev.architectury.networking.simple.MessageType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.*;
 
-public class InstantPrintPacket extends BaseC2SMessage {
+public class InstantPrintPacket implements CustomPacketPayload {
 
 	private BunchOfBlocks blocks;
 
@@ -36,32 +35,30 @@ public class InstantPrintPacket extends BaseC2SMessage {
 	}
 
 	@Override
-	public MessageType getType() {
-		return AllPackets.INSTANT_PRINT;
+	public Type<? extends CustomPacketPayload> type() {
+		return AllPackets.INSTANT_PRINT_TYPE;
 	}
 
-	@Override
-	public void write(RegistryFriendlyByteBuf buf) {
-		buf.writeInt(blocks.size);
-		blocks.blocks.forEach((pos, state) -> {
+	public static void write(RegistryFriendlyByteBuf buf, InstantPrintPacket packet) {
+		buf.writeInt(packet.blocks.size);
+		packet.blocks.blocks.forEach((pos, state) -> {
 			buf.writeNbt(NbtUtils.writeBlockState(state));
 			buf.writeBlockPos(pos);
 		});
 	}
 	
-	@Override
-	public void handle(NetworkManager.PacketContext context) {
+	public static void handle(InstantPrintPacket packet, NetworkManager.PacketContext context) {
 		context.queue(() -> {
 			var holderGetter = context.getPlayer().level().holderLookup(Registries.BLOCK);
-			if (blocks.rawData != null) {
+			if (packet.blocks.rawData != null) {
 				// Decode from raw data on server side
-				for (BlockData data : blocks.rawData) {
+				for (BlockData data : packet.blocks.rawData) {
 					BlockState state = NbtUtils.readBlockState(holderGetter, data.tag);
 					context.getPlayer().level().setBlock(data.pos, state, 3);
 				}
 			} else {
 				// Already decoded (shouldn't happen for C2S)
-				blocks.blocks.forEach((pos, state) -> {
+				packet.blocks.blocks.forEach((pos, state) -> {
 					context.getPlayer().level().setBlock(pos, state, 3);
 				});
 			}

@@ -1,12 +1,12 @@
 package com.timmie.mightyarchitect.fabric;
 
 import com.timmie.mightyarchitect.MightyClient;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 
 public class OnRenderWorld {
     public static void RegisterRenderEvent() {
         // Register world rendering for outlines and schematics
-        WorldRenderEvents.LAST.register((context) -> {
+        WorldRenderEvents.END_MAIN.register((context) -> {
             MightyClient.onRenderWorld();
         });
 

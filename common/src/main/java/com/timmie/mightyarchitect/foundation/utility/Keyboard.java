@@ -1,11 +1,8 @@
 package com.timmie.mightyarchitect.foundation.utility;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 
-@Environment(EnvType.CLIENT)
 public class Keyboard {
 	
 	public static final int PRESS = 1;
@@ -24,7 +21,7 @@ public class Keyboard {
 	public static final int G = 71;
 
 	public static boolean isKeyDown(int key) {
-		return InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), key);
+		return InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), key);
 	}
 	
 }

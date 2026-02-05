@@ -9,6 +9,7 @@ import com.timmie.mightyarchitect.gui.widgets.Label;
 import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -200,9 +201,9 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public boolean mouseClicked(double x, double y, int button) {
+	public boolean mouseClicked(MouseButtonEvent event, boolean flag) {
 
-		if (button == 0) {
+		if (event.button() == 0) {
 			for (IconButton button2 : toggleButtons) {
 				if (button2.isHoveredOrFocused()) {
 					buttonClicked(button2);
@@ -211,7 +212,7 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 			}
 		}
 
-		return super.mouseClicked(x, y, button);
+		return super.mouseClicked(event, flag);
 	}
 
 	protected void buttonClicked(IconButton button) {

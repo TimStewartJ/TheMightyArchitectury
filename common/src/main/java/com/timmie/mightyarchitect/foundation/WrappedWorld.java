@@ -79,7 +79,7 @@ public class WrappedWorld extends Level {
 
 	public WrappedWorld(Level world) {
 		super((WritableLevelData) world.getLevelData(), world.dimension(), world.registryAccess(), world.dimensionTypeRegistration(),
-			world.isClientSide, false, 0L, 0);
+			world.isClientSide(), false, 0L, 0);
 		this.world = world;
 	}
 
@@ -246,8 +246,9 @@ public class WrappedWorld extends Level {
 			Level.ExplosionInteraction interaction,
 			net.minecraft.core.particles.ParticleOptions smallParticle,
 			net.minecraft.core.particles.ParticleOptions largeParticle,
+			net.minecraft.util.random.WeightedList<net.minecraft.core.particles.ExplosionParticleInfo> particleInfo,
 			net.minecraft.core.Holder<net.minecraft.sounds.SoundEvent> sound) {
-		world.explode(entity, damageSource, calculator, x, y, z, radius, fire, interaction, smallParticle, largeParticle, sound);
+		world.explode(entity, damageSource, calculator, x, y, z, radius, fire, interaction, smallParticle, largeParticle, particleInfo, sound);
 	}
 
 	@Override
@@ -256,8 +257,23 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
+	public net.minecraft.world.level.storage.LevelData.@org.jetbrains.annotations.Nullable RespawnData getRespawnData() {
+		return null;
+	}
+
+	@Override
+	public void setRespawnData(net.minecraft.world.level.storage.LevelData.RespawnData respawnData) {
+		// No-op for wrapped world
+	}
+
+	@Override
 	public float getShade(Direction p_230487_1_, boolean p_230487_2_) {
 		return 1;
+	}
+
+	@Override
+	public net.minecraft.world.level.border.WorldBorder getWorldBorder() {
+		return world.getWorldBorder();
 	}
 
 	@Override

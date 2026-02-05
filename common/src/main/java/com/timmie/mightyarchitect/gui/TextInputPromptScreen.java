@@ -3,6 +3,7 @@ package com.timmie.mightyarchitect.gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -88,16 +89,16 @@ public class TextInputPromptScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public boolean keyPressed(int keyCode, int p_keyPressed_2_, int p_keyPressed_3_) {
-		if (keyCode == GLFW.GLFW_KEY_ENTER) {
-			confirm.onPress();
+	public boolean keyPressed(KeyEvent event) {
+		if (event.key() == GLFW.GLFW_KEY_ENTER) {
+			confirm.onPress(null);
 			return true;
 		}
-		if (keyCode == 256 && this.shouldCloseOnEsc()) {
+		if (event.key() == 256 && this.shouldCloseOnEsc()) {
 			this.onClose();
 			return true;
 		}
-		return nameField.keyPressed(keyCode, p_keyPressed_2_, p_keyPressed_3_);
+		return nameField.keyPressed(event);
 	}
 
 }

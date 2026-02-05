@@ -5,8 +5,6 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.function.Function;
-
 public class SpriteShiftEntry {
 	protected ResourceLocation originalTextureLocation;
 	protected ResourceLocation targetTextureLocation;
@@ -19,10 +17,9 @@ public class SpriteShiftEntry {
 	}
 
 	protected void loadTextures() {
-		Function<ResourceLocation, TextureAtlasSprite> textureMap = Minecraft.getInstance()
-			.getTextureAtlas(TextureAtlas.LOCATION_BLOCKS);
-		original = textureMap.apply(originalTextureLocation);
-		target = textureMap.apply(targetTextureLocation);
+		TextureAtlas atlas = (TextureAtlas) Minecraft.getInstance().getTextureManager().getTexture(TextureAtlas.LOCATION_BLOCKS);
+		original = atlas.getSprite(originalTextureLocation);
+		target = atlas.getSprite(targetTextureLocation);
 	}
 
 	public ResourceLocation getTargetResourceLocation() {

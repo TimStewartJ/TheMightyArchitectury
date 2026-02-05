@@ -16,12 +16,15 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 
 public class MightyClient {
 
 	public static KeyMapping COMPOSE;
 	public static KeyMapping TOOL_MENU;
+
+	public static final KeyMapping.Category CATEGORY = new KeyMapping.Category(ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "keys"));
 
 	public static SchematicRenderer renderer = new SchematicRenderer();
 	public static Outliner outliner = new Outliner();
@@ -30,9 +33,8 @@ public class MightyClient {
 
 	public static void init() {
 		AllItems.initColorHandlers();
-		String modName = TheMightyArchitect.NAME;
-		COMPOSE = new KeyMapping("key.mightyclient.compose", Keyboard.G, modName);
-		TOOL_MENU = new KeyMapping("key.mightyclient.toolmenu", Keyboard.LALT, modName);
+		COMPOSE = new KeyMapping("key.mightyclient.compose", Keyboard.G, CATEGORY);
+		TOOL_MENU = new KeyMapping("key.mightyclient.toolmenu", Keyboard.LALT, CATEGORY);
 		KeyMappingRegistry.register(COMPOSE);
 		KeyMappingRegistry.register(TOOL_MENU);
 
