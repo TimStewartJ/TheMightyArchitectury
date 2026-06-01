@@ -3,7 +3,6 @@ package com.timmie.mightyarchitect.foundation.utility.outliner;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -20,8 +19,8 @@ public class LineOutline extends Outline {
 	}
 
 	@Override
-	public void render(GuiGraphics ms, MultiBufferSource buffer) {
-		renderCuboidLine(ms.pose(), buffer, start, end);
+	public void render(PoseStack ms, MultiBufferSource buffer) {
+		renderCuboidLine(ms, buffer, start, end);
 	}
 
 	public static class ChasingLineOutline extends LineOutline {
@@ -59,10 +58,10 @@ public class LineOutline extends Outline {
 		}
 
 		@Override
-		public void render(GuiGraphics ms, MultiBufferSource buffer) {
+		public void render(PoseStack ms, MultiBufferSource buffer) {
 			float pt = Minecraft.getInstance()
 				.getTimer().getGameTimeDeltaPartialTick(true);
-			renderCuboidLine(ms.pose(), buffer, VecHelper.lerp(prevStart, start, pt), VecHelper.lerp(prevEnd, end, pt));
+			renderCuboidLine(ms, buffer, VecHelper.lerp(prevStart, start, pt), VecHelper.lerp(prevEnd, end, pt));
 		}
 
 	}
@@ -89,13 +88,13 @@ public class LineOutline extends Outline {
 		}
 
 		@Override
-		public void render(GuiGraphics ms, MultiBufferSource buffer) {
+		public void render(PoseStack ms, MultiBufferSource buffer) {
 			float pt = Minecraft.getInstance()
 				.getTimer().getGameTimeDeltaPartialTick(true);
 			float distanceToTarget = 1 - Mth.lerp(pt, prevProgress, progress);
 			Vec3 start = end.add(this.start.subtract(end)
 				.scale(distanceToTarget));
-			renderCuboidLine(ms.pose(), buffer, start, end);
+			renderCuboidLine(ms, buffer, start, end);
 		}
 
 	}

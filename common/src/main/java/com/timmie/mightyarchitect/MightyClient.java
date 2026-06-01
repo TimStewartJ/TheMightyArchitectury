@@ -14,7 +14,6 @@ import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import net.minecraft.client.Camera;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
@@ -55,8 +54,8 @@ public class MightyClient {
 		MightyClient.renderer.tick();
 	}
 
-	public static void onRenderWorld(GuiGraphics guiGraphics) {
-		PoseStack ms = guiGraphics.pose();
+	public static void onRenderWorld(PoseStack poseStack) {
+		PoseStack ms = poseStack;
 		Camera info = Minecraft.getInstance().gameRenderer.getMainCamera();
 		Vec3 view = info.getPosition();
 
@@ -70,7 +69,7 @@ public class MightyClient {
 
 		MightyClient.renderer.render(ms, b);
 		ArchitectManager.render(ms, b);
-		MightyClient.outliner.renderOutlines(guiGraphics, b);
+		MightyClient.outliner.renderOutlines(ms, b);
 
 		b.draw();
 		buffer.endBatch();
