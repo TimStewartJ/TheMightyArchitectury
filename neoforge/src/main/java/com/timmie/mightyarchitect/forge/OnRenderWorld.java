@@ -1,8 +1,6 @@
 package com.timmie.mightyarchitect.forge;
 
 import com.timmie.mightyarchitect.MightyClient;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -14,7 +12,7 @@ public class OnRenderWorld {
     public static void onRenderWorld(RenderLevelStageEvent event) {
         // Render outlines and schematics after particles
         if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
-            MightyClient.onRenderWorld(new GuiGraphics(Minecraft.getInstance(), event.getPoseStack(), Minecraft.getInstance().renderBuffers().bufferSource()));
+            MightyClient.onRenderWorld(event.getPoseStack());
         }
 
         // Apply post-processing shaders after level rendering is complete

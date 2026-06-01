@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.timmie.mightyarchitect.foundation.RenderTypes;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
@@ -21,8 +20,8 @@ public class AABBOutline extends Outline {
 	}
 
 	@Override
-	public void render(GuiGraphics ms, MultiBufferSource buffer) {
-		renderBB(ms.pose(), buffer, bb);
+	public void render(PoseStack ms, MultiBufferSource buffer) {
+		renderBB(ms, buffer, bb);
 	}
 
 	public void renderBB(PoseStack ms, MultiBufferSource buffer, AABB bb) {
