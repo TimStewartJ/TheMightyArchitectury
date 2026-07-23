@@ -1,11 +1,24 @@
-plugins {
-    // Regular Architectury Loom (real remapping) — same 1.17.491 release the 26.1 branch
-    // uses via the -no-remap variant, but here with Mojang mappings for obfuscated targets.
-    id "dev.architectury.loom" version "1.17.491"
+buildscript {
+    repositories {
+        maven { url "https://maven.fabricmc.net/" }
+        maven { url "https://maven.architectury.dev/" }
+        maven { url "https://maven.neoforged.net/releases/" }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+    dependencies {
+        // This impl jar registers BOTH plugin ids: dev.architectury.loom and
+        // dev.architectury.loom-no-remap. We apply exactly one per node below.
+        classpath "dev.architectury:architectury-loom:1.17.491"
+    }
 }
 
-// The logical Minecraft version of THIS build instance (node), e.g. "1.21.4" or "1.21.8".
+// The logical Minecraft version of THIS build instance (node), e.g. "1.21.8" or "26.1".
 def mc = stonecutter.current.version
+// 26.1+ ships unobfuscated -> loom-no-remap (no remap, no mappings, JDK 25).
+// <=1.21.x is obfuscated  -> loom (real remap via Mojang mappings, JDK 21).
+def unobf = (mc.tokenize('.')[0] as int) >= 26
+apply plugin: unobf ? "dev.architectury.loom-no-remap" : "dev.architectury.loom"
 
 base {
     archivesName = "dualpoc"
@@ -15,9 +28,14 @@ version = "${property('mod_version')}+${mc}"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(unobf ? 25 : 21)
     }
     withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.release = unobf ? 25 : 21
 }
 
 loom {
@@ -27,9 +45,17 @@ loom {
 dependencies {
     // Per-node values resolved from versions/<node>/gradle.properties by Stonecutter.
     minecraft "com.mojang:minecraft:${property('minecraft_version')}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${property('fabric_loader_version')}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${property('fabric_api_version')}"
+    if (unobf) {
+        // Unobfuscated (26.1+): no remap step, so mods are consumed as-is via plain
+        // `implementation` and no mappings are declared. Matches the real 26.1 branch.
+        implementation "net.fabricmc:fabric-loader:${property('fabric_loader_version')}"
+        implementation "net.fabricmc.fabric-api:fabric-api:${property('fabric_api_version')}"
+    } else {
+        // Obfuscated (<=1.21.x): Loom remaps mod deps, so use `modImplementation` + Mojang mappings.
+        mappings loom.officialMojangMappings()
+        modImplementation "net.fabricmc:fabric-loader:${property('fabric_loader_version')}"
+        modImplementation "net.fabricmc.fabric-api:fabric-api:${property('fabric_api_version')}"
+    }
 }
 
 processResources {

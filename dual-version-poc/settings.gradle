@@ -21,7 +21,8 @@ stonecutter {
     centralScript = "build.gradle"
 
     create(getRootProject()) {
-        versions "1.21.4", "1.21.8"
+        // Straddle the mapping boundary: one obfuscated node + one unobfuscated (26.1) node.
+        versions "1.21.8", "26.1"
         vcsVersion = "1.21.8"
     }
 }
