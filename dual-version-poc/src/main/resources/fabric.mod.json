@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "dualpoc",
+  "version": "${version}",
+  "name": "Dual Version POC",
+  "description": "Stonecutter dual-version build proof (1.21.4 + 1.21.8).",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.timmie.dualpoc.DualPoc"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "*"
+  }
+}

@@ -1,0 +1,45 @@
+plugins {
+    // Regular Architectury Loom (real remapping) — same 1.17.491 release the 26.1 branch
+    // uses via the -no-remap variant, but here with Mojang mappings for obfuscated targets.
+    id "dev.architectury.loom" version "1.17.491"
+}
+
+// The logical Minecraft version of THIS build instance (node), e.g. "1.21.4" or "1.21.8".
+def mc = stonecutter.current.version
+
+base {
+    archivesName = "dualpoc"
+}
+group = "com.timmie.dualpoc"
+version = "${property('mod_version')}+${mc}"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    withSourcesJar()
+}
+
+loom {
+    silentMojangMappingsLicense()
+}
+
+dependencies {
+    // Per-node values resolved from versions/<node>/gradle.properties by Stonecutter.
+    minecraft "com.mojang:minecraft:${property('minecraft_version')}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${property('fabric_loader_version')}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${property('fabric_api_version')}"
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+// Node build tasks are meant to run through the controller's `chiseledBuild`.
+tasks.named("build") {
+    group = "versioned"
+}

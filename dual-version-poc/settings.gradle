@@ -1,0 +1,29 @@
+pluginManagement {
+    repositories {
+        maven { url "https://maven.fabricmc.net/" }
+        maven { url "https://maven.architectury.dev/" }
+        maven { url "https://maven.minecraftforge.net/" }
+        maven { url "https://maven.neoforged.net/releases/" }
+        maven { url "https://maven.kikugie.dev/releases" }
+        maven { url "https://maven.kikugie.dev/snapshots" }
+        gradlePluginPortal()
+    }
+}
+
+plugins {
+    id "dev.kikugie.stonecutter" version "0.9.7"
+}
+
+// Dual-version build proof on the OBFUSCATED cluster (same Loom model / JDK 21 / Mojang
+// mappings), so there is no unobfuscated-26.1 wall. Two real Minecraft versions, each a node.
+stonecutter {
+    kotlinController = false
+    centralScript = "build.gradle"
+
+    create(getRootProject()) {
+        versions "1.21.4", "1.21.8"
+        vcsVersion = "1.21.8"
+    }
+}
+
+rootProject.name = "dual-version-poc"
