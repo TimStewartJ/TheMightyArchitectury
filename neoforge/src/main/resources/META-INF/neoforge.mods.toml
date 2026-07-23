@@ -16,14 +16,14 @@ Architectury port of The Mighty Architect. Design elaborate buildings within a m
 [[dependencies.mightyarchitect]]
 modId = "neoforge"
 type = "required"
-versionRange = "[21.6.20-beta,)"
+versionRange = "[21.8.54,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.mightyarchitect]]
 modId = "minecraft"
 type = "required"
-versionRange = "[1.21.6,)"
+versionRange = "[1.21.8,)"
 ordering = "NONE"
 side = "BOTH"
 
