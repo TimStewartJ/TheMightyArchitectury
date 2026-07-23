@@ -1,0 +1,5 @@
+// Convention plugin for UNOBFUSCATED nodes (26.1+): no remap step.
+plugins {
+    id "dev.architectury.loom-no-remap"
+    id "architectury-plugin"
+}

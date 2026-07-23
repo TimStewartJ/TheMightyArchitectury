@@ -1,13 +1,54 @@
+// Read this node's toolchain from the root version node (versions/<node>/gradle.properties).
+def node = rootProject.project(":${stonecutter.current.version}")
+def unobf = node.findProperty('unobfuscated') == 'true'
+def javaVer = (node.findProperty('java_version') ?: '21') as int
+def mcVersion = node.property('minecraft_version')
+def archVersion = node.property('architectury_version')
+def floaderVersion = node.property('fabric_loader_version')
+
+apply plugin: unobf ? "mightyarchitect.loom-noremap" : "mightyarchitect.loom-remap"
+apply plugin: "java"
+apply plugin: "maven-publish"
+
+base { archivesName = "${rootProject.archives_base_name}-${mcVersion}" }
+version = rootProject.mod_version
+group = rootProject.maven_group
+
+repositories {
+    maven { url "https://maven.neoforged.net/releases/" }
+}
+
 architectury {
+    minecraft = mcVersion
     common(rootProject.enabled_platforms.split(","))
 }
 
+loom {
+    silentMojangMappingsLicense()
+}
+
 dependencies {
-    // We depend on fabric loader here to use the fabric @Environment annotations and get the mixin dependencies
-    // Do NOT use other classes from fabric loader
-    implementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
-    // Remove the next line if you don't want to depend on the API
-    implementation "dev.architectury:architectury:${rootProject.architectury_version}"
+    minecraft "com.mojang:minecraft:${mcVersion}"
+    // Obfuscated nodes remap against Mojang mappings; unobfuscated 26.1 declares none.
+    if (!unobf) {
+        mappings loom.officialMojangMappings()
+    }
+    // Fabric loader is used only for @Environment annotations + mixin deps in common.
+    implementation "net.fabricmc:fabric-loader:${floaderVersion}"
+    implementation "dev.architectury:architectury:${archVersion}"
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.release = javaVer
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(javaVer)
+    }
+    withSourcesJar()
 }
 
 publishing {
@@ -17,9 +58,5 @@ publishing {
             from components.java
         }
     }
-
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-    repositories {
-        // Add repositories to publish to here.
-    }
+    repositories {}
 }
