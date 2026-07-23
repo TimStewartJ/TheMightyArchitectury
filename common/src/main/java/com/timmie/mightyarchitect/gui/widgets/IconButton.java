@@ -21,15 +21,15 @@ public class IconButton extends AbstractSimiWidget {
 	public void renderWidget(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
 		if (this.visible) {
 			this.isHovered =
-				mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
+				mouseX >= getX() && mouseY >= getY() && mouseX < getX() + this.width && mouseY < getY() + this.height;
 
 			ScreenResources button = (pressed || !active) ? button = ScreenResources.BUTTON_DOWN
 				: (isHovered) ? ScreenResources.BUTTON_HOVER : ScreenResources.BUTTON;
 
 			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 			ScreenResources.BUTTON.bind();
-			ms.blit(ScreenResources.GRAY.location, x, y, button.startX, button.startY, button.width, button.height);
-			icon.draw(ms, x + 1, y + 1);
+			ms.blit(ScreenResources.GRAY.location, getX(), getY(), button.startX, button.startY, button.width, button.height);
+			icon.draw(ms, getX() + 1, getY() + 1);
 		}
 	}
 

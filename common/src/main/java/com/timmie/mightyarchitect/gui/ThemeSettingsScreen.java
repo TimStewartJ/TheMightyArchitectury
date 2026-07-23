@@ -186,7 +186,7 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 			.setState(theme.getMaxFloorHeight())
 			.calling(position -> {
 				labelRoomHeight.setText(position + "m");
-				labelRoomHeight.x = position > 9 ? topLeftX + 102 : topLeftX + 106;
+				labelRoomHeight.setX(position > 9 ? topLeftX + 102 : topLeftX + 106);
 			});
 		widgets.add(areaRoomHeight);
 		widgets.add(labelRoomHeight);

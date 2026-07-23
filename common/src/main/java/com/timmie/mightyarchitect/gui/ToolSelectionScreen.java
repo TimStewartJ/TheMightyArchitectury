@@ -134,6 +134,7 @@ public class ToolSelectionScreen extends Screen {
 			ms.pose().popPose();
 		}
 
+		RenderSystem.setShaderColor(1, 1, 1, 1);
 		ms.pose().popPose();
 	}
 

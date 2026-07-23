@@ -240,7 +240,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 
 		private void preview(GuiGraphics ms, Minecraft mc) {
 			ms.pose().pushPose();
-			ms.pose().translate(x + 1, y + 9, 100);
+			ms.pose().translate(getX() + 1, getY() + 9, 100);
 			ms.pose().scale(1 + 1/64f, 1 + 1/64f, 1);
 			renderBlock(ms, mc, new BlockPos(0, 1, 0), Palette.INNER_PRIMARY);
 			renderBlock(ms, mc, new BlockPos(1, 1, 0), Palette.INNER_DETAIL);
