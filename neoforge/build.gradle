@@ -1,1 +1,1 @@
-// WIP: loader wiring pending (see stonecutter-migration-runbook). Stubbed so common builds.
+// WIP: neoforge wiring compiles common but source-inclusion loses architectury fabric-dialect transform (EnvType/@Environment) + a neoforge MC generics divergence. See neoforge/build.gradle.wip-source-inclusion and the runbook. Stubbed so common+fabric stay green.

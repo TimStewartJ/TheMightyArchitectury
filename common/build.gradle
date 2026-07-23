@@ -60,3 +60,27 @@ publishing {
     }
     repositories {}
 }
+
+// Expose this node's Stonecutter-processed source + resource DIRECTORIES as consumable configs.
+// The loader modules compile these directories in directly (source inclusion) via the compile
+// TASK (not a sourceSet srcDir), which is the proven Structurify/MultiLoader pattern and avoids
+// architectury's cross-project transform config (unusable between sibling Stonecutter nodes).
+// Safe here: the mod uses no @ExpectPlatform, only architectury's runtime API.
+configurations {
+    commonJava {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+    commonResources {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+}
+
+afterEvaluate {
+    artifacts {
+        def main = sourceSets.main
+        main.java.sourceDirectories.files.each { add("commonJava", it) }
+        main.resources.sourceDirectories.files.each { add("commonResources", it) }
+    }
+}

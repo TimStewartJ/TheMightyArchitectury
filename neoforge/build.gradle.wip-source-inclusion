@@ -3,18 +3,14 @@ def unobf = node.findProperty('unobfuscated') == 'true'
 def javaVer = (node.findProperty('java_version') ?: '21') as int
 def mcVersion = node.property('minecraft_version')
 def archVersion = node.property('architectury_version')
+def neoforgeVersion = node.property('neoforge_version')
 def floaderVersion = node.property('fabric_loader_version')
-def fapiVersion = node.property('fabric_api_version')
 def commonProject = ":common:${stonecutter.current.version}"
 
 // Force the matching common node to fully evaluate first, then read its Stonecutter-processed
-// source/resource directories DIRECTLY off the project object. This deliberately avoids
-// project(path, configuration:) cross-project variant resolution, which does not work between
-// sibling Stonecutter nodes ("no variant with that configuration name exists").
+// source/resource directories directly off the project object (see fabric/build.gradle for why).
 def commonNode = evaluationDependsOn(commonProject)
 
-// Loom-only (no architectury-plugin) so there is no cross-jar transform; common is bundled by
-// compiling its source directly into this module (source inclusion).
 apply plugin: unobf ? "mightyarchitect.loomonly-noremap" : "mightyarchitect.loomonly-remap"
 apply plugin: "java"
 apply plugin: "maven-publish"
@@ -31,32 +27,24 @@ loom {
     silentMojangMappingsLicense()
 }
 
-configurations.all {
-    resolutionStrategy {
-        force "net.fabricmc:fabric-loader:${floaderVersion}"
-    }
-}
-
 dependencies {
     minecraft "com.mojang:minecraft:${mcVersion}"
-
+    neoForge "net.neoforged:neoforge:${neoforgeVersion}"
+    // common uses Fabric's @Environment/EnvType annotations (loader-neutral in the architectury
+    // model). Provide them at compile time only; they are CLASS-retention and ignored at runtime
+    // on NeoForge. (Sidedness-annotation conversion to @OnlyIn is a production follow-up.)
+    compileOnly "net.fabricmc:fabric-loader:${floaderVersion}"
     if (unobf) {
-        // Unobfuscated 26.1: no remap / no mappings; mods consumed as-is.
-        implementation "net.fabricmc:fabric-loader:${floaderVersion}"
-        implementation "net.fabricmc.fabric-api:fabric-api:${fapiVersion}"
-        implementation "dev.architectury:architectury-fabric:${archVersion}"
+        // Unobfuscated 26.1: no remap / no mappings.
+        implementation "dev.architectury:architectury-neoforge:${archVersion}"
     } else {
         mappings loom.officialMojangMappings()
-        modImplementation "net.fabricmc:fabric-loader:${floaderVersion}"
-        modApi "net.fabricmc.fabric-api:fabric-api:${fapiVersion}"
-        modApi "dev.architectury:architectury-fabric:${archVersion}"
+        implementation "dev.architectury:architectury-neoforge:${archVersion}"
     }
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
 }
 
-// Feed common's Stonecutter-processed source/resource directories into the compile TASK directly
-// (NOT sourceSets.main.java.srcDir, which mutates a config Loom has already observed). Read as
-// plain File dirs off the already-evaluated common node -> no cross-project variant resolution.
+// Feed common's Stonecutter-processed source/resource directories into the compile TASK directly.
 def commonMain = commonNode.sourceSets.main
 tasks.named("compileJava") {
     dependsOn("${commonProject}:classes")
@@ -66,7 +54,7 @@ tasks.named("processResources") {
     dependsOn("${commonProject}:processResources")
     from(commonMain.resources.sourceDirectories)
     inputs.property "version", project.version
-    filesMatching("fabric.mod.json") {
+    filesMatching("META-INF/neoforge.mods.toml") {
         expand "version": project.version
     }
 }
@@ -84,7 +72,7 @@ java {
 
 if (!unobf) {
     remapJar {
-        archiveClassifier.set("fabric")
+        archiveClassifier.set("neoforge")
     }
     jar {
         archiveClassifier.set("dev")
@@ -92,14 +80,14 @@ if (!unobf) {
 } else {
     // Unobfuscated 26.1: no remap step; the plain jar is the published artifact.
     jar {
-        archiveClassifier.set("fabric")
+        archiveClassifier.set("neoforge")
     }
 }
 
 publishing {
     publications {
-        mavenFabric(MavenPublication) {
-            artifactId = rootProject.archives_base_name + "-fabric"
+        mavenNeoForge(MavenPublication) {
+            artifactId = rootProject.archives_base_name + "-neoforge"
             from components.java
         }
     }
