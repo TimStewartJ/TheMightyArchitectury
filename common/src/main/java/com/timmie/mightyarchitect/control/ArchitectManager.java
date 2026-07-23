@@ -343,7 +343,7 @@ public class ArchitectManager {
 			((IRenderGameOverlay) phaseHandler).renderGameOverlay(poseStack, deltaTracker.getGameTimeDeltaPartialTick(true));
 		}
 
-		menu.drawPassive();
+		menu.drawPassive(poseStack, deltaTracker.getGameTimeDeltaPartialTick(true));
 	}
 
 	public static InteractionResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return InteractionResult.PASS; }

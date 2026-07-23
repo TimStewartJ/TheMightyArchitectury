@@ -85,15 +85,13 @@ public class ArchitectMenuScreen extends Screen {
 		// This keeps the game world visible behind the menu
 	}
 
-	public void drawPassive() {
+	public void drawPassive(GuiGraphicsExtractor graphics, float partialTicks) {
 		if (isFocused())
 			return;
 
-		// Skip when there is no active screen context to render into.
-		Minecraft mc = Minecraft.getInstance();
-		if (mc.screen == null) {
-			return;
-		}
+		// Rendered from the in-game HUD hook (ClientGuiEvent.RENDER_HUD) when the menu is not the
+		// focused screen. draw() slides the menu off-screen via its animation when not visible.
+		draw(graphics, partialTicks);
 	}
 
 	@Override
