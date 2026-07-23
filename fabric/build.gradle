@@ -7,15 +7,15 @@ def floaderVersion = node.property('fabric_loader_version')
 def fapiVersion = node.property('fabric_api_version')
 def commonProject = ":common:${stonecutter.current.version}"
 
-// Force the matching common node to fully evaluate first, then read its Stonecutter-processed
-// source/resource directories DIRECTLY off the project object. This deliberately avoids
-// project(path, configuration:) cross-project variant resolution, which does not work between
-// sibling Stonecutter nodes ("no variant with that configuration name exists").
+// Force the matching common node to evaluate first, then read its architectury transform output +
+// compiled classes DIRECTLY off the project object. This keeps architectury's bytecode transform
+// (which converts common's fabric-dialect @Environment/EnvType for each loader and compiles common
+// only once) while avoiding project(path, configuration:) cross-project resolution, which yields
+// "no variant exists" between sibling Stonecutter nodes.
 def commonNode = evaluationDependsOn(commonProject)
 
-// Loom-only (no architectury-plugin) so there is no cross-jar transform; common is bundled by
-// compiling its source directly into this module (source inclusion).
-apply plugin: unobf ? "mightyarchitect.loomonly-noremap" : "mightyarchitect.loomonly-remap"
+apply plugin: unobf ? "mightyarchitect.loom-noremap" : "mightyarchitect.loom-remap"
+apply plugin: "mightyarchitect.shadow"
 apply plugin: "java"
 apply plugin: "maven-publish"
 
@@ -27,8 +27,20 @@ repositories {
     maven { url "https://maven.neoforged.net/releases/" }
 }
 
+architectury {
+    platformSetupLoomIde()
+    fabric()
+}
+
 loom {
     silentMojangMappingsLicense()
+}
+
+configurations {
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = false
+    }
 }
 
 configurations.all {
@@ -39,9 +51,7 @@ configurations.all {
 
 dependencies {
     minecraft "com.mojang:minecraft:${mcVersion}"
-
     if (unobf) {
-        // Unobfuscated 26.1: no remap / no mappings; mods consumed as-is.
         implementation "net.fabricmc:fabric-loader:${floaderVersion}"
         implementation "net.fabricmc.fabric-api:fabric-api:${fapiVersion}"
         implementation "dev.architectury:architectury-fabric:${archVersion}"
@@ -51,20 +61,20 @@ dependencies {
         modApi "net.fabricmc.fabric-api:fabric-api:${fapiVersion}"
         modApi "dev.architectury:architectury-fabric:${archVersion}"
     }
-    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+
+    // common's compiled classes on this loader's compile classpath (to compile the loader's own
+    // fabric/ source, which imports common). Direct project-object output, not a project() variant.
+    compileOnly commonNode.sourceSets.main.output
+    // The architectury-transformed common jar, bundled into the final jar via shadow.
+    shadowBundle commonNode.configurations.getByName("transformProductionFabric").artifacts.files
 }
 
-// Feed common's Stonecutter-processed source/resource directories into the compile TASK directly
-// (NOT sourceSets.main.java.srcDir, which mutates a config Loom has already observed). Read as
-// plain File dirs off the already-evaluated common node -> no cross-project variant resolution.
-def commonMain = commonNode.sourceSets.main
+// Ensure common is compiled/transformed before this loader compiles or bundles.
 tasks.named("compileJava") {
-    dependsOn("${commonProject}:classes")
-    source(commonMain.java.sourceDirectories)
+    dependsOn commonNode.tasks.named("classes")
 }
-tasks.named("processResources") {
-    dependsOn("${commonProject}:processResources")
-    from(commonMain.resources.sourceDirectories)
+
+processResources {
     inputs.property "version", project.version
     filesMatching("fabric.mod.json") {
         expand "version": project.version
@@ -82,17 +92,34 @@ java {
     }
 }
 
-if (!unobf) {
+if (unobf) {
+    // Unobfuscated 26.1: no remap step. The plain jar is unpacked into the shadowJar, which bundles
+    // the transformed common classes and becomes the published fabric artifact.
+    jar {
+        archiveClassifier.set("raw")
+    }
+    shadowJar {
+        dependsOn(jar)
+        mainSpec.sourcePaths.clear()
+        from(zipTree(jar.archiveFile))
+        exclude "architectury.common.json"
+        configurations = [project.configurations.shadowBundle]
+        archiveClassifier.set("fabric")
+    }
+} else {
+    // Obfuscated: shadow the transformed common with the loader classes, then remap named -> intermediary.
+    shadowJar {
+        exclude "architectury.common.json"
+        configurations = [project.configurations.shadowBundle]
+        archiveClassifier.set("dev-shadow")
+    }
     remapJar {
+        inputFile.set shadowJar.archiveFile
+        dependsOn shadowJar
         archiveClassifier.set("fabric")
     }
     jar {
         archiveClassifier.set("dev")
-    }
-} else {
-    // Unobfuscated 26.1: no remap step; the plain jar is the published artifact.
-    jar {
-        archiveClassifier.set("fabric")
     }
 }
 
