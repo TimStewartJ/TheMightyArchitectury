@@ -99,26 +99,10 @@ public class GuiGameElement {
 
 		public abstract void render(GuiGraphicsExtractor matrixStack);
 
-		@Deprecated
-		protected void prepare() {}
-
 		protected void prepareMatrix(PoseStack matrixStack) {
 			matrixStack.pushPose();
 			// In 1.21.6, lighting is handled by the render pipeline
 		}
-
-		/*@Deprecated
-		protected void transform() {
-			RenderSystem.translated(xBeforeScale, yBeforeScale, 0);
-			RenderSystem.scaled(scale, scale, scale);
-			RenderSystem.translated(x, y, z);
-			RenderSystem.scaled(1, -1, 1);
-			RenderSystem.translated(rotationOffset.x, rotationOffset.y, rotationOffset.z);
-			RenderSystem.rotatef((float) zRot, 0, 0, 1);
-			RenderSystem.rotatef((float) xRot, 1, 0, 0);
-			RenderSystem.rotatef((float) yRot, 0, 1, 0);
-			RenderSystem.translated(-rotationOffset.x, -rotationOffset.y, -rotationOffset.z);
-		}*/
 
 		protected void transformMatrix(PoseStack matrixStack) {
 			matrixStack.translate(xBeforeScale, yBeforeScale, zBeforeScale);
@@ -132,9 +116,6 @@ public class GuiGameElement {
 			matrixStack.mulPose(Axis.YP.rotationDegrees((float) yRot));
 			matrixStack.translate(-rotationOffset.x, -rotationOffset.y, -rotationOffset.z);
 		}
-
-		@Deprecated
-		protected void cleanUp() {}
 
 		protected void cleanUpMatrix(PoseStack matrixStack) {
 			matrixStack.popPose();

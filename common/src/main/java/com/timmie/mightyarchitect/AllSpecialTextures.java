@@ -34,12 +34,6 @@ public enum AllSpecialTextures {
                 "textures/block/marker/" + filename);
     }
 
-    @Deprecated
-    public void bind() {
-	    // In 1.21.6, texture binding is handled through RenderType
-	    // This method is kept for compatibility but should use getLocation() in new code
-    }
-    
     public Identifier getLocation() {
 		return location;
 	}

@@ -134,10 +134,4 @@ public enum ScreenResources {
 		screen.fill(x, y, x + areaWidth, y + areaHeight, overlayColor);
 	}
 
-	@Deprecated
-	public void bind() {
-		// In 1.21.6, texture binding is handled through RenderPipeline
-		// This method is kept for compatibility but does nothing
-	}
-
 }
