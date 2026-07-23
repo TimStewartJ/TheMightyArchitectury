@@ -1,6 +1,5 @@
 package com.timmie.mightyarchitect.control;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.MightyClient;

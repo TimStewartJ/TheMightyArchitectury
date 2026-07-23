@@ -2,7 +2,6 @@ package com.timmie.mightyarchitect.foundation.utility;
 
 import joptsimple.internal.Strings;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.MutableComponent;

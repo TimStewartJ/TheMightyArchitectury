@@ -1,6 +1,5 @@
 package com.timmie.mightyarchitect.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.control.design.DesignExporter;
 import com.timmie.mightyarchitect.control.design.DesignLayer;
 import com.timmie.mightyarchitect.control.design.DesignTheme;
