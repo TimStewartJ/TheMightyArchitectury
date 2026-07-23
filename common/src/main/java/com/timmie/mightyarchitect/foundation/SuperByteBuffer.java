@@ -3,6 +3,8 @@ package com.timmie.mightyarchitect.foundation;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormatElement;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector4f;
@@ -45,9 +47,13 @@ public class SuperByteBuffer {
 	private int r, g, b, a;
 	private float sheetSize;
 
-	// Vertex format info - BLOCK format is 32 bytes (8 ints): pos(3 floats) + color(1 int) + uv(2 floats) + light(1 int) + normal(1 int)
+	// Vertex format info. In 26.1, DefaultVertexFormat.BLOCK is 28 bytes (7 ints):
+	// pos(3 floats) + color(1 int) + uv0(2 floats) + uv2/light(1 int). It no longer carries a normal,
+	// so the normal offset must be resolved from the actual format instead of assumed at int 7.
 	private static final int DEFAULT_VERTEX_SIZE = 32;
 	private int intsPerVertex;
+	private boolean hasNormal;
+	private int normalIntOffset = -1;
 
 	public SuperByteBuffer(int[] vertexData, int vertexCount) {
 		this.vertexData = vertexData;
@@ -72,8 +78,11 @@ public class SuperByteBuffer {
 		
 		MeshData.DrawState drawState = meshData.drawState();
 		this.vertexCount = drawState.vertexCount();
-		this.formatSize = drawState.format().getVertexSize();
+		VertexFormat format = drawState.format();
+		this.formatSize = format.getVertexSize();
 		this.intsPerVertex = formatSize / 4;
+		this.hasNormal = format.contains(VertexFormatElement.NORMAL);
+		this.normalIntOffset = hasNormal ? format.getOffset(VertexFormatElement.NORMAL) / 4 : -1;
 		
 		ByteBuffer vertexBuffer = meshData.vertexBuffer();
 		this.vertexData = new int[vertexCount * intsPerVertex];
@@ -160,7 +169,8 @@ public class SuperByteBuffer {
 			} else
 				builder.setLight(getLightData(i));
 
-			builder.setNormal(getNX(i), getNY(i), getNZ(i));
+			if (hasNormal)
+				builder.setNormal(getNX(i), getNY(i), getNZ(i));
 		}
 
 		transforms = new PoseStack();
@@ -265,17 +275,17 @@ public class SuperByteBuffer {
 	}
 
 	protected float getNX(int index) {
-		int packed = vertexData[getIntOffset(index) + 7];
+		int packed = vertexData[getIntOffset(index) + normalIntOffset];
 		return ((byte) (packed & 0xFF)) / 127f;
 	}
 
 	protected float getNY(int index) {
-		int packed = vertexData[getIntOffset(index) + 7];
+		int packed = vertexData[getIntOffset(index) + normalIntOffset];
 		return ((byte) ((packed >> 8) & 0xFF)) / 127f;
 	}
 
 	protected float getNZ(int index) {
-		int packed = vertexData[getIntOffset(index) + 7];
+		int packed = vertexData[getIntOffset(index) + normalIntOffset];
 		return ((byte) ((packed >> 16) & 0xFF)) / 127f;
 	}
 
