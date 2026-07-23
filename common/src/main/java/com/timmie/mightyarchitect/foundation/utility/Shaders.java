@@ -18,7 +18,7 @@ public enum Shaders {
 		if (name.isEmpty()) {
 			location = Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, "");
 		} else {
-			// In 1.21.4+, post chains are loaded from post_effect/<name>.json
+			// Post chains are loaded from post_effect/<name>.json.
 			// ResourceLocation should just be namespace:name without path prefix or extension
 			location = Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, name);
 		}

@@ -67,7 +67,7 @@ public enum ScreenResources {
 	ICON_FOLDER("icons.png", 0, 96, 16, 16),
 	ICON_REFRESH("icons.png", 16, 96, 16, 16);
 	
-	// In 1.21.6, colors must include the alpha channel (0xFF prefix for fully opaque)
+	// Colors include the alpha channel (0xFF prefix = fully opaque).
 	public static final int FONT_COLOR = 0xFF373F5A;
 	
 	public final Identifier location;
@@ -96,8 +96,7 @@ public enum ScreenResources {
 	}
 
 	public void draw(GuiGraphicsExtractor screen, int x, int y, int color) {
-		// In 1.21.6, RenderSystem color methods are removed
-		// Just draw the texture - color parameter kept for API compatibility
+		// The color parameter is currently ignored (per-quad tinting was removed); kept for API compatibility.
 		screen.blit(RenderPipelines.GUI_TEXTURED, location, x, y, (float) startX, (float) startY, width, height, textureWidth, textureHeight);
 	}
 	

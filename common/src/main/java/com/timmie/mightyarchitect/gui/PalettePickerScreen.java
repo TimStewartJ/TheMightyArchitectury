@@ -239,8 +239,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 		}
 
 		private void preview(GuiGraphicsExtractor ms, Minecraft mc) {
-			// In 1.21.6, GuiGraphicsExtractor.pose() returns Matrix3x2fStack (2D).
-			// We pass positioning to GuiGameElement instead
+			// pose() is a Matrix3x2fStack (2D); positioning is passed to GuiGameElement.
 			float baseX = getX() + 1;
 			float baseY = getY() + 9;
 			float baseZ = 100;

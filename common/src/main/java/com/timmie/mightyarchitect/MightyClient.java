@@ -58,7 +58,6 @@ public class MightyClient {
 	}
 
 	public static void onRenderWorld() {
-		// In 1.21.6, world rendering uses PoseStack directly, not GuiGraphics
 		PoseStack ms = new PoseStack();
 		Camera info = Minecraft.getInstance().gameRenderer.getMainCamera();
 		Vec3 view = info.position();

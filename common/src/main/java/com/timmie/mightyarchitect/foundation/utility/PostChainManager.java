@@ -51,7 +51,7 @@ public class PostChainManager {
         }
 
         try {
-            // In 1.21.4, PostChain is obtained via ShaderManager.getPostChain()
+            // PostChain is obtained via ShaderManager.getPostChain().
             // Use LevelTargetBundle.MAIN_TARGETS to declare available external targets (like vanilla does)
             activePostChain = mc.getShaderManager().getPostChain(
                 shaderLocation, 
@@ -81,13 +81,13 @@ public class PostChainManager {
     }
 
     /**
-     * Processes the active post-processing shader using UNPOOLED resource allocator.
-     * For optimal performance, prefer the overload that accepts a GraphicsResourceAllocator.
+     * Processes the active post-processing shader using the UNPOOLED resource allocator.
+     * This is the NeoForge entry point (via {@code RenderLevelStageEvent}), which does not
+     * expose GameRenderer's pooled resource allocator. The Fabric mixin path uses the
+     * {@link #processShader(float, GraphicsResourceAllocator)} overload with the pooled allocator.
      *
      * @param partialTicks The partial tick time
-     * @deprecated Use {@link #processShader(float, GraphicsResourceAllocator)} with GameRenderer's resourcePool
      */
-    @Deprecated
     public static void processShader(float partialTicks) {
         processShader(partialTicks, GraphicsResourceAllocator.UNPOOLED);
     }
@@ -109,8 +109,6 @@ public class PostChainManager {
 
         // Apply the post-processing effect using the provided resource allocator (like vanilla does)
         activePostChain.process(mainTarget, resourceAllocator);
-
-        // In 1.21.6, framebuffer binding is handled internally by the pipeline
     }
 
     /**

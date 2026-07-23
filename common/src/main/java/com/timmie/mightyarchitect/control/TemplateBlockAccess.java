@@ -73,7 +73,7 @@ public class TemplateBlockAccess extends WrappedWorld {
 					
 					// updateShape returns the potentially modified state based on the neighbor
 					// This does NOT trigger cascading notifications
-					// 1.21.4 signature: (LevelReader, ScheduledTickAccess, BlockPos, Direction, BlockPos, BlockState, RandomSource)
+					// updateShape signature: (LevelReader, ScheduledTickAccess, BlockPos, Direction, BlockPos, BlockState, RandomSource)
 					newState = newState.updateShape(this, this, worldPos, direction, neighborWorldPos, neighborState, this.getRandom());
 				}
 				
@@ -86,8 +86,6 @@ public class TemplateBlockAccess extends WrappedWorld {
 			blocks.putAll(updates);
 		}
 	}
-
-	// neighborShapeChanged method removed in 1.21.4 - the method no longer exists in LevelAccessor
 
 	public Set<BlockPos> getAllPositions() {
 		return blocks.keySet();

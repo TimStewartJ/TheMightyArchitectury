@@ -81,7 +81,6 @@ public class Label extends AbstractSimiWidget {
 		if (text == null || text.getString().isEmpty())
 			return;
 
-		// In 1.21.6, shader color is handled by the render pipeline
 		MutableComponent copy = text.plainCopy();
 		if (suffix != null && !suffix.isEmpty())
 			copy.append(suffix);

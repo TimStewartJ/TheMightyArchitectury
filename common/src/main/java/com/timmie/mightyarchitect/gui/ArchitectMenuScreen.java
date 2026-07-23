@@ -89,11 +89,9 @@ public class ArchitectMenuScreen extends Screen {
 		if (isFocused())
 			return;
 
-		// NOT FOCUSED - in 1.21.6 GuiGraphicsExtractor requires GuiRenderState
-		// This is handled differently now, skip rendering when not focused in screen context
+		// Skip when there is no active screen context to render into.
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.screen == null) {
-			// Can't safely render without proper screen context in 1.21.6
 			return;
 		}
 	}

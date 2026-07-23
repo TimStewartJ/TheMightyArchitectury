@@ -92,7 +92,7 @@ public class WrappedWorld extends Level implements BlockAndTintGetter {
 		return world.getBlockState(pos);
 	}
 
-	// In 1.21.6, Level requires these playSeededSound implementations with Entity as first parameter (source/excluded entity)
+	// Level requires these playSeededSound overloads (Entity source as the first parameter).
 
 	@Override
 	public void playSeededSound(@Nullable Entity source, @Nullable Entity entity, Holder<SoundEvent> holder, SoundSource soundSource, float f, float g, long l) {
@@ -185,7 +185,7 @@ public class WrappedWorld extends Level implements BlockAndTintGetter {
 		return world.addFreshEntity(entityIn);
 	}
 
-	// In 1.21.6, setMapData and getFreeMapId are on ServerLevel, not Level
+	// setMapData and getFreeMapId live on ServerLevel, not Level
 
 	@Override
 	public void destroyBlockProgress(int breakerId, BlockPos pos, int progress) {}

@@ -33,8 +33,7 @@ public abstract class AbstractSimiScreen extends Screen {
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
-		// In 1.21.6, renderBackground renders a dark overlay which blocks the game view
-		// Only call it for screens that should have a darkened background
+		// extractBackground draws a darkening overlay; only draw it for screens that opt in.
 		if (shouldRenderDarkBackground()) {
 			extractBackground(ms, mouseX, mouseY, partialTicks);
 		}
@@ -109,7 +108,7 @@ public abstract class AbstractSimiScreen extends Screen {
 				continue;
 			if (widget instanceof AbstractSimiWidget && !((AbstractSimiWidget) widget).getToolTip()
 				.isEmpty()) {
-				// In 1.21.6, convert Component list to FormattedCharSequence list
+				// Convert the Component tooltip lines to FormattedCharSequence.
 				java.util.List<net.minecraft.util.FormattedCharSequence> tooltipLines = ((AbstractSimiWidget) widget).getToolTip()
 					.stream()
 					.map(Component::getVisualOrderText)

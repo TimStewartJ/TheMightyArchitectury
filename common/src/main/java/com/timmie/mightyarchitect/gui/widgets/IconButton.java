@@ -26,7 +26,6 @@ public class IconButton extends AbstractSimiWidget {
 			ScreenResources button = (pressed || !active) ? button = ScreenResources.BUTTON_DOWN
 				: (isHovered) ? ScreenResources.BUTTON_HOVER : ScreenResources.BUTTON;
 
-			// In 1.21.6, use RenderPipelines.GUI_TEXTURED for GUI texture rendering
 			ms.blit(RenderPipelines.GUI_TEXTURED, ScreenResources.BUTTON.location, getX(), getY(), (float) button.startX, (float) button.startY, button.width, button.height, 256, 256);
 			icon.draw(ms, getX() + 1, getY() + 1);
 		}

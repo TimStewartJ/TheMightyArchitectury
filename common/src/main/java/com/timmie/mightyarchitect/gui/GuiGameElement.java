@@ -101,7 +101,6 @@ public class GuiGameElement {
 
 		protected void prepareMatrix(PoseStack matrixStack) {
 			matrixStack.pushPose();
-			// In 1.21.6, lighting is handled by the render pipeline
 		}
 
 		protected void transformMatrix(PoseStack matrixStack) {
@@ -133,8 +132,7 @@ public class GuiGameElement {
 
 		@Override
 		public void render(GuiGraphicsExtractor guiGraphics) {
-			// In 1.21.6, guiGraphics.pose() returns Matrix3x2fStack for 2D GUI.
-			// For 3D block rendering, create a new PoseStack
+			// pose() is a Matrix3x2fStack for 2D GUI; 3D block rendering needs its own PoseStack.
 			PoseStack ms = new PoseStack();
 			prepareMatrix(ms);
 

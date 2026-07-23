@@ -234,8 +234,7 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 	protected void renderWindow(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
 		ScreenResources.EXPORTER.draw(ms, topLeftX, topLeftY);
 
-		// In 1.21.6, GuiGraphicsExtractor.pose() returns Matrix3x2fStack for 2D GUI.
-		// Use GuiGameElement's positioning methods for 3D rendering instead
+		// pose() is a Matrix3x2fStack for 2D GUI; 3D block/item previews go through GuiGameElement.
 		GuiGameElement.of(minecraft.player.getMainHandItem())
 			.at((this.width - this.sWidth) / 2 + 150, 120, -200)
 			.scale(10)

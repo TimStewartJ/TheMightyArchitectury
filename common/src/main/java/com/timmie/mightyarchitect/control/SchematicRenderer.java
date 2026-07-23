@@ -28,7 +28,6 @@ import java.util.Set;
 
 public class SchematicRenderer {
 
-	// In 1.21.6, ChunkSectionLayer enum replaces chunk render layer RenderTypes
 	private static final ChunkSectionLayer[] CHUNK_SECTION_LAYERS = ChunkSectionLayer.values();
 
 	// Map ChunkSectionLayer to RenderType for buffer rendering
