@@ -3,7 +3,7 @@ package com.timmie.mightyarchitect.control.compose.planner;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.KeyEvent;
 import org.apache.commons.lang3.ArrayUtils;
 import org.lwjgl.glfw.GLFW;
@@ -43,6 +43,6 @@ public interface IComposerTool {
 	void tickGroundPlanOutlines();
 	
 	void updateSelection();
-	void renderOverlay(GuiGraphics ms);
+	void renderOverlay(GuiGraphicsExtractor ms);
 	void init();
 }

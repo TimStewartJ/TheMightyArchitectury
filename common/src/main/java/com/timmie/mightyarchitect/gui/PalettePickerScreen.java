@@ -11,7 +11,7 @@ import com.timmie.mightyarchitect.gui.widgets.IconButton;
 import net.minecraft.ChatFormatting;
 import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -97,12 +97,10 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 
 		if (scanPicker) {
 			if (primary.palette.hasDuplicates())
-				minecraft.player.displayClientMessage(
-					Component.literal(ChatFormatting.RED + "Warning: Ambiguous Scanner Palette "
-						+ ChatFormatting.WHITE + "( " + primary.palette.getDuplicates() + " )"),
-					false);
+				minecraft.player.sendSystemMessage(Component.literal(ChatFormatting.RED + "Warning: Ambiguous Scanner Palette "
+						+ ChatFormatting.WHITE + "( " + primary.palette.getDuplicates() + " )"));
 
-			minecraft.player.displayClientMessage(Component.literal("Updated Default Palette"), true);
+			minecraft.player.sendOverlayMessage(Component.literal("Updated Default Palette"));
 			DesignExporter.theme.setDefaultPalette(primary.palette);
 			DesignExporter.theme.setDefaultSecondaryPalette(secondary.palette);
 		}
@@ -134,24 +132,24 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public void renderWindow(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+	public void renderWindow(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
 		ScreenResources.PALETTES.draw(ms, topLeftX, topLeftY);
 
 		int color = ScreenResources.FONT_COLOR;
 
 		if (scanPicker) {
-			ms.drawString(font, "Choose a palette for", topLeftX + 8, topLeftY + 10, color);
-			ms.drawString(font, "your theme.", topLeftX + 8, topLeftY + 18, color);
+			ms.text(font, "Choose a palette for", topLeftX + 8, topLeftY + 10, color);
+			ms.text(font, "your theme.", topLeftX + 8, topLeftY + 18, color);
 
 		} else {
-			ms.drawString(font, "Palette Picker", topLeftX + 8, topLeftY + 10, color);
-			ms.drawString(font, "Primary", topLeftX + 134, topLeftY + 30, color);
-			ms.drawString(font, "Secondary", topLeftX + 191, topLeftY + 30, color);
+			ms.text(font, "Palette Picker", topLeftX + 8, topLeftY + 10, color);
+			ms.text(font, "Primary", topLeftX + 134, topLeftY + 30, color);
+			ms.text(font, "Secondary", topLeftX + 191, topLeftY + 30, color);
 
 		}
 
-		ms.drawString(font, "Included Palettes", topLeftX + 8, topLeftY + 53, color);
-		ms.drawString(font, "My Palettes", topLeftX + 134, topLeftY + 53, color);
+		ms.text(font, "Included Palettes", topLeftX + 8, topLeftY + 53, color);
+		ms.text(font, "My Palettes", topLeftX + 134, topLeftY + 53, color);
 	}
 
 	@Override
@@ -240,11 +238,11 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 			this.setTooltip(Tooltip.create(tooltipText));
 		}
 
-		private void preview(GuiGraphics ms, Minecraft mc) {
-			// In 1.21.6, GuiGraphics.pose() returns Matrix3x2fStack (2D).
+		private void preview(GuiGraphicsExtractor ms, Minecraft mc) {
+			// In 1.21.6, GuiGraphicsExtractor.pose() returns Matrix3x2fStack (2D).
 			// We pass positioning to GuiGameElement instead
-			float baseX = x + 1;
-			float baseY = y + 9;
+			float baseX = getX() + 1;
+			float baseY = getY() + 9;
 			float baseZ = 100;
 			float scale = 1 + 1/64f;
 			renderBlock(ms, mc, new BlockPos(0, 1, 0), Palette.INNER_PRIMARY, baseX, baseY, baseZ, scale);
@@ -253,7 +251,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 			renderBlock(ms, mc, new BlockPos(1, 0, 0), Palette.ROOF_PRIMARY, baseX, baseY, baseZ, scale);
 		}
 
-		protected void renderBlock(GuiGraphics ms, Minecraft mc, BlockPos pos, Palette key, float baseX, float baseY, float baseZ, float baseScale) {
+		protected void renderBlock(GuiGraphicsExtractor ms, Minecraft mc, BlockPos pos, Palette key, float baseX, float baseY, float baseZ, float baseScale) {
 			GuiGameElement.of(palette.get(key))
 				.at(baseX, baseY, baseZ)
 				.atLocal(pos.getX() * baseScale, pos.getY() * baseScale, pos.getZ() * baseScale)
@@ -262,8 +260,8 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 		}
 
 		@Override
-		public void renderWidget(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
-			super.renderWidget(ms, mouseX, mouseY, partialTicks);
+		public void extractWidgetRenderState(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
+			super.extractWidgetRenderState(ms, mouseX, mouseY, partialTicks);
 			preview(ms, minecraft);
 		}
 	}

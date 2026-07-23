@@ -65,7 +65,7 @@ public class ArchitectWandItem extends Item {
 
 			String name = DesignExporter.exportDesign(world, anchor);
 			if (!name.isEmpty()) {
-				player.displayClientMessage(Component.literal(name), true);
+				player.sendOverlayMessage(Component.literal(name));
 			}
 
 		} else {

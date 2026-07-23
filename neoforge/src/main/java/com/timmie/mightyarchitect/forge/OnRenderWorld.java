@@ -5,12 +5,12 @@ import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent.AfterParticles;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent.AfterLevel;
 
 @EventBusSubscriber(value = Dist.CLIENT)
 public class OnRenderWorld {
     @SubscribeEvent
-    public static void onRenderWorld(AfterParticles event) {
+    public static void onRenderWorld(AfterLevel event) {
         // Render outlines and schematics
         MightyClient.onRenderWorld();
         

@@ -1,5 +1,5 @@
 plugins {
-    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "com.gradleup.shadow" version "9.6.1"
 }
 
 architectury {
@@ -13,8 +13,6 @@ repositories {
 }
 
 loom {
-    accessWidenerPath = project(":common").loom.accessWidenerPath
-    
     runs {
         clientWithSodium {
             client()
@@ -29,9 +27,9 @@ loom {
 if (project.hasProperty("withSodium")) {
     dependencies {
         // Sodium 0.6.0 for 1.21.1
-        modRuntimeOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-fabric"
+        runtimeOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-fabric"
         // Iris 1.8.0 for 1.21.1
-        modRuntimeOnly "maven.modrinth:iris:1.8.8+1.21.1-fabric"
+        runtimeOnly "maven.modrinth:iris:1.8.8+1.21.1-fabric"
         // Iris transitive dependencies (not pulled from Modrinth maven)
         runtimeOnly "org.anarres:jcpp:1.4.14"
         runtimeOnly "io.github.douira:glsl-transformer:2.0.1"
@@ -39,8 +37,14 @@ if (project.hasProperty("withSodium")) {
 }
 
 configurations {
-    common
-    shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
+    common {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = false
+    }
     compileClasspath.extendsFrom common
     runtimeClasspath.extendsFrom common
     developmentFabric.extendsFrom common
@@ -53,13 +57,13 @@ configurations.all {
 }
 
 dependencies {
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
-    modApi "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+    implementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
     // Remove the next line if you don't want to depend on the API
-    modApi "dev.architectury:architectury-fabric:${rootProject.architectury_version}"
+    implementation "dev.architectury:architectury-fabric:${rootProject.architectury_version}"
 
-    common(project(path: ":common", configuration: "namedElements")) { transitive false }
-    shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
+    common(project(path: ":common")) { transitive false }
+    shadowBundle project(path: ":common", configuration: "transformProductionFabric")
 }
 
 processResources {
@@ -70,22 +74,21 @@ processResources {
     }
 }
 
-shadowJar {
-    exclude "architectury.common.json"
-
-    configurations = [project.configurations.shadowCommon]
-    archiveClassifier.set("dev-shadow")
-}
-
-remapJar {
-    injectAccessWidener = true
-    inputFile.set shadowJar.archiveFile
-    dependsOn shadowJar
-    archiveClassifier.set("fabric")
-}
-
+// Minecraft 26.1+ is unobfuscated, so there is no remap step. The plain jar
+// (with Loom's modifications) is unpacked into the shadowJar, which bundles the
+// transformed common classes and becomes the published mod artifact.
 jar {
-    archiveClassifier.set("dev")
+    archiveClassifier.set("raw")
+}
+
+shadowJar {
+    dependsOn(jar)
+    mainSpec.sourcePaths.clear()
+    from(zipTree(jar.archiveFile))
+
+    exclude "architectury.common.json"
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier.set("fabric")
 }
 
 sourcesJar {

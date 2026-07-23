@@ -9,11 +9,11 @@ import com.timmie.mightyarchitect.foundation.RenderTypes;
 import com.timmie.mightyarchitect.foundation.utility.AngleHelper;
 import com.timmie.mightyarchitect.foundation.utility.ColorHelper;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
-import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
+import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3f;
@@ -147,7 +147,7 @@ public abstract class Outline {
 			.setUv(u, v)
 			.setOverlay(OverlayTexture.NO_OVERLAY)
 			.setLight(params.lightMap)
-			//.uv2(LightTexture.FULL_BRIGHT)
+			//.uv2(LightCoordsUtil.FULL_BRIGHT)
 			.setNormal(peek, xOffset, yOffset, zOffset);
 
 		transformNormals = null;
@@ -187,7 +187,7 @@ public abstract class Outline {
 			faceRgb = null;
 			fadeTicks = 8;
 
-			lightMap = LightTexture.FULL_BRIGHT;
+			lightMap = LightCoordsUtil.FULL_BRIGHT;
 		}
 
 		// builder

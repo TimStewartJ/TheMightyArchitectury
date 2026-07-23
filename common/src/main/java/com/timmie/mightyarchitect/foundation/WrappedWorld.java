@@ -7,11 +7,15 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.AbortableIterationConsumer;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
+import net.minecraft.world.clock.ClockManager;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.item.alchemy.PotionBrewing;
 import net.minecraft.world.item.crafting.RecipeAccess;
+import net.minecraft.world.level.CardinalLighting;
+import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
@@ -39,7 +43,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class WrappedWorld extends Level {
+public class WrappedWorld extends Level implements BlockAndTintGetter {
 
 	protected Level world;
 
@@ -242,6 +246,25 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
+	public ClockManager clockManager() {
+		return world.clockManager();
+	}
+
+	@Override
+	public CardinalLighting cardinalLighting() {
+		if (world instanceof BlockAndTintGetter tintGetter)
+			return tintGetter.cardinalLighting();
+		return world.dimensionType().cardinalLightType().get();
+	}
+
+	@Override
+	public int getBlockTint(BlockPos pos, ColorResolver color) {
+		if (world instanceof BlockAndTintGetter tintGetter)
+			return tintGetter.getBlockTint(pos, color);
+		return color.getColor(world.getBiome(pos).value(), pos.getX(), pos.getZ());
+	}
+
+	@Override
 	public void explode(
 			net.minecraft.world.entity.Entity entity,
 			net.minecraft.world.damagesource.DamageSource damageSource,
@@ -271,7 +294,6 @@ public class WrappedWorld extends Level {
 		// No-op for wrapped world
 	}
 
-	@Override
 	public float getShade(Direction p_230487_1_, boolean p_230487_2_) {
 		return 1;
 	}

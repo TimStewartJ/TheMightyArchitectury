@@ -3,7 +3,7 @@ package com.timmie.mightyarchitect.gui.widgets;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.gui.ScreenResources;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 
@@ -27,7 +27,7 @@ public class Indicator extends AbstractSimiWidget {
 	}
 	
 	@Override
-	public void renderWidget(GuiGraphics ms, int mouseX, int mouseY, float partialTicks ) {
+	public void extractWidgetRenderState(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks ) {
 		ScreenResources toDraw;
 		switch(state) {
 			case ON: toDraw = ScreenResources.INDICATOR_WHITE; break;

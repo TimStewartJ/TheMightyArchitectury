@@ -7,7 +7,7 @@ import com.timmie.mightyarchitect.gui.widgets.Indicator;
 import com.timmie.mightyarchitect.gui.widgets.Indicator.State;
 import com.timmie.mightyarchitect.gui.widgets.Label;
 import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
@@ -187,7 +187,7 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 			.setState(theme.getMaxFloorHeight())
 			.calling(position -> {
 				labelRoomHeight.setText(position + "m");
-				labelRoomHeight.x = position > 9 ? topLeftX + 102 : topLeftX + 106;
+				labelRoomHeight.setX(position > 9 ? topLeftX + 102 : topLeftX + 106);
 			});
 		widgets.add(areaRoomHeight);
 		widgets.add(labelRoomHeight);
@@ -264,20 +264,20 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public void renderWindow(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+	public void renderWindow(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
 		ScreenResources.THEME_EDITOR.draw(ms, topLeftX, topLeftY);
 
 		int x = topLeftX + 10;
 		int y = topLeftY + 14;
 
-		ms.drawString(font, "Theme name", x, y, ScreenResources.FONT_COLOR);
-		ms.drawString(font, "Designer", x, y + 20, ScreenResources.FONT_COLOR);
+		ms.text(font, "Theme name", x, y, ScreenResources.FONT_COLOR);
+		ms.text(font, "Designer", x, y + 20, ScreenResources.FONT_COLOR);
 
 		y = topLeftY + 75;
 
-		ms.drawString(font, "Styles included", x, y - 17, ScreenResources.FONT_COLOR);
-		ms.drawString(font, "Shapes and Roof Types included", x, y + 32, ScreenResources.FONT_COLOR);
-		ms.drawString(font, "Max. Room Height", x, y + 87, ScreenResources.FONT_COLOR);
+		ms.text(font, "Styles included", x, y - 17, ScreenResources.FONT_COLOR);
+		ms.text(font, "Shapes and Roof Types included", x, y + 32, ScreenResources.FONT_COLOR);
+		ms.text(font, "Max. Room Height", x, y + 87, ScreenResources.FONT_COLOR);
 	}
 
 	@Override
@@ -328,7 +328,7 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 		ThemeStorage.exportTheme(theme);
 		ThemeStorage.reloadExternal();
 		ArchitectManager.editTheme(theme);
-		minecraft.player.displayClientMessage(Component.literal("Theme settings have been updated."), true);
+		minecraft.player.sendOverlayMessage(Component.literal("Theme settings have been updated."));
 	}
 
 	private boolean roofLayerExists() {

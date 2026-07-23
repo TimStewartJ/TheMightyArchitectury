@@ -10,7 +10,7 @@ import com.timmie.mightyarchitect.foundation.utility.LerpedFloat;
 import com.timmie.mightyarchitect.foundation.utility.LerpedFloat.Chaser;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -73,14 +73,14 @@ public class ArchitectMenuScreen extends Screen {
 	}
 
 	@Override
-	public void render(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+	public void extractRenderState(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
 		// Don't call super.render() - we don't want the dark background overlay
 		// This is an in-game menu that should show over the game world
 		draw(ms, partialTicks);
 	}
 
 	@Override
-	public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
 		// Override to prevent the default dark background from being rendered
 		// This keeps the game world visible behind the menu
 	}
@@ -89,7 +89,7 @@ public class ArchitectMenuScreen extends Screen {
 		if (isFocused())
 			return;
 
-		// NOT FOCUSED - in 1.21.6 GuiGraphics requires GuiRenderState
+		// NOT FOCUSED - in 1.21.6 GuiGraphicsExtractor requires GuiRenderState
 		// This is handled differently now, skip rendering when not focused in screen context
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.screen == null) {
@@ -141,7 +141,7 @@ public class ArchitectMenuScreen extends Screen {
 		return super.charTyped(event);
 	}
 
-	private void draw(GuiGraphics graphics, float partialTicks) {
+	private void draw(GuiGraphicsExtractor graphics, float partialTicks) {
 		Minecraft mc = Minecraft.getInstance();
 		Window mainWindow = mc.getWindow();
 		partialTicks = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
@@ -184,21 +184,21 @@ public class ArchitectMenuScreen extends Screen {
 			if (sideways) {
 				if (visible) {
 					String string = "Press " + compose.toUpperCase() + " for Menu";
-					graphics.drawString(textRenderer, string,
+					graphics.text(textRenderer, string,
 							(int) (mainWindow.getGuiScaledWidth() - textRenderer.width(string) - 15 - sidewaysShift), yPos - 14,
 							0xFFEEEEEE);
 				}
 			} else {
-				graphics.drawString(textRenderer, "Press " + compose.toUpperCase() + " to focus", xPos, yPos - 14, 0xFFEEEEEE);
+				graphics.text(textRenderer, "Press " + compose.toUpperCase() + " to focus", xPos, yPos - 14, 0xFFEEEEEE);
 			}
 		} else {
 			String string = "Press " + compose + " to close";
-			graphics.drawString(textRenderer, string,
+			graphics.text(textRenderer, string,
 					sideways
 							? (int) Math.min(xPos, mainWindow.getGuiScaledWidth() - textRenderer.width(string) - 15 - sidewaysShift)
 							: xPos, yPos - 14, 0xFFDDDDDD);
 		}
-		graphics.drawString(textRenderer, title, xPos, yPos, 0xFFEEEEEE);
+		graphics.text(textRenderer, title, xPos, yPos, 0xFFEEEEEE);
 
 		boolean hoveredHorizontally = x <= mouseX && mouseX <= x + menuWidth && focused;
 
@@ -212,8 +212,8 @@ public class ArchitectMenuScreen extends Screen {
 			yPos += textRenderer.lineHeight;
 			int color =
 				hoveredHorizontally && yPos < mouseY && mouseY <= yPos + textRenderer.lineHeight ? 0xFFFFFFFF : 0xFFCCDDFF;
-			graphics.drawString(textRenderer, "[" + key + "] " + keybinds.get(key), xPos, yPos, color);
-			graphics.drawString(textRenderer, ">", xPos - 12, yPos, color);
+			graphics.text(textRenderer, "[" + key + "] " + keybinds.get(key), xPos, yPos, color);
+			graphics.text(textRenderer, ">", xPos - 12, yPos, color);
 		}
 
 		yPos += 4;
@@ -222,7 +222,7 @@ public class ArchitectMenuScreen extends Screen {
 			int height = mc.font.wordWrapHeight(Component.literal(text), menuWidth - 8);
 			int lineY = yPos;
 			for (FormattedCharSequence iro : textRenderer.split(Component.literal(text), menuWidth - 8)) {
-				graphics.drawString(textRenderer, iro, xPos, lineY, 0xFFEEEEEE);
+				graphics.text(textRenderer, iro, xPos, lineY, 0xFFEEEEEE);
 				lineY += textRenderer.lineHeight;
 			}
 			yPos += height + 2;
@@ -264,7 +264,7 @@ public class ArchitectMenuScreen extends Screen {
 
 			yPos += font.lineHeight;
 			if (hoveredHorizontally && yPos < mouseY && mouseY <= yPos + font.lineHeight) {
-				charTyped(new CharacterEvent(key.toLowerCase().charAt(0), 0));
+				charTyped(new CharacterEvent(key.toLowerCase().charAt(0)));
 			}
 		}
 

@@ -8,7 +8,7 @@ import com.timmie.mightyarchitect.foundation.utility.LerpedFloat.Chaser;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -50,7 +50,7 @@ public class ToolSelectionScreen extends Screen {
 		selection = Mth.clamp(index, 0, tools.size() - 1);
 	}
 
-	private void draw(GuiGraphics graphics, float partialTicks) {
+	private void draw(GuiGraphicsExtractor graphics, float partialTicks) {
 		Window mainWindow = Minecraft.getInstance()
 			.getWindow();
 		Font font = minecraft.font;
@@ -75,13 +75,13 @@ public class ToolSelectionScreen extends Screen {
 			gray.drawTiledWithBackground(graphics, x - 15, y + 30, w, h + 22, (tooltipBgAlpha << 24) | 0x202030);
 
 			if (toolTip.size() > 0)
-				graphics.drawString(font, toolTip.get(0), x - 10, y + 35, 0xEEEEEE + stringAlphaComponent);
+				graphics.text(font, toolTip.get(0), x - 10, y + 35, 0xEEEEEE + stringAlphaComponent);
 			if (toolTip.size() > 1)
-				graphics.drawString(font, toolTip.get(1), x - 10, y + 47, 0xCCDDFF + stringAlphaComponent);
+				graphics.text(font, toolTip.get(1), x - 10, y + 47, 0xCCDDFF + stringAlphaComponent);
 			if (toolTip.size() > 2)
-				graphics.drawString(font, toolTip.get(2), x - 10, y + 57, 0xCCDDFF + stringAlphaComponent);
+				graphics.text(font, toolTip.get(2), x - 10, y + 57, 0xCCDDFF + stringAlphaComponent);
 			if (toolTip.size() > 3)
-				graphics.drawString(font, toolTip.get(3), x - 10, y + 69, 0xCCCCDD + stringAlphaComponent);
+				graphics.text(font, toolTip.get(3), x - 10, y + 69, 0xCCCCDD + stringAlphaComponent);
 		}
 
 		String translationKey = MightyClient.TOOL_MENU.getTranslatedKeyMessage()
@@ -90,10 +90,10 @@ public class ToolSelectionScreen extends Screen {
 		int width = minecraft.getWindow()
 			.getGuiScaledWidth();
 		if (!focused)
-			graphics.drawCenteredString(minecraft.font, "Hold [" + translationKey + "] to focus", width / 2, y - 10,
+			graphics.centeredText(minecraft.font, "Hold [" + translationKey + "] to focus", width / 2, y - 10,
 				0xFFCCDDFF);
 		else
-			graphics.drawCenteredString(minecraft.font, "[SCROLL] to Cycle", width / 2, y - 10, 0xFFCCDDFF);
+			graphics.centeredText(minecraft.font, "[SCROLL] to Cycle", width / 2, y - 10, 0xFFCCDDFF);
 
 		for (int i = 0; i < tools.size(); i++) {
 			float alpha = focused ? 1 : .2f;
@@ -101,7 +101,7 @@ public class ToolSelectionScreen extends Screen {
 
 			if (i == selection) {
 				yToolOffset = -10;
-				graphics.drawCenteredString(minecraft.font, tools.get(i)
+				graphics.centeredText(minecraft.font, tools.get(i)
 					.getDisplayName(), x + i * 50 + 24, y + 20, 0xFFCCDDFF);
 				alpha = 1;
 			}
@@ -117,7 +117,7 @@ public class ToolSelectionScreen extends Screen {
 
 			if (focused && i != selection) {
 				KeyMapping keyMapping = minecraft.options.keyHotbarSlots[i];
-				graphics.drawCenteredString(minecraft.font, "[" + keyMapping.getTranslatedKeyMessage()
+				graphics.centeredText(minecraft.font, "[" + keyMapping.getTranslatedKeyMessage()
 					.getString() + "]", x + i * 50 + 24, y + 3, 0xFFCCDDFF);
 			}
 		}
@@ -128,7 +128,7 @@ public class ToolSelectionScreen extends Screen {
 		yOffset.tickChaser();
 	}
 
-	public void renderPassive(GuiGraphics ms, float partialTicks) {
+	public void renderPassive(GuiGraphicsExtractor ms, float partialTicks) {
 		if (Minecraft.getInstance().screen != null)
 			return;
 		draw(ms, partialTicks);

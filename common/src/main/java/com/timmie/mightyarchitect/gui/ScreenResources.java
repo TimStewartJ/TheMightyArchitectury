@@ -1,7 +1,7 @@
 package com.timmie.mightyarchitect.gui;
 
 import com.timmie.mightyarchitect.TheMightyArchitect;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 
@@ -91,11 +91,11 @@ public enum ScreenResources {
 		this.textureHeight = textureHeight;
 	}
 	
-	public void draw(GuiGraphics screen, int i, int j) {
+	public void draw(GuiGraphicsExtractor screen, int i, int j) {
 		draw(screen, i, j, 0xFFFFFFFF);
 	}
 
-	public void draw(GuiGraphics screen, int x, int y, int color) {
+	public void draw(GuiGraphicsExtractor screen, int x, int y, int color) {
 		// In 1.21.6, RenderSystem color methods are removed
 		// Just draw the texture - color parameter kept for API compatibility
 		screen.blit(RenderPipelines.GUI_TEXTURED, location, x, y, (float) startX, (float) startY, width, height, textureWidth, textureHeight);
@@ -106,7 +106,7 @@ public enum ScreenResources {
 	 * In 1.21.6, color tinting is not supported via RenderSystem.
 	 * Use drawTiledWithBackground() for semi-transparent backgrounds.
 	 */
-	public void drawTiled(GuiGraphics screen, int x, int y, int areaWidth, int areaHeight) {
+	public void drawTiled(GuiGraphicsExtractor screen, int x, int y, int areaWidth, int areaHeight) {
 		for (int tileY = 0; tileY < areaHeight; tileY += height) {
 			for (int tileX = 0; tileX < areaWidth; tileX += width) {
 				int w = Math.min(width, areaWidth - tileX);
@@ -120,14 +120,14 @@ public enum ScreenResources {
 	/**
 	 * Draw a tiled texture with a semi-transparent overlay to create a subtle effect.
 	 * The texture is drawn first, then a colored overlay is applied on top.
-	 * @param screen The GuiGraphics context
+	 * @param screen The GuiGraphicsExtractor context
 	 * @param x Starting X position
 	 * @param y Starting Y position
 	 * @param areaWidth Total width to fill
 	 * @param areaHeight Total height to fill
 	 * @param overlayColor ARGB color for the overlay (higher alpha = more subtle texture)
 	 */
-	public void drawTiledWithBackground(GuiGraphics screen, int x, int y, int areaWidth, int areaHeight, int overlayColor) {
+	public void drawTiledWithBackground(GuiGraphicsExtractor screen, int x, int y, int areaWidth, int areaHeight, int overlayColor) {
 		// Draw the texture tiles first
 		drawTiled(screen, x, y, areaWidth, areaHeight);
 		// Then overlay a semi-transparent fill to create subtlety/tinting

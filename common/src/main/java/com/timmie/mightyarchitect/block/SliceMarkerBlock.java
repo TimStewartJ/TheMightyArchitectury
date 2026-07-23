@@ -53,7 +53,7 @@ public class SliceMarkerBlock extends Block {
 		DesignSliceTrait currentTrait = state.getValue(VARIANT);
 		DesignSliceTrait newTrait = currentTrait.cycle(player.isShiftKeyDown() ? -1 : 1);
 		worldIn.setBlockAndUpdate(pos, state.setValue(VARIANT, newTrait));
-		player.displayClientMessage(Component.literal(newTrait.getDescription()), true);
+		player.sendOverlayMessage(Component.literal(newTrait.getDescription()));
 
 		return InteractionResult.SUCCESS;
 	}

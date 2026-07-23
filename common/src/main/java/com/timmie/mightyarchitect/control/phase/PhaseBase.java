@@ -34,7 +34,7 @@ public abstract class PhaseBase implements IArchitectPhase {
 		if (message == null) 
 			return;
 		
-		minecraft.player.displayClientMessage(Component.literal(message), true);
+		minecraft.player.sendOverlayMessage(Component.literal(message));
 	}
 
 	

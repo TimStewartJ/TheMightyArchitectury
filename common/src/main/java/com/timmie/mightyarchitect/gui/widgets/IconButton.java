@@ -1,7 +1,7 @@
 package com.timmie.mightyarchitect.gui.widgets;
 
 import com.timmie.mightyarchitect.gui.ScreenResources;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -18,17 +18,17 @@ public class IconButton extends AbstractSimiWidget {
 	}
 
 	@Override
-	public void renderWidget(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+	public void extractWidgetRenderState(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
 		if (this.visible) {
 			this.isHovered =
-				mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
+				mouseX >= this.getX() && mouseY >= this.getY() && mouseX < this.getX() + this.width && mouseY < this.getY() + this.height;
 
 			ScreenResources button = (pressed || !active) ? button = ScreenResources.BUTTON_DOWN
 				: (isHovered) ? ScreenResources.BUTTON_HOVER : ScreenResources.BUTTON;
 
 			// In 1.21.6, use RenderPipelines.GUI_TEXTURED for GUI texture rendering
-			ms.blit(RenderPipelines.GUI_TEXTURED, ScreenResources.BUTTON.location, x, y, (float) button.startX, (float) button.startY, button.width, button.height, 256, 256);
-			icon.draw(ms, x + 1, y + 1);
+			ms.blit(RenderPipelines.GUI_TEXTURED, ScreenResources.BUTTON.location, getX(), getY(), (float) button.startX, (float) button.startY, button.width, button.height, 256, 256);
+			icon.draw(ms, getX() + 1, getY() + 1);
 		}
 	}
 

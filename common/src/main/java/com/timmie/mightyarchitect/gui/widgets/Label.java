@@ -2,7 +2,7 @@ package com.timmie.mightyarchitect.gui.widgets;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -75,7 +75,7 @@ public class Label extends AbstractSimiWidget {
 	}
 
 	@Override
-	public void renderWidget(GuiGraphics matrixStack, int mouseX, int mouseY, float partialTicks) {
+	public void extractWidgetRenderState(GuiGraphicsExtractor matrixStack, int mouseX, int mouseY, float partialTicks) {
 		if (!visible)
 			return;
 		if (text == null || text.getString().isEmpty())
@@ -86,7 +86,7 @@ public class Label extends AbstractSimiWidget {
 		if (suffix != null && !suffix.isEmpty())
 			copy.append(suffix);
 
-		matrixStack.drawString(font, copy, getX(), getY(), color, hasShadow);
+		matrixStack.text(font, copy, getX(), getY(), color, hasShadow);
 	}
 
 	@Override

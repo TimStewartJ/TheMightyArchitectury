@@ -9,7 +9,7 @@ import com.timmie.mightyarchitect.foundation.utility.Shaders;
 import com.timmie.mightyarchitect.gui.ToolSelectionScreen;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.apache.commons.lang3.ArrayUtils;
@@ -120,7 +120,7 @@ public class PhaseComposing extends PhaseBase implements IRenderGameOverlay {
 	}
 
 	@Override
-	public void renderGameOverlay(GuiGraphics ms, float partialTicks) {
+	public void renderGameOverlay(GuiGraphicsExtractor ms, float partialTicks) {
 		if (Minecraft.getInstance().screen != null)
 			return;
 

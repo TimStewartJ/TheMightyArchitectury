@@ -10,7 +10,7 @@ import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import com.timmie.mightyarchitect.foundation.utility.RaycastHelper;
 import com.timmie.mightyarchitect.foundation.utility.RaycastHelper.PredicateTraceResult;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -86,7 +86,7 @@ public abstract class ComposerToolBase implements IComposerTool {
 	}
 	
 	@Override
-	public void renderOverlay(GuiGraphics graphics) {
+	public void renderOverlay(GuiGraphicsExtractor graphics) {
 		Minecraft mc = Minecraft.getInstance();
 		Window mainWindow = mc.getWindow();
 		
@@ -98,18 +98,18 @@ public abstract class ComposerToolBase implements IComposerTool {
 			int color = 0xFFFFFFFF;
 			if (Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL))
 				color = 0x66AACCFF;
-			graphics.drawString(mc.font, toolModeNoCtrl, baseX, baseY, color);
+			graphics.text(mc.font, toolModeNoCtrl, baseX, baseY, color);
 		}
 		if (toolModeCtrl != null) {
 			int color = 0xFFFFFFFF;
 			if (!Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL))
 				color = 0x66AACCFF;
-			graphics.drawString(mc.font, toolModeCtrl, baseX, baseY + 12, color);
+			graphics.text(mc.font, toolModeCtrl, baseX, baseY + 12, color);
 		}
 	}
 	
 	protected void status(String message) {
-		Minecraft.getInstance().player.displayClientMessage(Component.literal(message), true);
+		Minecraft.getInstance().player.sendOverlayMessage(Component.literal(message));
 	}
 	
 }

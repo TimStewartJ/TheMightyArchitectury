@@ -2,7 +2,7 @@ package com.timmie.mightyarchitect.gui.widgets;
 
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
@@ -122,7 +122,7 @@ public class ScrollInput extends AbstractSimiWidget {
 	}
 
 	@Override
-	public void renderWidget(GuiGraphics poseStack, int i, int j, float f) {
+	public void extractWidgetRenderState(GuiGraphicsExtractor poseStack, int i, int j, float f) {
 
 	}
 

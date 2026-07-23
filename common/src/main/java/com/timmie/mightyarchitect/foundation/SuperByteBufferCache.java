@@ -9,15 +9,15 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.block.model.BlockModelPart;
-import net.minecraft.client.renderer.block.model.BlockStateModel;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
+import net.minecraft.client.renderer.block.BlockQuadOutput;
+import net.minecraft.client.renderer.block.ModelBlockRenderer;
+import net.minecraft.client.renderer.block.MovingBlockRenderState;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -72,21 +72,36 @@ public class SuperByteBufferCache {
 	}
 
 	private SuperByteBuffer standardBlockRender(BlockState referenceState, PoseStack ms) {
-		BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
+		Minecraft minecraft = Minecraft.getInstance();
 		ByteBufferBuilder byteBuffer = new ByteBufferBuilder(2097152);
 		BufferBuilder builder = new BufferBuilder(byteBuffer, VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
-		RandomSource random = RandomSource.create();
-		
-		// In 1.21.6, renderBatched takes List<BlockModelPart> instead of RandomSource
-		BlockStateModel model = dispatcher.getBlockModel(referenceState);
-		List<BlockModelPart> parts = model.collectParts(random);
-		dispatcher.renderBatched(referenceState, BlockPos.ZERO.above(255), Minecraft.getInstance().level, ms,
-				builder, true, parts);
+		BlockPos pos = BlockPos.ZERO;
+		BlockAndTintGetter blockAccess = singleBlockAccess(minecraft, referenceState, pos);
+		ModelBlockRenderer renderer = new ModelBlockRenderer(minecraft.options.ambientOcclusion().get(), true, minecraft.getBlockColors());
+		BlockStateModel model = minecraft.getModelManager()
+			.getBlockStateModelSet()
+			.get(referenceState);
+		BlockQuadOutput output = (x, y, z, quad, instance) -> builder.putBlockBakedQuad(x, y, z, quad, instance);
+		renderer.tesselateBlock(output, 0, 0, 0, blockAccess, pos, referenceState, model, referenceState.getSeed(pos));
+
 		MeshData meshData = builder.build();
 
 		SuperByteBuffer result = meshData != null ? new SuperByteBuffer(meshData) : SuperByteBuffer.empty();
 		byteBuffer.close();
 		return result;
+	}
+
+	private BlockAndTintGetter singleBlockAccess(Minecraft minecraft, BlockState state, BlockPos pos) {
+		MovingBlockRenderState renderState = new MovingBlockRenderState();
+		renderState.blockPos = pos;
+		renderState.randomSeedPos = pos;
+		renderState.blockState = state;
+		if (minecraft.level != null) {
+			renderState.biome = minecraft.level.getBiome(pos);
+			renderState.cardinalLighting = minecraft.level.cardinalLighting();
+			renderState.lightEngine = minecraft.level.getLightEngine();
+		}
+		return renderState;
 	}
 
 	public void invalidate() {

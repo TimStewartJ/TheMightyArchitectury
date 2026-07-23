@@ -2,7 +2,7 @@ package com.timmie.mightyarchitect.gui;
 
 import com.timmie.mightyarchitect.gui.widgets.AbstractSimiWidget;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
@@ -32,15 +32,15 @@ public abstract class AbstractSimiScreen extends Screen {
 	}
 
 	@Override
-	public void render(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+	public void extractRenderState(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
 		// In 1.21.6, renderBackground renders a dark overlay which blocks the game view
 		// Only call it for screens that should have a darkened background
 		if (shouldRenderDarkBackground()) {
-			renderBackground(ms, mouseX, mouseY, partialTicks);
+			extractBackground(ms, mouseX, mouseY, partialTicks);
 		}
 		renderWindow(ms, mouseX, mouseY, partialTicks);
 		for (AbstractWidget widget : widgets)
-			widget.render(ms, mouseX, mouseY, partialTicks);
+			widget.extractRenderState(ms, mouseX, mouseY, partialTicks);
 		renderWindowForeground(ms, mouseX, mouseY, partialTicks);
 	}
 
@@ -101,9 +101,9 @@ public abstract class AbstractSimiScreen extends Screen {
 		return false;
 	}
 
-	protected abstract void renderWindow(GuiGraphics ms, int mouseX, int mouseY, float partialTicks);
+	protected abstract void renderWindow(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks);
 
-	protected void renderWindowForeground(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+	protected void renderWindowForeground(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
 		for (AbstractWidget widget : widgets) {
 			if (!widget.isHoveredOrFocused())
 				continue;

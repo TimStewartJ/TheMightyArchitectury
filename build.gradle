@@ -1,6 +1,6 @@
 plugins {
-    id "architectury-plugin" version "3.4-SNAPSHOT"
-    id "dev.architectury.loom" version "1.13-SNAPSHOT" apply false
+    id "architectury-plugin" version "3.5.169"
+    id "dev.architectury.loom-no-remap" version "1.17.491" apply false
 }
 
 architectury {
@@ -8,7 +8,7 @@ architectury {
 }
 
 subprojects {
-    apply plugin: "dev.architectury.loom"
+    apply plugin: "dev.architectury.loom-no-remap"
 
     loom {
         silentMojangMappingsLicense()
@@ -16,8 +16,7 @@ subprojects {
 
     dependencies {
         minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
-        // The following line declares the mojmap mappings, you may use other mappings as well
-        mappings loom.officialMojangMappings()
+        // Minecraft 26.1+ ships unobfuscated, so no mappings are declared (loom-no-remap).
         implementation 'com.google.code.findbugs:jsr305:3.0.2'
     }
 }
@@ -34,7 +33,9 @@ allprojects {
     apply plugin: "architectury-plugin"
     apply plugin: "maven-publish"
 
-    archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version}"
+    base {
+        archivesName = "${rootProject.archives_base_name}-${rootProject.minecraft_version}"
+    }
     version = buildVersion
     group = rootProject.maven_group
 
@@ -49,10 +50,13 @@ allprojects {
 
     tasks.withType(JavaCompile) {
         options.encoding = "UTF-8"
-        options.release = 21
+        options.release = 25
     }
 
     java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
         withSourcesJar()
     }
 }

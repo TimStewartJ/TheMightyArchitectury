@@ -28,7 +28,7 @@ import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -178,12 +178,12 @@ public class ArchitectManager {
 				.getOrigin());
 		Component component = Component.literal("Deploy Schematic at: " + ChatFormatting.BLUE + "["
 			+ pos.getX() + "," + pos.getY() + "," + pos.getZ() + "]");
-		Minecraft.getInstance().player.displayClientMessage(component, false);
+		Minecraft.getInstance().player.sendSystemMessage(component);
 		unload();
 	}
 
 	public static void status(String message) {
-		Minecraft.getInstance().player.displayClientMessage(Component.literal(message), true);
+		Minecraft.getInstance().player.sendOverlayMessage(Component.literal(message));
 	}
 
 	public static void pickPalette() {
@@ -338,7 +338,7 @@ public class ArchitectManager {
 			((IDrawBlockHighlights) phaseHandler).tickHighlightOutlines();
 	}
 
-	public static void onDrawGameOverlay(GuiGraphics poseStack, DeltaTracker deltaTracker) {
+	public static void onDrawGameOverlay(GuiGraphicsExtractor poseStack, DeltaTracker deltaTracker) {
 		IArchitectPhase phaseHandler = phase.getPhaseHandler();
 		if (phaseHandler instanceof IRenderGameOverlay) {
 			((IRenderGameOverlay) phaseHandler).renderGameOverlay(poseStack, deltaTracker.getGameTimeDeltaPartialTick(true));

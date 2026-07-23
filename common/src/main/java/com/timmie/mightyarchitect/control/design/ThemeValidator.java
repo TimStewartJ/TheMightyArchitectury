@@ -18,10 +18,9 @@ public class ThemeValidator {
 	public static void check(DesignTheme theme) {
 		LocalPlayer player = Minecraft.getInstance().player;
 		for (int i = 0; i < 3; i++)
-			player.displayClientMessage(Component.literal(" "), false);
-		player.displayClientMessage(Component.literal(ChatFormatting.AQUA + "--> Validation on "
-			+ ChatFormatting.BLUE + ChatFormatting.BOLD + theme.getDisplayName() + ChatFormatting.AQUA + " <--"),
-			false);
+			player.sendSystemMessage(Component.literal(" "));
+		player.sendSystemMessage(Component.literal(ChatFormatting.AQUA + "--> Validation on "
+			+ ChatFormatting.BLUE + ChatFormatting.BOLD + theme.getDisplayName() + ChatFormatting.AQUA + " <--"));
 		theme.clearDesigns();
 		ThemeStatistics stats = theme.getStatistics();
 		stats.sendToPlayer();
@@ -141,20 +140,15 @@ public class ThemeValidator {
 		}
 
 		if (complaints.size() > 0) {
-			player.displayClientMessage(
-				Component.literal(ChatFormatting.GOLD + "The Following Designs are missing:"), false);
+			player.sendSystemMessage(Component.literal(ChatFormatting.GOLD + "The Following Designs are missing:"));
 			for (Component text : complaints) {
-				player.displayClientMessage(text, false);
+				player.sendSystemMessage(text);
 			}
-			player.displayClientMessage(
-				Component.literal(
-					ChatFormatting.GOLD + "Try and add these missing designs or exclude their type from your theme."),
-				false);
+			player.sendSystemMessage(Component.literal(
+					ChatFormatting.GOLD + "Try and add these missing designs or exclude their type from your theme."));
 
 		} else {
-			player.displayClientMessage(
-				Component.literal(ChatFormatting.GREEN + "For prior traits no missing designs have been found."),
-				false);
+			player.sendSystemMessage(Component.literal(ChatFormatting.GREEN + "For prior traits no missing designs have been found."));
 		}
 
 	}

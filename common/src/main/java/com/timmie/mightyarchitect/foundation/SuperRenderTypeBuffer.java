@@ -59,16 +59,14 @@ public class SuperRenderTypeBuffer implements MultiBufferSource {
 	private static class SuperRenderTypeBufferPhase {
 
 		private final SequencedMap<RenderType, ByteBufferBuilder> fixedBuffers = Util.make(new Object2ObjectLinkedOpenHashMap<>(), map -> {
-			put(map, Sheets.solidBlockSheet());
+			put(map, net.minecraft.client.renderer.rendertype.RenderTypes.solidMovingBlock());
+			put(map, net.minecraft.client.renderer.rendertype.RenderTypes.cutoutMovingBlock());
+			put(map, net.minecraft.client.renderer.rendertype.RenderTypes.translucentMovingBlock());
 			put(map, Sheets.cutoutBlockSheet());
-			put(map, Sheets.bannerSheet());
+			put(map, Sheets.cutoutBlockItemSheet());
+			put(map, Sheets.translucentBlockItemSheet());
+			put(map, Sheets.cutoutItemSheet());
 			put(map, Sheets.translucentItemSheet());
-			put(map, Sheets.shieldSheet());
-			put(map, Sheets.bedSheet());
-			put(map, Sheets.shulkerBoxSheet());
-			put(map, Sheets.signSheet());
-			put(map, Sheets.hangingSignSheet());
-			put(map, Sheets.chestSheet());
 			put(map, net.minecraft.client.renderer.rendertype.RenderTypes.armorEntityGlint());
 			put(map, net.minecraft.client.renderer.rendertype.RenderTypes.glint());
 			put(map, net.minecraft.client.renderer.rendertype.RenderTypes.glintTranslucent());

@@ -4,11 +4,15 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.block.BlockQuadOutput;
+import net.minecraft.client.renderer.block.ModelBlockRenderer;
+import net.minecraft.client.renderer.block.MovingBlockRenderState;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
@@ -93,7 +97,7 @@ public class GuiGameElement {
 			return this;
 		}
 
-		public abstract void render(GuiGraphics matrixStack);
+		public abstract void render(GuiGraphicsExtractor matrixStack);
 
 		@Deprecated
 		protected void prepare() {}
@@ -137,7 +141,7 @@ public class GuiGameElement {
 		}
 	}
 
-	// In 1.21.6, BakedModel rendering is simplified - we use renderSingleBlock directly
+	// 26.1 removed BlockRenderDispatcher; GUI block previews tesselate through ModelBlockRenderer.
 	public static class GuiBlockStateRenderBuilder extends GuiRenderBuilder {
 
 		protected BlockState blockState;
@@ -147,28 +151,57 @@ public class GuiGameElement {
 		}
 
 		@Override
-		public void render(GuiGraphics guiGraphics) {
+		public void render(GuiGraphicsExtractor guiGraphics) {
 			// In 1.21.6, guiGraphics.pose() returns Matrix3x2fStack for 2D GUI.
 			// For 3D block rendering, create a new PoseStack
 			PoseStack ms = new PoseStack();
 			prepareMatrix(ms);
 
 			Minecraft mc = Minecraft.getInstance();
-			BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
 			MultiBufferSource.BufferSource buffer = mc.renderBuffers()
 				.bufferSource();
 
 			transformMatrix(ms);
 
-			renderModel(blockRenderer, buffer, ms);
+			renderModel(mc, buffer, ms);
 
 			cleanUpMatrix(ms);
 		}
 
-		protected void renderModel(BlockRenderDispatcher blockRenderer, MultiBufferSource.BufferSource buffer, PoseStack ms) {
-			// In 1.21.6, lighting is handled internally by the renderer
-			blockRenderer.renderSingleBlock(blockState, ms, buffer, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+		protected void renderModel(Minecraft minecraft, MultiBufferSource.BufferSource buffer, PoseStack ms) {
+			MovingBlockRenderState renderState = new MovingBlockRenderState();
+			renderState.blockPos = BlockPos.ZERO;
+			renderState.randomSeedPos = BlockPos.ZERO;
+			renderState.blockState = blockState;
+			if (minecraft.level != null) {
+				renderState.biome = minecraft.level.getBiome(BlockPos.ZERO);
+				renderState.cardinalLighting = minecraft.level.cardinalLighting();
+				renderState.lightEngine = minecraft.level.getLightEngine();
+			}
+
+			ModelBlockRenderer blockRenderer =
+				new ModelBlockRenderer(minecraft.options.ambientOcclusion().get(), false, minecraft.getBlockColors());
+			BlockStateModel model = minecraft.getModelManager()
+				.getBlockStateModelSet()
+				.get(blockState);
+			BlockQuadOutput output = (x, y, z, quad, instance) -> {
+				ms.pushPose();
+				ms.translate(x, y, z);
+				buffer.getBuffer(layerToRenderType(quad.materialInfo().layer()))
+					.putBakedQuad(ms.last(), quad, instance);
+				ms.popPose();
+			};
+			blockRenderer.tesselateBlock(output, 0, 0, 0, renderState, BlockPos.ZERO, blockState, model,
+				blockState.getSeed(BlockPos.ZERO));
 			buffer.endBatch();
+		}
+
+		private RenderType layerToRenderType(ChunkSectionLayer layer) {
+			return switch (layer) {
+				case SOLID -> RenderTypes.solidMovingBlock();
+				case CUTOUT -> RenderTypes.cutoutMovingBlock();
+				case TRANSLUCENT -> RenderTypes.translucentMovingBlock();
+			};
 		}
 	}
 
@@ -185,19 +218,14 @@ public class GuiGameElement {
 		}
 
 		@Override
-		public void render(GuiGraphics guiGraphics) {
-			// In 1.21, guiGraphics.pose() returns Matrix3x2fStack for 2D transformations
-			// For simple item rendering with position offset, use renderItem directly
-			int renderX = (int) xBeforeScale;
-			int renderY = (int) yBeforeScale;
-			
+		public void render(GuiGraphicsExtractor guiGraphics) {
 			// Apply 2D scale transform using matrix stack
 			guiGraphics.pose().pushMatrix();
 			guiGraphics.pose().translate((float) xBeforeScale, (float) yBeforeScale);
 			guiGraphics.pose().scale((float) scale, (float) scale);
 			
 			// Render the item at origin (transforms applied via matrix)
-			guiGraphics.renderItem(stack, 0, 0);
+			guiGraphics.item(stack, 0, 0);
 			
 			guiGraphics.pose().popMatrix();
 		}

@@ -46,8 +46,8 @@ public class PrintingToMultiplayer extends PhaseBase {
 	public void update() {
 		// exit state if not successful
 		if (!success) {
-			Minecraft.getInstance().player.displayClientMessage(Component.literal(
-							ChatFormatting.RED + "You do not have permission to print on this server."), false);
+			Minecraft.getInstance().player.sendSystemMessage(Component.literal(
+							ChatFormatting.RED + "You do not have permission to print on this server."));
 			ArchitectManager.enterPhase(ArchitectPhases.Previewing);
 			return;
 		}
@@ -83,8 +83,7 @@ public class PrintingToMultiplayer extends PhaseBase {
 	@Override
 	public void whenExited() {
 		if (success) {
-			Minecraft.getInstance().player.displayClientMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"),
-					false);
+			Minecraft.getInstance().player.sendSystemMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"));
 			String cmd = "gamerule logAdminCommands true";
 			Minecraft.getInstance().player.connection.sendCommand(cmd);
 			cmd = "gamerule sendCommandFeedback true";

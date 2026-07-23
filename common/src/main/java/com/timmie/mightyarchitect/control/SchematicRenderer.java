@@ -7,25 +7,22 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.timmie.mightyarchitect.MightyClient;
-import com.timmie.mightyarchitect.foundation.MatrixStacker;
 import com.timmie.mightyarchitect.foundation.SuperByteBuffer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.block.model.BlockModelPart;
-import net.minecraft.client.renderer.block.model.BlockStateModel;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
+import net.minecraft.client.renderer.block.BlockQuadOutput;
+import net.minecraft.client.renderer.block.ModelBlockRenderer;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,10 +34,9 @@ public class SchematicRenderer {
 	// Map ChunkSectionLayer to RenderType for buffer rendering
 	private static RenderType layerToRenderType(ChunkSectionLayer layer) {
 		return switch (layer) {
-			case SOLID -> net.minecraft.client.renderer.rendertype.RenderTypes.solidMovingBlock();
-			case CUTOUT -> net.minecraft.client.renderer.rendertype.RenderTypes.cutoutMovingBlock();
-			case TRANSLUCENT -> net.minecraft.client.renderer.rendertype.RenderTypes.translucentMovingBlock();
-			case TRIPWIRE -> net.minecraft.client.renderer.rendertype.RenderTypes.tripwireMovingBlock();
+			case SOLID -> RenderTypes.solidMovingBlock();
+			case CUTOUT -> RenderTypes.cutoutMovingBlock();
+			case TRANSLUCENT -> RenderTypes.translucentMovingBlock();
 		};
 	}
 
@@ -88,7 +84,7 @@ public class SchematicRenderer {
 
 		ms.pushPose();
 		ms.translate(anchor.getX(), anchor.getY(), anchor.getZ());
-		buffer.getBuffer(net.minecraft.client.renderer.rendertype.RenderTypes.solidMovingBlock());
+		buffer.getBuffer(RenderTypes.solidMovingBlock());
 		for (ChunkSectionLayer layer : CHUNK_SECTION_LAYERS) {
 			if (!usedBlockRenderLayers.contains(layer))
 				continue;
@@ -104,50 +100,41 @@ public class SchematicRenderer {
 		startedBufferBuilders.clear();
 
 		final BlockAndTintGetter blockAccess = schematic.getMaterializedSketch();
-		final BlockRenderDispatcher blockRendererDispatcher = minecraft.getBlockRenderer();
-		final RandomSource random = RandomSource.create();
+		final ModelBlockRenderer blockRenderer = new ModelBlockRenderer(
+			minecraft.options.ambientOcclusion().get(), true, minecraft.getBlockColors());
+		final boolean cutoutLeaves = minecraft.options.cutoutLeaves().get();
 
 		Map<ChunkSectionLayer, ByteBufferBuilder> byteBuffers = new HashMap<>();
 		Map<ChunkSectionLayer, BufferBuilder> buffers = new HashMap<>();
-		PoseStack ms = new PoseStack();
 
 		BlockPos.betweenClosedStream(schematic.getLocalBounds()
 			.toMBB())
 			.forEach(localPos -> {
-				ms.pushPose();
-				MatrixStacker.of(ms)
-					.translate(localPos);
 				BlockPos pos = localPos.offset(anchor);
 				BlockState state = blockAccess.getBlockState(pos);
 
-				ChunkSectionLayer stateLayer = ItemBlockRenderTypes.getChunkRenderType(state);
-				for (ChunkSectionLayer blockRenderLayer : CHUNK_SECTION_LAYERS) {
-					if (blockRenderLayer != stateLayer)
-						continue;
+				if (state.getRenderShape() == RenderShape.MODEL) {
+					boolean forceOpaque = ModelBlockRenderer.forceOpaque(cutoutLeaves, state);
+					BlockQuadOutput output = (x, y, z, quad, instance) -> {
+						ChunkSectionLayer blockRenderLayer = forceOpaque ? ChunkSectionLayer.SOLID : quad.materialInfo().layer();
+						if (!buffers.containsKey(blockRenderLayer)) {
+							int bufferSize = MightyClient.iris_presence ? 262144 : 2097152;
+							ByteBufferBuilder byteBuffer = new ByteBufferBuilder(bufferSize);
+							byteBuffers.put(blockRenderLayer, byteBuffer);
+							buffers.put(blockRenderLayer, new BufferBuilder(byteBuffer, VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK));
+							startedBufferBuilders.add(blockRenderLayer);
+						}
 
-					if (!buffers.containsKey(blockRenderLayer))
-					{
-						int bufferSize = MightyClient.iris_presence ? 262144 : 2097152;
-						ByteBufferBuilder byteBuffer = new ByteBufferBuilder(bufferSize);
-						byteBuffers.put(blockRenderLayer, byteBuffer);
-						buffers.put(blockRenderLayer, new BufferBuilder(byteBuffer, VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK));
-						startedBufferBuilders.add(blockRenderLayer);
-					}
-
-					BufferBuilder bufferBuilder = buffers.get(blockRenderLayer);
-
-					if (state.getRenderShape() == RenderShape.MODEL)
-					{
-						// In 1.21.6, renderBatched takes List<BlockModelPart> instead of RandomSource
-						BlockStateModel model = blockRendererDispatcher.getBlockModel(state);
-						List<BlockModelPart> parts = model.collectParts(random);
-						blockRendererDispatcher.renderBatched(state, pos, blockAccess, ms,
-								bufferBuilder, true, parts);
+						buffers.get(blockRenderLayer).putBlockBakedQuad(x, y, z, quad, instance);
 						usedBlockRenderLayers.add(blockRenderLayer);
-					}
-				}
+					};
 
-				ms.popPose();
+					BlockStateModel model = minecraft.getModelManager()
+						.getBlockStateModelSet()
+						.get(state);
+					blockRenderer.tesselateBlock(output, localPos.getX(), localPos.getY(), localPos.getZ(),
+						blockAccess, pos, state, model, state.getSeed(pos));
+				}
 			});
 
 		// finishDrawing

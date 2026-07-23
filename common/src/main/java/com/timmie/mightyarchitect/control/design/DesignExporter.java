@@ -111,10 +111,9 @@ public class DesignExporter {
 					Palette block = scanningPalette.scan(blockState);
 
 					if (block == null && blockState.getBlock() != Blocks.AIR) {
-						Minecraft.getInstance().player.displayClientMessage(
-							Component.literal(blockState.getBlock()
+						Minecraft.getInstance().player.sendSystemMessage(Component.literal(blockState.getBlock()
 							.getDescriptionId() + " @" + pos.getX() + "," + pos.getY() + "," + pos.getZ()
-							+ " does not belong to the Scanner Palette"), false);
+							+ " does not belong to the Scanner Palette"));
 						return "Export failed";
 					}
 

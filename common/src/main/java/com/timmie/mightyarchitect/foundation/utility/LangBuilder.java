@@ -141,11 +141,11 @@ public class LangBuilder {
 	}
 
 	public void sendStatus(Player player) {
-		player.displayClientMessage(component(), true);
+		player.sendOverlayMessage(component());
 	}
 
 	public void sendChat(Player player) {
-		player.displayClientMessage(component(), false);
+		player.sendSystemMessage(component());
 	}
 
 	public void addTo(List<? super MutableComponent> tooltip) {
