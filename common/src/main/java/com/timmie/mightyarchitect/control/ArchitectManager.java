@@ -344,6 +344,9 @@ public class ArchitectManager {
 		}
 
 		menu.drawPassive(poseStack, deltaTracker.getGameTimeDeltaPartialTick(true));
+
+		// Draw world-space measurement labels submitted during the world render pass as HUD text.
+		com.timmie.mightyarchitect.foundation.utility.HudTextBuffer.render(poseStack);
 	}
 
 	public static InteractionResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return InteractionResult.PASS; }

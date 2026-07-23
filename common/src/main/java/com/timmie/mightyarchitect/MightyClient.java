@@ -58,14 +58,20 @@ public class MightyClient {
 	}
 
 	public static void onRenderWorld() {
-		PoseStack ms = new PoseStack();
-		Camera info = Minecraft.getInstance().gameRenderer.getMainCamera();
+		Minecraft mc = Minecraft.getInstance();
+		Camera info = mc.gameRenderer.getMainCamera();
 		Vec3 view = info.position();
 
+		// Reset the per-frame HUD label buffer; outlines re-submit their labels as they render below.
+		com.timmie.mightyarchitect.foundation.utility.HudTextBuffer.beginFrame();
+
+		// Rendered from a mid-level stage (after translucent particles / features) where the active
+		// RenderSystem modelview still holds the camera view rotation, so only the world-space offset
+		// is applied here. Do not re-apply the camera rotation or it double-transforms.
+		PoseStack ms = new PoseStack();
 		ms.pushPose();
 		ms.translate(-view.x(), -view.y(), -view.z());
-		MultiBufferSource.BufferSource buffer = Minecraft.getInstance()
-			.renderBuffers()
+		MultiBufferSource.BufferSource buffer = mc.renderBuffers()
 			.bufferSource();
 
 		SuperRenderTypeBuffer b = SuperRenderTypeBuffer.getInstance();
