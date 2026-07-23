@@ -7,7 +7,13 @@ architectury {
     minecraft = rootProject.minecraft_version
 }
 
-subprojects {
+// Stonecutter POC: `:common` is a Stonecutter tree/branch *container* — it is not itself
+// buildable (its version nodes `:common:26.1` / `:common:1.21.8` are). It must NOT receive the
+// Java/Loom/Architectury plugins, or Stonecutter fails with "branch root should not be buildable".
+def stonecutterContainers = [":common"]
+def buildableSubprojects = subprojects.findAll { !stonecutterContainers.contains(it.path) }
+
+configure(buildableSubprojects) {
     apply plugin: "dev.architectury.loom-no-remap"
 
     loom {
@@ -28,7 +34,7 @@ if (System.getenv("CI")) {
     buildVersion = "${rootProject.mod_version}+${commitCount}"
 }
 
-allprojects {
+configure([rootProject] + buildableSubprojects) {
     apply plugin: "java"
     apply plugin: "architectury-plugin"
     apply plugin: "maven-publish"

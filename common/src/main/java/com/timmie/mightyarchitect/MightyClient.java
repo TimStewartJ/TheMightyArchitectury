@@ -16,6 +16,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
+//? if >=26
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 
@@ -24,6 +25,7 @@ public class MightyClient {
 	public static KeyMapping COMPOSE;
 	public static KeyMapping TOOL_MENU;
 
+	//? if >=26
 	public static final KeyMapping.Category CATEGORY = new KeyMapping.Category(Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, "keys"));
 
 	public static SchematicRenderer renderer = new SchematicRenderer();
@@ -33,8 +35,14 @@ public class MightyClient {
 
 	public static void init() {
 		AllItems.initColorHandlers();
+		//? if >=26 {
 		COMPOSE = new KeyMapping("key.mightyclient.compose", Keyboard.G, CATEGORY);
 		TOOL_MENU = new KeyMapping("key.mightyclient.toolmenu", Keyboard.LALT, CATEGORY);
+		//?} else {
+		/*String modName = TheMightyArchitect.NAME;
+		COMPOSE = new KeyMapping("key.mightyclient.compose", Keyboard.G, modName);
+		TOOL_MENU = new KeyMapping("key.mightyclient.toolmenu", Keyboard.LALT, modName);
+		*///?}
 		KeyMappingRegistry.register(COMPOSE);
 		KeyMappingRegistry.register(TOOL_MENU);
 
@@ -60,7 +68,11 @@ public class MightyClient {
 	public static void onRenderWorld() {
 		PoseStack ms = new PoseStack();
 		Camera info = Minecraft.getInstance().gameRenderer.getMainCamera();
+		//? if >=26 {
 		Vec3 view = info.position();
+		//?} else {
+		/*Vec3 view = info.getPosition();
+		*///?}
 
 		ms.pushPose();
 		ms.translate(-view.x(), -view.y(), -view.z());
