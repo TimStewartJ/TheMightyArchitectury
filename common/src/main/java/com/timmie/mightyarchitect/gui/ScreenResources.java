@@ -135,6 +135,150 @@ public enum ScreenResources {
 	}
 
 }
+//?} else if >=1.21.11 {
+/*package com.timmie.mightyarchitect.gui;
+
+import com.timmie.mightyarchitect.TheMightyArchitect;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
+
+public enum ScreenResources {
+	
+	// Inventories
+	PLAYER_INVENTORY("player_inventory.png", 176, 108),
+	COMPOSER("composer.png", 256, 58),
+	PALETTES("palette_picker.png", 256, 236),
+	EXPORTER("design_exporter.png", 200, 111),
+	THEME_EDITOR("theme_editor.png", 200, 187),
+	WAND_SYMMETRY("wand_symmetry.png", 207, 58),
+
+	// Widgets
+	PALETTE_BUTTON("palette_picker.png", 0, 236, 20, 20),
+	TEXT_INPUT("widgets.png", 0, 28, 194, 47),
+	BUTTON("widgets.png", 18, 18),
+	BUTTON_HOVER("widgets.png", 18, 0, 18, 18),
+	BUTTON_DOWN("widgets.png", 36, 0, 18, 18),
+	INDICATOR("widgets.png", 0, 18, 18, 5),
+	INDICATOR_WHITE("widgets.png", 18, 18, 18, 5),
+	INDICATOR_GREEN("widgets.png", 0, 23, 18, 5),
+	INDICATOR_YELLOW("widgets.png", 18, 23, 18, 5),
+	INDICATOR_RED("widgets.png", 36, 23, 18, 5),
+	GRAY("background.png", 0, 0, 16, 16, 16, 16),  // 16x16 texture file
+	
+	SCROLLBAR_AXIS("widgets.png", 224, 0, 32, 256),
+	SCROLLBAR_CAP("widgets.png", 0, 87, 40, 6),
+	SCROLLBAR_INDICATOR("widgets.png", 0, 75, 40, 12),
+	SCROLLBAR_BACKGROUND("widgets.png", 0, 93, 40, 16),
+	
+	// Icons
+	ICON_NONE("icons.png", 16, 16, 16, 16),
+	ICON_ADD("icons.png", 16, 16),
+	ICON_TRASH("icons.png", 16, 0, 16, 16),
+	ICON_3x3("icons.png", 32, 0, 16, 16),
+	ICON_TARGET("icons.png", 48, 0, 16, 16),
+	ICON_CONFIRM("icons.png", 0, 16, 16, 16),
+	
+	ICON_NORMAL_ROOF("icons.png", 32, 16, 16, 16),
+	ICON_FLAT_ROOF("icons.png", 48, 16, 16, 16),
+	ICON_NO_ROOF("icons.png", 0, 32, 16, 16),
+	
+	ICON_TOWER_NO_ROOF("icons.png", 16, 32, 16, 16),
+	ICON_TOWER_ROOF("icons.png", 32, 32, 16, 16),
+	ICON_TOWER_FLAT_ROOF("icons.png", 48, 32, 16, 16),
+	
+	ICON_LAYER_REGULAR("icons.png", 0, 48, 16, 16),
+	ICON_LAYER_OPEN("icons.png", 16, 48, 16, 16),
+	ICON_LAYER_FOUNDATION("icons.png", 32, 48, 16, 16),
+	ICON_LAYER_SPECIAL("icons.png", 48, 48, 16, 16),
+	
+	ICON_TOOL_RESHAPE("icons.png", 0, 64, 16, 16),
+	ICON_TOOL_ROOM("icons.png", 16, 64, 16, 16),
+	ICON_TOOL_TOWER("icons.png", 32, 64, 16, 16),
+	ICON_TOOL_STACK("icons.png", 48, 64, 16, 16),
+	
+	ICON_TOOL_HEIGHT("icons.png", 0, 80, 16, 16),
+	ICON_TOOL_REROLL("icons.png", 16, 80, 16, 16),
+	ICON_TOOL_REROLL_TARGET("icons.png", 32, 80, 16, 16),
+	ICON_TOOL_PALETTE("icons.png", 48, 80, 16, 16),
+	
+	ICON_FOLDER("icons.png", 0, 96, 16, 16),
+	ICON_REFRESH("icons.png", 16, 96, 16, 16);
+	
+	// In 1.21.6, colors must include the alpha channel (0xFF prefix for fully opaque)
+	public static final int FONT_COLOR = 0xFF373F5A;
+	
+	public final Identifier location;
+	public int width, height;
+	public int startX, startY;
+	public int textureWidth, textureHeight; // Actual texture file dimensions
+	
+	private ScreenResources(String location, int width, int height) {
+		this(location, 0, 0, width, height, 256, 256);
+	}
+	
+	private ScreenResources(String location, int startX, int startY, int width, int height) {
+		this(location, startX, startY, width, height, 256, 256);
+	}
+	
+	private ScreenResources(String location, int startX, int startY, int width, int height, int textureWidth, int textureHeight) {
+		this.location = Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, "textures/gui/" + location);
+		this.width = width; this.height = height;
+		this.startX = startX; this.startY = startY;
+		this.textureWidth = textureWidth;
+		this.textureHeight = textureHeight;
+	}
+	
+	public void draw(GuiGraphics screen, int i, int j) {
+		draw(screen, i, j, 0xFFFFFFFF);
+	}
+
+	public void draw(GuiGraphics screen, int x, int y, int color) {
+		// In 1.21.6, RenderSystem color methods are removed
+		// Just draw the texture - color parameter kept for API compatibility
+		screen.blit(RenderPipelines.GUI_TEXTURED, location, x, y, (float) startX, (float) startY, width, height, textureWidth, textureHeight);
+	}
+	
+	//*
+	 //* Draw this resource tiled across the specified area.
+	 //* In 1.21.6, color tinting is not supported via RenderSystem.
+	 //* Use drawTiledWithBackground() for semi-transparent backgrounds.
+	 //
+	public void drawTiled(GuiGraphics screen, int x, int y, int areaWidth, int areaHeight) {
+		for (int tileY = 0; tileY < areaHeight; tileY += height) {
+			for (int tileX = 0; tileX < areaWidth; tileX += width) {
+				int w = Math.min(width, areaWidth - tileX);
+				int h = Math.min(height, areaHeight - tileY);
+				screen.blit(RenderPipelines.GUI_TEXTURED, location, x + tileX, y + tileY, 
+					(float) startX, (float) startY, w, h, textureWidth, textureHeight);
+			}
+		}
+	}
+	
+	//*
+	 //* Draw a tiled texture with a semi-transparent overlay to create a subtle effect.
+	 //* The texture is drawn first, then a colored overlay is applied on top.
+	 //* @param screen The GuiGraphics context
+	 //* @param x Starting X position
+	 //* @param y Starting Y position
+	 //* @param areaWidth Total width to fill
+	 //* @param areaHeight Total height to fill
+	 //* @param overlayColor ARGB color for the overlay (higher alpha = more subtle texture)
+	 //
+	public void drawTiledWithBackground(GuiGraphics screen, int x, int y, int areaWidth, int areaHeight, int overlayColor) {
+		// Draw the texture tiles first
+		drawTiled(screen, x, y, areaWidth, areaHeight);
+		// Then overlay a semi-transparent fill to create subtlety/tinting
+		screen.fill(x, y, x + areaWidth, y + areaHeight, overlayColor);
+	}
+
+	@Deprecated
+	public void bind() {
+		// In 1.21.6, texture binding is handled through RenderPipeline
+		// This method is kept for compatibility but does nothing
+	}
+
+}*/
 //?} else if >=1.21.6 {
 /*package com.timmie.mightyarchitect.gui;
 
