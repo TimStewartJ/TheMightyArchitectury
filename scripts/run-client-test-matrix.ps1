@@ -242,6 +242,9 @@ function Invoke-ClientTest {
         $gradleArguments.Add(":${Loader}:${Version}:runAutomatedClientTest")
         $gradleArguments.Add('--console=plain')
         $gradleArguments.Add('--no-daemon')
+        if ($Loader -eq 'neoforge') {
+            $gradleArguments.Add('-PenableClientTestMod=true')
+        }
         $gradleArguments.Add('-Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64')
         $gradleProcess = Start-Process -FilePath $Gradle `
             -ArgumentList $gradleArguments `
