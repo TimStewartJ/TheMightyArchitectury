@@ -41,6 +41,17 @@ configurations {
         canBeResolved = true
         canBeConsumed = false
     }
+    // Dependency bucket for common's named (dev) classes+resources. Extending compileClasspath +
+    // runtimeClasspath + developmentFabric from it mirrors the canonical architectury loader wiring:
+    // developmentFabric is what architectury-loom hands to the dev run as the mod-in-dev, so common
+    // classes are resolvable at dev runtime (runClient). Plain runtimeOnly does NOT reach that layer.
+    common {
+        canBeResolved = false
+        canBeConsumed = false
+    }
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
 }
 
 configurations.all {
@@ -62,9 +73,11 @@ dependencies {
         modApi "dev.architectury:architectury-fabric:${archVersion}"
     }
 
-    // common's compiled classes on this loader's compile classpath (to compile the loader's own
-    // fabric/ source, which imports common). Direct project-object output, not a project() variant.
-    compileOnly commonNode.sourceSets.main.output
+    // common's named (dev) classes+resources as a JAR — feeds the loader's compile classpath (to
+    // compile the fabric/ source, which imports common) AND the dev-run classpath via
+    // developmentFabric. Must be a jar (not raw output dirs): architectury's dev-time transformer
+    // opens developmentFabric entries as jar filesystems. The packaged jar uses the transformed copy.
+    common files(commonNode.tasks.named('jar').flatMap { it.archiveFile })
     // The architectury-transformed common jar, bundled into the final jar via shadow.
     shadowBundle commonNode.configurations.getByName("transformProductionFabric").artifacts.files
 }
@@ -79,6 +92,7 @@ processResources {
         "version"                 : project.version,
         "meta_mc_range"           : node.property('meta_mc_range'),
         "meta_java_range"         : node.property('meta_java_range'),
+        "meta_floader_range"      : node.property('fabric_loader_version'),
         "meta_architectury_range" : node.property('meta_architectury_range')
     ]
     inputs.properties(metaProps)

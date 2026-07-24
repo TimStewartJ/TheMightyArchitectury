@@ -37,6 +37,17 @@ configurations {
         canBeResolved = true
         canBeConsumed = false
     }
+    // Dependency bucket for common's named (dev) classes+resources. Extending compileClasspath +
+    // runtimeClasspath + developmentNeoForge from it mirrors the canonical architectury loader wiring:
+    // developmentNeoForge is what architectury-loom hands to FML as the mod-in-dev, so common classes
+    // are resolvable at dev runtime (runClient). Plain runtimeOnly does NOT reach that layer.
+    common {
+        canBeResolved = false
+        canBeConsumed = false
+    }
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentNeoForge.extendsFrom common
 }
 
 dependencies {
@@ -49,9 +60,12 @@ dependencies {
         implementation "dev.architectury:architectury-neoforge:${archVersion}"
     }
 
-    // common's compiled classes on this loader's compile classpath (to compile the loader's own
-    // neoforge/ source, which imports common). Direct project-object output.
-    compileOnly commonNode.sourceSets.main.output
+    // common's named (dev) classes+resources as a JAR — feeds the loader's compile classpath (to
+    // compile the neoforge/ source, which imports common) AND the dev-run classpath via
+    // developmentNeoForge. Must be a jar (not raw output dirs): architectury's dev-time transformer
+    // opens developmentNeoForge entries as jar filesystems. architectury-neoforge provides the
+    // fabric-dialect EnvType/@Environment shims at runtime; the packaged jar uses the transformed copy.
+    common files(commonNode.tasks.named('jar').flatMap { it.archiveFile })
     // The architectury-transformed (fabric-dialect -> neoforge) common jar, bundled via shadow.
     shadowBundle commonNode.configurations.getByName("transformProductionNeoForge").artifacts.files
 }

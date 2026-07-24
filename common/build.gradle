@@ -47,6 +47,21 @@ dependencies {
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
 }
 
+// Blueprint post-processing shader/effect resources differ per MC version in BOTH format and file
+// layout (old GameRenderer.loadEffect PostChain vs new post_effect API; program vs vertex/fragment
+// passes; core/screenquad vs post/blit vertex; GLSL #version 120/150/330). A single shared copy in
+// common/ can't satisfy all versions, so each node pulls the matching variant set from
+// common/shader-variants/<group>/ as an extra resources source directory.
+def oldApiVersions = ["1.20.1", "1.21.1"]  // GameRenderer.loadEffect PostChain (shaders/post + shaders/program)
+def t4ShaderVersions = ["1.21.4"]          // transitional: post_effect (program) + shaders/post program def
+def p6ShaderVersions = ["1.21.6", "1.21.8"] // post_effect (post/blit vertex) + #version 150 fragment
+// Everything newer (1.21.10, 1.21.11, 26.1, ...) uses post_effect (core/screenquad) + #version 330 fragment.
+def shaderVariant =
+    oldApiVersions.contains(stonecutter.current.version)   ? "old" :
+    t4ShaderVersions.contains(stonecutter.current.version) ? "t4"  :
+    p6ShaderVersions.contains(stonecutter.current.version) ? "p6"  : "p10"
+sourceSets.main.resources.srcDir rootProject.file("common/shader-variants/${shaderVariant}")
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
     options.release = javaVer
