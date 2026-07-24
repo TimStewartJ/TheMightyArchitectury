@@ -27,6 +27,27 @@ public class OnRenderWorld {
         MightyClient.onPostRender(Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false));
     }
 }
+//?} else if >=1.21.10 {
+/*package com.timmie.mightyarchitect.forge;
+
+import com.timmie.mightyarchitect.MightyClient;
+import net.minecraft.client.Minecraft;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent.AfterParticles;
+
+@EventBusSubscriber(value = Dist.CLIENT)
+public class OnRenderWorld {
+    @SubscribeEvent
+    public static void onRenderWorld(AfterParticles event) {
+        // Render outlines and schematics
+        MightyClient.onRenderWorld();
+        
+        // Apply post-processing shaders after level rendering
+        MightyClient.onPostRender(Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false));
+    }
+}*/
 //?} else if >=1.21.6 {
 /*package com.timmie.mightyarchitect.forge;
 
