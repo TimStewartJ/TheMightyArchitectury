@@ -59,6 +59,68 @@ public class IconButton extends AbstractSimiWidget {
 	}
 
 }
+//?} else if >=1.21.6 {
+/*package com.timmie.mightyarchitect.gui.widgets;
+
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.timmie.mightyarchitect.gui.ScreenResources;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
+
+public class IconButton extends AbstractSimiWidget {
+
+	private ScreenResources icon;
+	protected boolean pressed;
+
+	public IconButton(int x, int y, ScreenResources icon) {
+		super(x, y, 18, 18);
+		this.icon = icon;
+	}
+
+	@Override
+	public void renderWidget(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+		if (this.visible) {
+			this.isHovered =
+				mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
+
+			ScreenResources button = (pressed || !active) ? button = ScreenResources.BUTTON_DOWN
+				: (isHovered) ? ScreenResources.BUTTON_HOVER : ScreenResources.BUTTON;
+
+			// In 1.21.6, use RenderPipelines.GUI_TEXTURED for GUI texture rendering
+			ms.blit(RenderPipelines.GUI_TEXTURED, ScreenResources.BUTTON.location, x, y, (float) button.startX, (float) button.startY, button.width, button.height, 256, 256);
+			icon.draw(ms, x + 1, y + 1);
+		}
+	}
+
+	@Override
+	public void onClick(double p_onClick_1_, double p_onClick_3_) {
+		super.onClick(p_onClick_1_, p_onClick_3_);
+		this.pressed = true;
+	}
+
+	@Override
+	public void onRelease(double p_onRelease_1_, double p_onRelease_3_) {
+		super.onRelease(p_onRelease_1_, p_onRelease_3_);
+		this.pressed = false;
+	}
+
+	@Override
+	protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+		defaultButtonNarrationText(narrationElementOutput);
+	}
+
+	public void setToolTip(String text) {
+		setToolTip(Component.literal(text));
+	}
+
+	public void setToolTip(Component text) {
+		toolTip.clear();
+		toolTip.add(text);
+	}
+
+}*/
 //?} else if >=1.21.4 {
 /*package com.timmie.mightyarchitect.gui.widgets;
 
