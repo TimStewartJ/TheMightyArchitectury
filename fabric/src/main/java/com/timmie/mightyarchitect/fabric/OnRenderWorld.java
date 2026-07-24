@@ -1,15 +1,11 @@
+//? if >=26 {
 package com.timmie.mightyarchitect.fabric;
 
 import com.timmie.mightyarchitect.MightyClient;
-//? if >=26 {
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
-//?} else {
-/*import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-*///?}
 
 public class OnRenderWorld {
     public static void RegisterRenderEvent() {
-        //? if >=26 {
         // Render world-space outlines, schematics and measurement labels after translucent features.
         // This mirrors the NeoForge AfterTranslucentParticles stage: the level's translucent pass is
         // still active, so translucent overlays and text glyphs composite into the frame, and the
@@ -20,8 +16,33 @@ public class OnRenderWorld {
 
         // Note: Post-processing shader is now handled via GameRendererMixin
         // to ensure correct timing in the render pipeline
-        //?} else {
-        /*WorldRenderEvents.LAST.register((context) -> MightyClient.onRenderWorld(context.matrixStack()));
-        *///?}
     }
 }
+//?} else if >=1.21.4 {
+/*package com.timmie.mightyarchitect.fabric;
+
+import com.timmie.mightyarchitect.MightyClient;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+
+public class OnRenderWorld {
+    public static void RegisterRenderEvent() {
+        // Register world rendering for outlines and schematics
+        WorldRenderEvents.LAST.register((context) -> {
+            MightyClient.onRenderWorld(context.matrixStack());
+        });
+
+        // Note: Post-processing shader is now handled via GameRendererMixin
+        // to ensure correct timing in the render pipeline
+    }
+}*/
+//?} else {
+/*package com.timmie.mightyarchitect.fabric;
+
+import com.timmie.mightyarchitect.MightyClient;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+
+public class OnRenderWorld {
+    public static void RegisterRenderEvent() {
+        WorldRenderEvents.LAST.register((context) -> MightyClient.onRenderWorld(context.matrixStack()));
+    }
+}*///?}

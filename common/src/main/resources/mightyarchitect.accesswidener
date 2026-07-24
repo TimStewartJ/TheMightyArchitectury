@@ -1,6 +1,11 @@
 accessWidener   v2  named
 
-accessible    method    net/minecraft/client/renderer/GameRenderer      loadEffect      (Lnet/minecraft/resources/ResourceLocation;)V
+#? if >=1.21.4 {
+## GameRenderer.loadEffect method removed in 1.21.4 - post-processing shader system completely changed
+## accessible    method    net/minecraft/client/renderer/GameRenderer      loadEffect      (Lnet/minecraft/resources/ResourceLocation;)V
+#?} else {
+#accessible    method    net/minecraft/client/renderer/GameRenderer      loadEffect      (Lnet/minecraft/resources/ResourceLocation;)V
+#?}
 
 # BufferBuilder fields/methods removed in 1.21.1 - no longer needed as we use new rendering API
 # accessible    field     com/mojang/blaze3d/vertex/BufferBuilder         buffer          Ljava/nio/ByteBuffer;
@@ -11,4 +16,10 @@ accessible    method    net/minecraft/client/renderer/GameRenderer      loadEffe
 accessible    field     net/minecraft/client/gui/components/AbstractWidget             x        I
 accessible    field     net/minecraft/client/gui/components/AbstractWidget             y        I
 
-accessible    method    net/minecraft/client/gui/GuiGraphics            <init>          (Lnet/minecraft/client/Minecraft;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;)V
+#? if >=1.21.6 {
+## GuiGraphics constructor changed in 1.21.6 - now uses Matrix3x2fStack internally instead of PoseStack
+## accessible    method    net/minecraft/client/gui/GuiGraphics            <init>          (Lnet/minecraft/client/Minecraft;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;)V
+#?} else {
+#accessible    method    net/minecraft/client/gui/GuiGraphics            <init>          (Lnet/minecraft/client/Minecraft;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;)V
+#?}
+
