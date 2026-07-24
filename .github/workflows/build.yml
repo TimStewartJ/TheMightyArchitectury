@@ -54,6 +54,34 @@ jobs:
           grep -q "\"minecraft\": \">=${{ matrix.mc }}\"" /tmp/fb.json \
             || { echo "::error::fabric minecraft depend is not >=${{ matrix.mc }}"; cat /tmp/fb.json; exit 1; }
 
+      - name: Dedicated server smoke (both loaders)
+        shell: pwsh
+        run: ./scripts/run-server-test-matrix.ps1 -Versions '${{ matrix.mc }}'
+
+      - name: Install virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgl1 libgl1-mesa-dri mesa-utils
+
+      - name: Automated client feature tests (both loaders)
+        env:
+          CI: true
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          ALSOFT_DRIVERS: "null"
+        run: |
+          xvfb-run -a -s "-screen 0 1280x720x24" \
+            pwsh -NoProfile -File ./scripts/run-client-test-matrix.ps1 -Versions '${{ matrix.mc }}'
+
+      - name: Upload runtime test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mightyarchitect-runtime-tests-${{ matrix.mc }}
+          if-no-files-found: warn
+          path: |
+            build/client-test-results/${{ matrix.mc }}/
+            build/server-test-results/${{ matrix.mc }}/
+
       - uses: actions/upload-artifact@v4
         with:
           name: mightyarchitect-${{ matrix.mc }}

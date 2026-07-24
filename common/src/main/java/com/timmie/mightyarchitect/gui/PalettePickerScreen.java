@@ -512,8 +512,8 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 		private void preview(GuiGraphics ms, Minecraft mc) {
 			// In 1.21.6, GuiGraphics.pose() returns Matrix3x2fStack (2D).
 			// We pass positioning to GuiGameElement instead
-			float baseX = x + 1;
-			float baseY = y + 9;
+			float baseX = getX() + 1;
+			float baseY = getY() + 9;
 			float baseZ = 100;
 			float scale = 1 + 1/64f;
 			renderBlock(ms, mc, new BlockPos(0, 1, 0), Palette.INNER_PRIMARY, baseX, baseY, baseZ, scale);
@@ -783,8 +783,8 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 		private void preview(GuiGraphics ms, Minecraft mc) {
 			// In 1.21.6, GuiGraphics.pose() returns Matrix3x2fStack (2D).
 			// We pass positioning to GuiGameElement instead
-			float baseX = x + 1;
-			float baseY = y + 9;
+			float baseX = getX() + 1;
+			float baseY = getY() + 9;
 			float baseZ = 100;
 			float scale = 1 + 1/64f;
 			renderBlock(ms, mc, new BlockPos(0, 1, 0), Palette.INNER_PRIMARY, baseX, baseY, baseZ, scale);
@@ -1052,8 +1052,8 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 		private void preview(GuiGraphics ms, Minecraft mc) {
 			// In 1.21.6, GuiGraphics.pose() returns Matrix3x2fStack (2D).
 			// We pass positioning to GuiGameElement instead
-			float baseX = x + 1;
-			float baseY = y + 9;
+			float baseX = getX() + 1;
+			float baseY = getY() + 9;
 			float baseZ = 100;
 			float scale = 1 + 1/64f;
 			renderBlock(ms, mc, new BlockPos(0, 1, 0), Palette.INNER_PRIMARY, baseX, baseY, baseZ, scale);
@@ -1320,7 +1320,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 
 		private void preview(GuiGraphics ms, Minecraft mc) {
 			ms.pose().pushPose();
-			ms.pose().translate(x + 1, y + 9, 100);
+			ms.pose().translate(getX() + 1, getY() + 9, 100);
 			ms.pose().scale(1 + 1/64f, 1 + 1/64f, 1);
 			renderBlock(ms, mc, new BlockPos(0, 1, 0), Palette.INNER_PRIMARY);
 			renderBlock(ms, mc, new BlockPos(1, 1, 0), Palette.INNER_DETAIL);
