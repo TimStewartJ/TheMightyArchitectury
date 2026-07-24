@@ -19,8 +19,8 @@ apply plugin: "mightyarchitect.shadow"
 apply plugin: "java"
 apply plugin: "maven-publish"
 
-base { archivesName = "${rootProject.archives_base_name}-${mcVersion}" }
-version = rootProject.mod_version
+base { archivesName = rootProject.archives_base_name }
+version = "${rootProject.mod_version}+mc${mcVersion}"
 group = rootProject.maven_group
 
 repositories {
