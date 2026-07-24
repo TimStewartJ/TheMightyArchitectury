@@ -75,9 +75,15 @@ tasks.named("compileJava") {
 }
 
 processResources {
-    inputs.property "version", project.version
+    def metaProps = [
+        "version"                 : project.version,
+        "meta_mc_range"           : node.property('meta_mc_range'),
+        "meta_java_range"         : node.property('meta_java_range'),
+        "meta_architectury_range" : node.property('meta_architectury_range')
+    ]
+    inputs.properties(metaProps)
     filesMatching("fabric.mod.json") {
-        expand "version": project.version
+        expand(metaProps)
     }
 }
 

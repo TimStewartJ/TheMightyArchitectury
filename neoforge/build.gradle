@@ -61,9 +61,15 @@ tasks.named("compileJava") {
 }
 
 processResources {
-    inputs.property "version", project.version
+    def metaProps = [
+        "version"                 : project.version,
+        "meta_mc_range"           : node.property('meta_mc_range'),
+        "meta_neoforge_range"     : node.property('meta_neoforge_range'),
+        "meta_architectury_range" : node.property('meta_architectury_range')
+    ]
+    inputs.properties(metaProps)
     filesMatching("META-INF/neoforge.mods.toml") {
-        expand "version": project.version
+        expand(metaProps)
     }
 }
 

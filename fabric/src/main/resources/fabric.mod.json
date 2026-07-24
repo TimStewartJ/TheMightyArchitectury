@@ -22,9 +22,9 @@
   },
   "depends": {
     "fabricloader": ">=0.19.0",
-    "minecraft": ">=26.1",
-    "java": ">=25",
-    "architectury": ">=20.0.0"
+    "minecraft": ">=${meta_mc_range}",
+    "java": ">=${meta_java_range}",
+    "architectury": ">=${meta_architectury_range}"
   },
   "mixins": [
     "mightyarchitect.mixins.json"
