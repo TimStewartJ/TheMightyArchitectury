@@ -1,6 +1,5 @@
 param(
     [string[]]$Versions = @('1.21.1', '1.21.4', '1.21.6', '1.21.8', '1.21.10', '1.21.11', '26.1'),
-    [ValidateSet('fabric', 'neoforge')]
     [string[]]$Loaders = @('fabric', 'neoforge'),
     [int]$TimeoutSeconds = 600
 )
@@ -9,6 +8,9 @@ $ErrorActionPreference = 'Stop'
 
 Import-Module (Join-Path $PSScriptRoot 'TestMatrix.Common.psm1') -Force
 Assert-TestMatrixPowerShell
+
+$Versions = Expand-TestListArgument -Value $Versions
+$Loaders = Expand-TestListArgument -Value $Loaders -Allowed @('fabric', 'neoforge')
 
 $RepoRoot = Get-TestMatrixRepoRoot -ScriptRoot $PSScriptRoot
 $ResultsRoot = Join-Path (Join-Path $RepoRoot 'build') 'server-test-results'

@@ -279,6 +279,7 @@ function Start-TestVanillaServer {
         'simulation-distance=3'
         'generate-structures=false'
         'level-type=minecraft:flat'
+        'difficulty=peaceful'
         "motd=$Motd"
     ) | Set-Content (Join-Path $directory 'server.properties') -Encoding ascii
 
@@ -320,6 +321,168 @@ function Start-TestVanillaServer {
     }
 }
 
+function Expand-TestListArgument {
+    <#
+        Normalizes list parameters so that both `-Versions a,b` (PowerShell array) and
+        `pwsh -File script.ps1 -Versions a,b` (single literal string) behave identically.
+    #>
+    param(
+        [string[]]$Value,
+        [string[]]$Allowed
+    )
+
+    $expanded = @(
+        $Value |
+            Where-Object { $_ } |
+            ForEach-Object { $_ -split ',' } |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { $_ }
+    )
+    if ($Allowed) {
+        foreach ($item in $expanded) {
+            if ($item -notin $Allowed) {
+                throw "Invalid value '$item'. Expected one of: $($Allowed -join ', ')"
+            }
+        }
+    }
+    return $expanded
+}
+
+function Find-TestGradleArtifact {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Group,
+        [Parameter(Mandatory = $true)]
+        [string]$Module,
+        [Parameter(Mandatory = $true)]
+        [string]$Version
+    )
+
+    $directory = Join-Path $env:USERPROFILE ".gradle/caches/modules-2/files-2.1/$Group/$Module/$Version"
+    $jar = Get-ChildItem $directory -Recurse -Filter "$Module-$Version.jar" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch 'sources|javadoc' } |
+        Select-Object -First 1
+    if (-not $jar) {
+        throw "Gradle artifact not found: $Group`:$Module`:$Version"
+    }
+    return $jar.FullName
+}
+
+function Get-RuntimeArtifactManifestPath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepoRoot
+    )
+
+    return Join-Path (Join-Path (Join-Path $RepoRoot 'build') 'runtime-artifacts') 'manifest.json'
+}
+
+function Read-RuntimeArtifactManifest {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepoRoot
+    )
+
+    $path = Get-RuntimeArtifactManifestPath -RepoRoot $RepoRoot
+    if (-not (Test-Path $path)) {
+        return $null
+    }
+    return Get-Content $path -Raw | ConvertFrom-Json
+}
+
+function Get-RuntimeArtifactTarget {
+    param(
+        [psobject]$Manifest,
+        [Parameter(Mandatory = $true)]
+        [string]$Version,
+        [Parameter(Mandatory = $true)]
+        [string]$Loader
+    )
+
+    if (-not $Manifest) {
+        return $null
+    }
+    return $Manifest.targets | Where-Object { $_.version -eq $Version -and $_.loader -eq $Loader } | Select-Object -First 1
+}
+
+function Test-RuntimeArtifactStale {
+    <#
+        Returns a reason string when the prebuilt artifacts cannot be trusted for the
+        requested targets, or $null when they are usable as-is.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepoRoot,
+        [Parameter(Mandatory = $true)]
+        [string[]]$Versions,
+        [Parameter(Mandatory = $true)]
+        [string[]]$Loaders
+    )
+
+    $manifest = Read-RuntimeArtifactManifest -RepoRoot $RepoRoot
+    if (-not $manifest) {
+        return 'no artifact manifest'
+    }
+
+    $currentCommit = (& git -C $RepoRoot rev-parse HEAD 2>$null)
+    if ($currentCommit -and $manifest.gitCommit -and $currentCommit.Trim() -ne $manifest.gitCommit) {
+        return "git commit changed ($($manifest.gitCommit) -> $($currentCommit.Trim()))"
+    }
+
+    foreach ($version in $Versions) {
+        foreach ($loader in $Loaders) {
+            $target = Get-RuntimeArtifactTarget -Manifest $manifest -Version $version -Loader $loader
+            if (-not $target) {
+                return "missing target $version/$loader"
+            }
+            foreach ($jar in @($target.modJar, $target.testJar) + @($target.dependencyJars)) {
+                if (-not (Test-Path $jar)) {
+                    return "missing jar $jar"
+                }
+            }
+        }
+    }
+
+    $builtAt = if ($manifest.createdAt -is [DateTime]) {
+        $manifest.createdAt.ToUniversalTime()
+    } else {
+        [DateTime]::Parse(
+            $manifest.createdAt,
+            [Globalization.CultureInfo]::InvariantCulture,
+            [Globalization.DateTimeStyles]::RoundtripKind
+        ).ToUniversalTime()
+    }
+    $sourceRoots = @('common/src', 'fabric/src', 'neoforge/src', 'client-test/src') |
+        ForEach-Object { Join-Path $RepoRoot $_ } |
+        Where-Object { Test-Path $_ }
+    $sourceRoots += @(Join-Path $RepoRoot 'buildSrc') | Where-Object { Test-Path $_ }
+    foreach ($root in $sourceRoots) {
+        $newer = Get-ChildItem $root -Recurse -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -notmatch '[\\/](build|\.gradle)[\\/]' -and $_.LastWriteTimeUtc -gt $builtAt } |
+            Select-Object -First 1
+        if ($newer) {
+            return "source newer than artifacts ($($newer.Name))"
+        }
+    }
+
+    $buildInputs = @('build.gradle', 'settings.gradle', 'stonecutter.gradle', 'gradle.properties',
+        'common/build.gradle', 'fabric/build.gradle', 'neoforge/build.gradle')
+    foreach ($version in $Versions) {
+        $buildInputs += "versions/$version/gradle.properties"
+    }
+    $buildInputFiles = $buildInputs |
+        ForEach-Object { Join-Path $RepoRoot $_ } |
+        Where-Object { Test-Path $_ } |
+        ForEach-Object { Get-Item $_ }
+    foreach ($buildInput in $buildInputFiles) {
+        if ($buildInput.LastWriteTimeUtc -gt $builtAt) {
+            return "build input newer than artifacts ($($buildInput.FullName.Substring($RepoRoot.Length).TrimStart('\', '/')))"
+        }
+    }
+
+    return $null
+}
+
 Export-ModuleMember -Function @(
     'Assert-TestMatrixPowerShell',
     'Get-TestMatrixRepoRoot',
@@ -333,5 +496,11 @@ Export-ModuleMember -Function @(
     'Get-TestProcessIdentity',
     'Stop-TestOwnedProcess',
     'Write-TestSessionManifest',
-    'Start-TestVanillaServer'
+    'Start-TestVanillaServer',
+    'Expand-TestListArgument',
+    'Find-TestGradleArtifact',
+    'Get-RuntimeArtifactManifestPath',
+    'Read-RuntimeArtifactManifest',
+    'Get-RuntimeArtifactTarget',
+    'Test-RuntimeArtifactStale'
 )

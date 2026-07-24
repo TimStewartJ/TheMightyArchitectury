@@ -1,9 +1,10 @@
 param(
     [string[]]$Versions = @('1.21.1', '1.21.4', '1.21.6', '1.21.8', '1.21.10', '1.21.11', '26.1'),
-    [ValidateSet('fabric', 'neoforge')]
     [string[]]$Loaders = @('fabric', 'neoforge'),
     [int]$Port = 25565,
     [int]$ClientTimeoutSeconds = 600,
+    [ValidateSet('Always', 'Auto', 'Never')]
+    [string]$Build = 'Auto',
     [switch]$KeepOpen
 )
 
@@ -12,6 +13,9 @@ $ProgressPreference = 'SilentlyContinue'
 
 Import-Module (Join-Path $PSScriptRoot 'TestMatrix.Common.psm1') -Force
 Assert-TestMatrixPowerShell
+
+$Versions = Expand-TestListArgument -Value $Versions
+$Loaders = Expand-TestListArgument -Value $Loaders -Allowed @('fabric', 'neoforge')
 
 if (-not $IsWindows) {
     throw 'The packaged matrix currently requires Prism Launcher on Windows.'
@@ -23,11 +27,6 @@ $PrismRoot = Join-Path $env:APPDATA 'PrismLauncher'
 $InstancesRoot = Join-Path $PrismRoot 'instances'
 $RuntimeRoot = Join-Path $RepoRoot 'build\client-test-runtime'
 $ResultsRoot = Join-Path $RepoRoot 'build\packaged-client-test-results'
-$Gradle = Get-TestGradleCommand -RepoRoot $RepoRoot
-
-if ($KeepOpen -and ($Versions.Count -ne 1 -or $Loaders.Count -ne 1)) {
-    throw '-KeepOpen requires exactly one version and one loader. Start multiple invocations with distinct -Port values for simultaneous clients.'
-}
 
 function Get-InstanceProcesses {
     param([string]$InstancePath)
@@ -116,13 +115,14 @@ function Write-PrismInstance {
         [string]$Version,
         [string]$Loader,
         [hashtable]$Properties,
+        [int]$InstancePort,
         [switch]$KeepOpen
     )
 
     $instanceName = if ($KeepOpen) {
-        "MightyArchitect-Manual-$Version-$Loader-$Port"
+        "MightyArchitect-Manual-$Version-$Loader-$InstancePort"
     } else {
-        "MightyArchitect-Matrix-$Version-$Loader-$Port"
+        "MightyArchitect-Matrix-$Version-$Loader-$InstancePort"
     }
     $instancePath = Join-Path $InstancesRoot $instanceName
     $minecraftDirectory = Join-Path $instancePath '.minecraft'
@@ -181,7 +181,7 @@ function Write-PrismInstance {
 
     $java = (Resolve-TestJava -Version ([int]$Properties.java_version)).Replace('\', '/').Replace('java.exe', 'javaw.exe')
     $jvmArgs = "-Dmightyarchitect.clientTest.enabled=true " +
-        "-Dmightyarchitect.clientTest.server=127.0.0.1:$Port " +
+        "-Dmightyarchitect.clientTest.server=127.0.0.1:$InstancePort " +
         "-Dmightyarchitect.clientTest.result=client-test-result.json " +
         "-Dmightyarchitect.clientTest.keepOpen=$($KeepOpen.IsPresent.ToString().ToLowerInvariant())"
     @"
@@ -217,56 +217,21 @@ notes=Disposable automated production-jar client-test instance.
     }
 }
 
-function Find-GradleArtifact {
-    param(
-        [string]$Group,
-        [string]$Module,
-        [string]$Version
-    )
-
-    $directory = Join-Path $env:USERPROFILE ".gradle\caches\modules-2\files-2.1\$Group\$Module\$Version"
-    $jar = Get-ChildItem $directory -Recurse -Filter "$Module-$Version.jar" -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -notmatch 'sources|javadoc' } |
-        Select-Object -First 1
-    if (-not $jar) {
-        throw "Gradle artifact not found: $Group`:$Module`:$Version"
-    }
-    return $jar.FullName
-}
-
 function Install-Mods {
     param(
-        [string]$Version,
-        [string]$Loader,
-        [hashtable]$Properties,
+        [psobject]$Artifacts,
         [string]$MinecraftDirectory
     )
-
-    & $Gradle ":${Loader}:${Version}:build" ":${Loader}:${Version}:buildClientTestMod" '--console=plain'
-    if ($LASTEXITCODE -ne 0) {
-        throw "Build failed for $Version / $Loader"
-    }
-
-    $libs = Join-Path $RepoRoot "$Loader\versions\$Version\build\libs"
-    $mainJar = Get-ChildItem $libs -Filter "*-$Loader.jar" |
-        Where-Object { $_.Name -notmatch 'sources|dev|raw|client-test' } |
-        Select-Object -First 1
-    $testJar = Get-ChildItem $libs -Filter "*-$Loader-client-test.jar" |
-        Where-Object { $_.Name -notmatch 'client-test-dev' } |
-        Select-Object -First 1
-    if (-not $mainJar -or -not $testJar) {
-        throw "Production or client-test jar missing in $libs"
-    }
 
     $mods = Join-Path $MinecraftDirectory 'mods'
     Remove-Item $mods -Recurse -Force -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Force -Path $mods | Out-Null
-    Copy-Item $mainJar.FullName, $testJar.FullName $mods
 
-    $architecturyModule = "architectury-$Loader"
-    Copy-Item (Find-GradleArtifact 'dev.architectury' $architecturyModule $Properties.architectury_version) $mods
-    if ($Loader -eq 'fabric') {
-        Copy-Item (Find-GradleArtifact 'net.fabricmc.fabric-api' 'fabric-api' $Properties.fabric_api_version) $mods
+    foreach ($jar in @($Artifacts.modJar, $Artifacts.testJar) + @($Artifacts.dependencyJars)) {
+        if (-not (Test-Path $jar)) {
+            throw "Prebuilt artifact missing: $jar. Re-run prepare-runtime-artifacts.ps1."
+        }
+        Copy-Item $jar $mods
     }
 }
 
@@ -324,15 +289,18 @@ function Invoke-PackagedClientTest {
         [string]$Version,
         [string]$Loader,
         [hashtable]$Properties,
+        [psobject]$Artifacts,
+        [int]$InstancePort,
         [string]$ServerLog,
         [System.Diagnostics.Process]$ServerProcess,
         [switch]$KeepOpen
     )
 
-    Write-Host "=== PACKAGED CLIENT TEST $Version / $Loader ==="
-    $instance = Write-PrismInstance -Version $Version -Loader $Loader -Properties $Properties -KeepOpen:$KeepOpen
+    Write-Host "=== PACKAGED CLIENT TEST $Version / $Loader (port $InstancePort) ==="
+    $instance = Write-PrismInstance -Version $Version -Loader $Loader -Properties $Properties `
+        -InstancePort $InstancePort -KeepOpen:$KeepOpen
     Stop-InstanceProcesses $instance.Path
-    Install-Mods $Version $Loader $Properties $instance.MinecraftDirectory
+    Install-Mods -Artifacts $Artifacts -MinecraftDirectory $instance.MinecraftDirectory
 
     Remove-Item (Join-Path $instance.MinecraftDirectory 'logs'),
         (Join-Path $instance.MinecraftDirectory 'crash-reports'),
@@ -377,14 +345,14 @@ function Invoke-PackagedClientTest {
                         mode = 'packaged'
                         version = $Version
                         loader = $Loader
-                        port = $Port
+                        port = $InstancePort
                         serverProcess = Get-TestProcessIdentity -Process $ServerProcess
                         clientProcesses = $clientIdentities
                         instancePath = $instance.Path
                         createdAt = (Get-Date).ToString('o')
                     }
                     $manifest = Write-TestSessionManifest -RepoRoot $RepoRoot `
-                        -FileName "packaged-$Version-$Loader-$Port.json" -Session $session
+                        -FileName "packaged-$Version-$Loader-$InstancePort.json" -Session $session
                     $leaveRunning = $true
                     return [pscustomobject]@{
                         ManifestPath = $manifest
@@ -413,28 +381,77 @@ if (-not (Test-Path $PrismExe)) {
     throw "Prism Launcher not found: $PrismExe"
 }
 
+switch ($Build) {
+    'Always' {
+        & (Join-Path $PSScriptRoot 'prepare-runtime-artifacts.ps1') -Versions $Versions -Loaders $Loaders
+    }
+    'Auto' {
+        $staleReason = Test-RuntimeArtifactStale -RepoRoot $RepoRoot -Versions $Versions -Loaders $Loaders
+        if ($staleReason) {
+            Write-Host "Rebuilding runtime artifacts: $staleReason"
+            & (Join-Path $PSScriptRoot 'prepare-runtime-artifacts.ps1') -Versions $Versions -Loaders $Loaders
+        } else {
+            Write-Host 'Reusing prepared runtime artifacts.'
+        }
+    }
+    'Never' {
+        $staleReason = Test-RuntimeArtifactStale -RepoRoot $RepoRoot -Versions $Versions -Loaders $Loaders
+        if ($staleReason) {
+            throw "-Build Never requires usable prepared artifacts, but: $staleReason"
+        }
+        Write-Host 'Reusing prepared runtime artifacts.'
+    }
+}
+
+$ArtifactManifest = Read-RuntimeArtifactManifest -RepoRoot $RepoRoot
+if (-not $ArtifactManifest) {
+    throw 'Runtime artifact manifest is missing. Run prepare-runtime-artifacts.ps1 first.'
+}
+
 New-Item -ItemType Directory -Force -Path $RuntimeRoot, $ResultsRoot, $InstancesRoot | Out-Null
 $failures = [System.Collections.Generic.List[string]]::new()
-$keptOpenSession = $null
+$keptOpenSessions = [System.Collections.Generic.List[object]]::new()
+$targetIndex = 0
 
 foreach ($version in $Versions) {
     $properties = Get-TestNodeProperties -RepoRoot $RepoRoot -Version $version
-    $server = $null
+    $sharedServer = $null
     try {
-        $serverNodeId = if ($KeepOpen) { "$version-$($Loaders[0])-$Port" } else { $version }
-        $server = Start-TestVanillaServer -NodeId $serverNodeId -Properties $properties -RuntimeRoot $RuntimeRoot `
-            -Port $Port -Motd 'Mighty Architect Packaged Client Test'
+        if (-not $KeepOpen) {
+            $sharedServer = Start-TestVanillaServer -NodeId $version -Properties $properties -RuntimeRoot $RuntimeRoot `
+                -Port $Port -Motd 'Mighty Architect Packaged Client Test'
+        }
+
         foreach ($loader in $Loaders) {
+            $instancePort = if ($KeepOpen) { $Port + $targetIndex } else { $Port }
+            $targetIndex++
+            $server = $sharedServer
+            $serverIsPerTarget = $false
             try {
-                $clientSession = Invoke-PackagedClientTest -Version $version -Loader $loader -Properties $properties `
-                    -ServerLog $server.Log -ServerProcess $server.Process -KeepOpen:$KeepOpen
+                $artifacts = Get-RuntimeArtifactTarget -Manifest $ArtifactManifest -Version $version -Loader $loader
+                if (-not $artifacts) {
+                    throw "No prepared artifacts for $version/$loader"
+                }
                 if ($KeepOpen) {
-                    $keptOpenSession = $clientSession
+                    $server = Start-TestVanillaServer -NodeId "$version-$loader-$instancePort" -Properties $properties `
+                        -RuntimeRoot $RuntimeRoot -Port $instancePort -Motd 'Mighty Architect Manual Client'
+                    $serverIsPerTarget = $true
+                }
+
+                $clientSession = Invoke-PackagedClientTest -Version $version -Loader $loader -Properties $properties `
+                    -Artifacts $artifacts -InstancePort $instancePort -ServerLog $server.Log `
+                    -ServerProcess $server.Process -KeepOpen:$KeepOpen
+                if ($KeepOpen) {
+                    $keptOpenSessions.Add($clientSession)
+                    $serverIsPerTarget = $false
                 }
             } catch {
                 $message = "$version / $loader - $($_.Exception.Message)"
                 $failures.Add($message)
                 Write-Host "FAIL $message" -ForegroundColor Red
+                if ($serverIsPerTarget -and $server) {
+                    Stop-TestProcessTree -Process $server.Process
+                }
             }
         }
     } catch {
@@ -442,25 +459,28 @@ foreach ($version in $Versions) {
         $failures.Add($message)
         Write-Host "FAIL $message" -ForegroundColor Red
     } finally {
-        if (-not $keptOpenSession) {
-            Stop-TestProcessTree -Process $server.Process
+        if ($sharedServer) {
+            Stop-TestProcessTree -Process $sharedServer.Process
         }
     }
+}
+
+if ($keptOpenSessions.Count -gt 0) {
+    $stopScript = Join-Path $PSScriptRoot 'stop-kept-open-clients.ps1'
+    Write-Host ''
+    Write-Host "KEEP OPEN: $($keptOpenSessions.Count) packaged client(s) left running"
+    foreach ($entry in $keptOpenSessions) {
+        $session = $entry.Session
+        Write-Host " - $($session.version) / $($session.loader) on 127.0.0.1:$($session.port) (server PID $($session.serverProcess.processId))"
+        Write-Host "   $($entry.ManifestPath)"
+    }
+    Write-Host "Stop all with: pwsh -File `"$stopScript`" -All"
 }
 
 if ($failures.Count -gt 0) {
     throw "Packaged client-test matrix failed:`n - $($failures -join "`n - ")"
 }
 
-if ($keptOpenSession) {
-    $session = $keptOpenSession.Session
-    $stopScript = Join-Path $PSScriptRoot 'stop-kept-open-clients.ps1'
-    Write-Host "KEEP OPEN packaged $($session.version) / $($session.loader)"
-    Write-Host "Server: 127.0.0.1:$Port (PID $($session.serverProcess.processId))"
-    Write-Host "Instance: $($session.instancePath)"
-    Write-Host "Manifest: $($keptOpenSession.ManifestPath)"
-    Write-Host "Stop with: pwsh -File `"$stopScript`" -ManifestPath `"$($keptOpenSession.ManifestPath)`""
-    return
+if ($keptOpenSessions.Count -eq 0) {
+    Write-Host "All $($Versions.Count * $Loaders.Count) packaged client-test nodes passed."
 }
-
-Write-Host "All $($Versions.Count * $Loaders.Count) packaged client-test nodes passed."

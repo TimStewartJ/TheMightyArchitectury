@@ -21,16 +21,29 @@ pwsh -File scripts/run-client-test-matrix.ps1
 pwsh -File scripts/run-packaged-client-test-matrix.ps1
 ```
 
-For manual testing, launch exactly one target with `-KeepOpen`. The full automated
-suite runs first, then Minecraft remains connected in-world with the composer active:
+The packaged runner is artifact-first: Gradle only ever runs in
+`scripts/prepare-runtime-artifacts.ps1`, which builds every requested target once
+and records the resulting jars in `build/runtime-artifacts/manifest.json`. Client
+launches only copy those prebuilt jars, so many clients can start without racing
+concurrent builds. Use `-Build Always|Auto|Never` to control preparation;
+`Auto` (the default) rebuilds only when the manifest is missing or stale.
+
+```powershell
+pwsh -File scripts/prepare-runtime-artifacts.ps1
+pwsh -File scripts/run-packaged-client-test-matrix.ps1 -Build Never
+```
+
+For manual testing, add `-KeepOpen`. Targets are launched one at a time, each
+running the full automated suite first and then remaining connected in-world with
+the composer active, so every requested target ends up open simultaneously. Ports
+are assigned sequentially from `-Port`:
 
 ```powershell
 pwsh -File scripts/run-packaged-client-test-matrix.ps1 `
-  -Versions 1.21.8 -Loaders neoforge -Port 25575 -KeepOpen
+  -Versions 1.21.1,1.21.8,26.1 -Loaders fabric,neoforge -Port 25601 -KeepOpen
 ```
 
-The command prints a session manifest and its matching stop command. Multiple manual
-clients can run simultaneously by launching separate invocations with distinct ports.
+The command prints a session manifest per client and a stop command.
 To stop every retained session:
 
 ```powershell
