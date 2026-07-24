@@ -1,3 +1,4 @@
+//? if >=26 {
 package com.timmie.mightyarchitect.foundation.utility;
 
 import net.minecraft.client.Camera;
@@ -11,34 +12,34 @@ import org.joml.Vector4f;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * World-space text (measurement labels) is submitted here during the world render pass and drawn as
- * HUD text during the overlay pass.
- * <p>
- * In 26.1 immediate-mode {@code Font.drawInBatch} into a custom {@code MultiBufferSource} no longer
- * displays in the world render (glyph rendering moved to the deferred GUI/submit-node system), so
- * the labels are projected from their world position to screen coordinates and rendered with the GUI
- * text system, which does work.
- */
+//*
+ //* World-space text (measurement labels) is submitted here during the world render pass and drawn as
+ //* HUD text during the overlay pass.
+ //* <p>
+ //* In 26.1 immediate-mode {@code Font.drawInBatch} into a custom {@code MultiBufferSource} no longer
+ //* displays in the world render (glyph rendering moved to the deferred GUI/submit-node system), so
+ //* the labels are projected from their world position to screen coordinates and rendered with the GUI
+ //* text system, which does work.
+ //
 public class HudTextBuffer {
 
 	private record Entry(Vec3 pos, String text, int color) {}
 
 	private static final List<Entry> ENTRIES = new ArrayList<>();
 
-	/** Clear the buffer at the start of a world render frame. */
+	//* Clear the buffer at the start of a world render frame. 
 	public static void beginFrame() {
 		ENTRIES.clear();
 	}
 
-	/** Submit a world-space label to be drawn as HUD text this frame. */
+	//* Submit a world-space label to be drawn as HUD text this frame. 
 	public static void submit(Vec3 worldPos, String text, int color) {
 		if (text == null || text.isEmpty())
 			return;
 		ENTRIES.add(new Entry(worldPos, text, color));
 	}
 
-	/** Draw all submitted labels, projecting each world position to the screen. */
+	//* Draw all submitted labels, projecting each world position to the screen. 
 	public static void render(GuiGraphicsExtractor gfx) {
 		if (ENTRIES.isEmpty())
 			return;
@@ -89,3 +90,5 @@ public class HudTextBuffer {
 		}
 	}
 }
+//?} else {
+/**///?}

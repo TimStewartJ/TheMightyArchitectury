@@ -1,12 +1,13 @@
+//? if >=26 {
 package com.timmie.mightyarchitect.foundation.utility;
 
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import net.minecraft.resources.Identifier;
 
-/**
- * Post-processing shader effects for the mod.
- * Uses the PostChainManager to handle the 1.21.4+ post-processing API.
- */
+//*
+ //* Post-processing shader effects for the mod.
+ //* Uses the PostChainManager to handle the 1.21.4+ post-processing API.
+ //
 public enum Shaders {
 
 	Blueprint("blueprint"), 
@@ -24,11 +25,11 @@ public enum Shaders {
 		}
 	}
 
-	/**
-	 * Checks if this shader is currently active.
-	 *
-	 * @return true if this shader is the currently active post-processing shader
-	 */
+	//*
+	 //* Checks if this shader is currently active.
+	 //*
+	 //* @return true if this shader is the currently active post-processing shader
+	 //
 	public boolean isActive() {
 		if (this == None) {
 			return !PostChainManager.isShaderActive();
@@ -36,11 +37,11 @@ public enum Shaders {
 		return PostChainManager.isShaderActive(location);
 	}
 
-	/**
-	 * Activates or deactivates this shader.
-	 *
-	 * @param active true to activate, false to deactivate
-	 */
+	//*
+	 //* Activates or deactivates this shader.
+	 //*
+	 //* @param active true to activate, false to deactivate
+	 //
 	public void setActive(boolean active) {
 		if (active) {
 			if (this == None) {
@@ -56,12 +57,57 @@ public enum Shaders {
 		}
 	}
 
-	/**
-	 * Gets the resource location of this shader.
-	 *
-	 * @return The shader's resource location
-	 */
+	//*
+	 //* Gets the resource location of this shader.
+	 //*
+	 //* @return The shader's resource location
+	 //
 	public Identifier getLocation() {
 		return location;
 	}
 }
+//?} else {
+/*package com.timmie.mightyarchitect.foundation.utility;
+
+import com.timmie.mightyarchitect.TheMightyArchitect;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.PostChain;
+import net.minecraft.resources.ResourceLocation;
+
+public enum Shaders {
+
+	Blueprint("blueprint.json"), None("");
+
+	private ResourceLocation location;
+
+	private Shaders(String filename) {
+		location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "shaders/post/" + filename);
+	}
+
+	public boolean isActive() {
+		Minecraft mc = Minecraft.getInstance();
+		PostChain shaderGroup = mc.gameRenderer.currentEffect();
+		return shaderGroup != null && shaderGroup.getName()
+			.equals(location.toString());
+	}
+
+	public void setActive(boolean active) {
+		Minecraft mc = Minecraft.getInstance();
+
+		if (this == None) {
+			mc.gameRenderer.shutdownEffect();
+			return;
+		}
+
+		if (active && !isActive()) {
+			mc.gameRenderer.loadEffect(location);
+			return;
+		}
+
+		if (!active && isActive()) {
+			mc.gameRenderer.shutdownEffect();
+			return;
+		}
+	}
+
+}*///?}

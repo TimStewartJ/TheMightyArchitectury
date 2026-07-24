@@ -1,3 +1,4 @@
+//? if >=26 {
 package com.timmie.mightyarchitect.foundation.utility;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
@@ -12,12 +13,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-/**
- * Manages post-processing shader effects using the 1.21.4 PostChain API.
- * <p>
- * The GameRenderer.loadEffect()/shutdownEffect() methods were removed in 1.21.4.
- * This class provides equivalent functionality by using ShaderManager.getPostChain().
- */
+//*
+ //* Manages post-processing shader effects using the 1.21.4 PostChain API.
+ //* <p>
+ //* The GameRenderer.loadEffect()/shutdownEffect() methods were removed in 1.21.4.
+ //* This class provides equivalent functionality by using ShaderManager.getPostChain().
+ //
 public class PostChainManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TheMightyArchitect.ID);
@@ -28,12 +29,12 @@ public class PostChainManager {
     @Nullable
     private static Identifier activeShaderLocation = null;
 
-    /**
-     * Loads and activates a post-processing shader.
-     *
-     * @param shaderLocation The resource location of the shader (e.g., "mightyarchitect:blueprint")
-     * @return true if the shader was loaded successfully, false otherwise
-     */
+    //*
+     //* Loads and activates a post-processing shader.
+     //*
+     //* @param shaderLocation The resource location of the shader (e.g., "mightyarchitect:blueprint")
+     //* @return true if the shader was loaded successfully, false otherwise
+     //
     public static boolean loadShader(Identifier shaderLocation) {
         Minecraft mc = Minecraft.getInstance();
 
@@ -69,9 +70,9 @@ public class PostChainManager {
         }
     }
 
-    /**
-     * Shuts down the currently active post-processing shader.
-     */
+    //*
+     //* Shuts down the currently active post-processing shader.
+     //
     public static void shutdownShader() {
         if (activePostChain != null) {
             activePostChain = null;
@@ -80,25 +81,25 @@ public class PostChainManager {
         }
     }
 
-    /**
-     * Processes the active post-processing shader using the UNPOOLED resource allocator.
-     * This is the NeoForge entry point (via {@code RenderLevelStageEvent}), which does not
-     * expose GameRenderer's pooled resource allocator. The Fabric mixin path uses the
-     * {@link #processShader(float, GraphicsResourceAllocator)} overload with the pooled allocator.
-     *
-     * @param partialTicks The partial tick time
-     */
+    //*
+     //* Processes the active post-processing shader using the UNPOOLED resource allocator.
+     //* This is the NeoForge entry point (via {@code RenderLevelStageEvent}), which does not
+     //* expose GameRenderer's pooled resource allocator. The Fabric mixin path uses the
+     //* {@link #processShader(float, GraphicsResourceAllocator)} overload with the pooled allocator.
+     //*
+     //* @param partialTicks The partial tick time
+     //
     public static void processShader(float partialTicks) {
         processShader(partialTicks, GraphicsResourceAllocator.UNPOOLED);
     }
 
-    /**
-     * Processes the active post-processing shader.
-     * This should be called after the world has been rendered to the main framebuffer.
-     *
-     * @param partialTicks The partial tick time
-     * @param resourceAllocator The graphics resource allocator (use GameRenderer's resourcePool)
-     */
+    //*
+     //* Processes the active post-processing shader.
+     //* This should be called after the world has been rendered to the main framebuffer.
+     //*
+     //* @param partialTicks The partial tick time
+     //* @param resourceAllocator The graphics resource allocator (use GameRenderer's resourcePool)
+     //
     public static void processShader(float partialTicks, GraphicsResourceAllocator resourceAllocator) {
         if (activePostChain == null) {
             return;
@@ -111,32 +112,34 @@ public class PostChainManager {
         activePostChain.process(mainTarget, resourceAllocator);
     }
 
-    /**
-     * Checks if a shader is currently active.
-     *
-     * @return true if a post-processing shader is active
-     */
+    //*
+     //* Checks if a shader is currently active.
+     //*
+     //* @return true if a post-processing shader is active
+     //
     public static boolean isShaderActive() {
         return activePostChain != null;
     }
 
-    /**
-     * Checks if a specific shader is currently active.
-     *
-     * @param shaderLocation The shader location to check
-     * @return true if the specified shader is active
-     */
+    //*
+     //* Checks if a specific shader is currently active.
+     //*
+     //* @param shaderLocation The shader location to check
+     //* @return true if the specified shader is active
+     //
     public static boolean isShaderActive(Identifier shaderLocation) {
         return activePostChain != null && shaderLocation.equals(activeShaderLocation);
     }
 
-    /**
-     * Gets the currently active shader location.
-     *
-     * @return The active shader location, or null if no shader is active
-     */
+    //*
+     //* Gets the currently active shader location.
+     //*
+     //* @return The active shader location, or null if no shader is active
+     //
     @Nullable
     public static Identifier getActiveShaderLocation() {
         return activeShaderLocation;
     }
 }
+//?} else {
+/**///?}

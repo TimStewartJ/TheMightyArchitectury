@@ -25,17 +25,25 @@ architectury {
 
 loom {
     silentMojangMappingsLicense()
+    // Obfuscated nodes need the access widener (loadEffect / AbstractWidget.x,y / GuiGraphics.<init>);
+    // 26.1 ships unobfuscated so those are already accessible and no AW is applied.
+    if (!unobf) {
+        accessWidenerPath = rootProject.file("common/src/main/resources/mightyarchitect.accesswidener")
+    }
 }
 
 dependencies {
     minecraft "com.mojang:minecraft:${mcVersion}"
-    // Obfuscated nodes remap against Mojang mappings; unobfuscated 26.1 declares none.
-    if (!unobf) {
+    if (unobf) {
+        // Unobfuscated 26.1: no remap; deps consumed as-is, no mappings.
+        implementation "net.fabricmc:fabric-loader:${floaderVersion}"
+        implementation "dev.architectury:architectury:${archVersion}"
+    } else {
+        // Obfuscated: Loom remaps intermediary -> named, so mod deps must use modImplementation/modApi.
         mappings loom.officialMojangMappings()
+        modImplementation "net.fabricmc:fabric-loader:${floaderVersion}"
+        modApi "dev.architectury:architectury:${archVersion}"
     }
-    // Fabric loader is used only for @Environment annotations + mixin deps in common.
-    implementation "net.fabricmc:fabric-loader:${floaderVersion}"
-    implementation "dev.architectury:architectury:${archVersion}"
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
 }
 
