@@ -6,6 +6,12 @@ def archVersion = node.property('architectury_version')
 def floaderVersion = node.property('fabric_loader_version')
 def fapiVersion = node.property('fabric_api_version')
 def commonProject = ":common:${stonecutter.current.version}"
+def clientTestSessionId = System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SESSION_ID")
+    ?.replaceAll("[^A-Za-z0-9._-]", "-")
+def clientTestRunDir = clientTestSessionId ? "run-client-test-${clientTestSessionId}" : "run-client-test"
+def clientTestResultFile = clientTestSessionId
+    ? layout.buildDirectory.file("client-test-${clientTestSessionId}/result.json")
+    : layout.buildDirectory.file("client-test/result.json")
 
 // Force the matching common node to evaluate first, then read its architectury transform output +
 // compiled classes DIRECTLY off the project object. This keeps architectury's bytecode transform
@@ -56,14 +62,16 @@ loom {
             inherit client
             source sourceSets.clientTest
             name "Mighty Architect Automated Client Test"
-            runDir "run-client-test"
+            runDir clientTestRunDir
             property "mightyarchitect.clientTest.enabled", "true"
             property "mightyarchitect.clientTest.server",
                 (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SERVER")
                     ?: project.findProperty("clientTestServer")
                     ?: "127.0.0.1:25565").toString()
             property "mightyarchitect.clientTest.result",
-                layout.buildDirectory.file("client-test/result.json").get().asFile.absolutePath
+                clientTestResultFile.get().asFile.absolutePath
+            property "mightyarchitect.clientTest.keepOpen",
+                (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_KEEP_OPEN") ?: "false").toString()
         }
         automatedServerTest {
             inherit server

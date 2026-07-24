@@ -7,17 +7,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-if ($PSVersionTable.PSVersion.Major -lt 7) {
-    throw 'PowerShell 7 or newer is required.'
-}
+Import-Module (Join-Path $PSScriptRoot 'TestMatrix.Common.psm1') -Force
+Assert-TestMatrixPowerShell
 
-$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$RepoRoot = Get-TestMatrixRepoRoot -ScriptRoot $PSScriptRoot
 $ResultsRoot = Join-Path (Join-Path $RepoRoot 'build') 'server-test-results'
-$Gradle = if ($IsWindows) {
-    Join-Path $RepoRoot 'gradlew.bat'
-} else {
-    Join-Path $RepoRoot 'gradlew'
-}
+$Gradle = Get-TestGradleCommand -RepoRoot $RepoRoot
 
 function Copy-ServerArtifacts {
     param(
@@ -44,20 +39,6 @@ function Copy-ServerArtifacts {
     $crashDirectory = Join-Path $RunDirectory 'crash-reports'
     if (Test-Path $crashDirectory) {
         Copy-Item $crashDirectory (Join-Path $target 'crash-reports') -Recurse
-    }
-}
-
-function Stop-ProcessTree {
-    param([System.Diagnostics.Process]$Process)
-
-    if (-not $Process -or $Process.HasExited) {
-        return
-    }
-    try {
-        $Process.Kill($true)
-        $Process.WaitForExit()
-    } catch {
-        Stop-Process -Id $Process.Id -Force -ErrorAction SilentlyContinue
     }
 }
 
@@ -126,7 +107,7 @@ function Invoke-ServerTest {
         }
         throw "Server test exceeded ${TimeoutSeconds}s timeout"
     } finally {
-        Stop-ProcessTree $process
+        Stop-TestProcessTree -Process $process
         Copy-ServerArtifacts $Version $Loader $runDirectory $gradleStdout $gradleStderr
     }
 }

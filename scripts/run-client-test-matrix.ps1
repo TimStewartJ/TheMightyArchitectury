@@ -3,177 +3,24 @@ param(
     [ValidateSet('fabric', 'neoforge')]
     [string[]]$Loaders = @('fabric', 'neoforge'),
     [int]$Port = 25565,
-    [int]$ClientTimeoutSeconds = 600
+    [int]$ClientTimeoutSeconds = 600,
+    [switch]$KeepOpen
 )
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
-if ($PSVersionTable.PSVersion.Major -lt 7) {
-    throw 'PowerShell 7 or newer is required.'
-}
+Import-Module (Join-Path $PSScriptRoot 'TestMatrix.Common.psm1') -Force
+Assert-TestMatrixPowerShell
 
-$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$RepoRoot = Get-TestMatrixRepoRoot -ScriptRoot $PSScriptRoot
 $BuildRoot = Join-Path $RepoRoot 'build'
 $RuntimeRoot = Join-Path $BuildRoot 'client-test-runtime'
 $ResultsRoot = Join-Path $BuildRoot 'client-test-results'
-$Gradle = if ($IsWindows) {
-    Join-Path $RepoRoot 'gradlew.bat'
-} else {
-    Join-Path $RepoRoot 'gradlew'
-}
+$Gradle = Get-TestGradleCommand -RepoRoot $RepoRoot
 
-function Get-NodeProperties {
-    param([string]$Version)
-
-    $path = Join-Path (Join-Path (Join-Path $RepoRoot 'versions') $Version) 'gradle.properties'
-    if (-not (Test-Path $path)) {
-        throw "Version properties not found: $path"
-    }
-
-    $properties = @{}
-    foreach ($line in Get-Content $path) {
-        if ($line -match '^\s*([^#][^=]*)=(.*)$') {
-            $properties[$matches[1].Trim()] = $matches[2].Trim()
-        }
-    }
-    return $properties
-}
-
-function Resolve-Java {
-    param([int]$Version)
-
-    $environmentName = "JAVA_HOME_${Version}_X64"
-    $javaHome = [Environment]::GetEnvironmentVariable($environmentName)
-    if ($javaHome) {
-        $candidate = Join-Path $javaHome $(if ($IsWindows) { 'bin\java.exe' } else { 'bin/java' })
-        if (Test-Path $candidate) {
-            return $candidate
-        }
-    }
-
-    if ($IsWindows) {
-        $known = if ($Version -eq 25) {
-            Join-Path $env:USERPROFILE '.jdks\jdk-25.0.3+9\bin\java.exe'
-        } else {
-            'C:\Program Files\Eclipse Adoptium\jdk-21.0.3.9-hotspot\bin\java.exe'
-        }
-        if (Test-Path $known) {
-            return $known
-        }
-    }
-
-    $command = Get-Command java -ErrorAction SilentlyContinue
-    if ($command) {
-        return $command.Source
-    }
-    throw "Unable to find Java $Version ($environmentName is unset)"
-}
-
-function Get-ServerJar {
-    param(
-        [string]$MinecraftVersion,
-        [string]$Directory
-    )
-
-    New-Item -ItemType Directory -Force -Path $Directory | Out-Null
-    $jar = Join-Path $Directory "minecraft-server-$MinecraftVersion.jar"
-    if (Test-Path $jar) {
-        return $jar
-    }
-
-    Write-Host "Downloading vanilla server $MinecraftVersion"
-    $manifest = Invoke-RestMethod 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json'
-    $entry = $manifest.versions | Where-Object { $_.id -eq $MinecraftVersion } | Select-Object -First 1
-    if (-not $entry) {
-        throw "No Mojang version manifest entry for $MinecraftVersion"
-    }
-    $detail = Invoke-RestMethod $entry.url
-    Invoke-WebRequest -Uri $detail.downloads.server.url -OutFile $jar
-    return $jar
-}
-
-function Wait-ForPortAvailable {
-    $deadline = (Get-Date).AddSeconds(30)
-    while ((Get-Date) -lt $deadline) {
-        $client = [System.Net.Sockets.TcpClient]::new()
-        try {
-            $client.Connect('127.0.0.1', $Port)
-        } catch {
-            return
-        } finally {
-            $client.Dispose()
-        }
-        Start-Sleep -Milliseconds 250
-    }
-    throw "TCP port $Port is still in use"
-}
-
-function Start-TestServer {
-    param(
-        [string]$NodeVersion,
-        [hashtable]$Properties
-    )
-
-    $minecraftVersion = $Properties.minecraft_version
-    $javaVersion = [int]$Properties.java_version
-    $directory = Join-Path $RuntimeRoot $NodeVersion
-    New-Item -ItemType Directory -Force -Path $directory | Out-Null
-    Remove-Item (Join-Path $directory 'world'), (Join-Path $directory 'logs') -Recurse -Force -ErrorAction SilentlyContinue
-
-    $jar = Get-ServerJar $minecraftVersion $directory
-    Set-Content (Join-Path $directory 'eula.txt') 'eula=true' -Encoding ascii
-    @(
-        "server-port=$Port"
-        'online-mode=false'
-        'enforce-secure-profile=false'
-        'spawn-protection=0'
-        'view-distance=3'
-        'simulation-distance=3'
-        'generate-structures=false'
-        'level-type=minecraft:flat'
-        'motd=Mighty Architect Client Test'
-    ) | Set-Content (Join-Path $directory 'server.properties') -Encoding ascii
-
-    $stdout = Join-Path $directory 'server.stdout.log'
-    $stderr = Join-Path $directory 'server.stderr.log'
-    Remove-Item $stdout, $stderr -ErrorAction SilentlyContinue
-    $java = Resolve-Java $javaVersion
-    Wait-ForPortAvailable
-    $process = Start-Process -FilePath $java `
-        -ArgumentList @('-Xms512M', '-Xmx1024M', '-jar', $jar, 'nogui') `
-        -WorkingDirectory $directory `
-        -RedirectStandardOutput $stdout `
-        -RedirectStandardError $stderr `
-        -PassThru
-
-    try {
-        $log = Join-Path (Join-Path $directory 'logs') 'latest.log'
-        $deadline = (Get-Date).AddSeconds(180)
-        while ((Get-Date) -lt $deadline) {
-            if ($process.HasExited) {
-                throw "Vanilla server $minecraftVersion exited early with code $($process.ExitCode)"
-            }
-            if (Test-Path $log) {
-                $text = Get-Content $log -Raw -ErrorAction SilentlyContinue
-                if ($text -match 'Done \(') {
-                    return @{
-                        Process = $process
-                        Directory = $directory
-                        Log = $log
-                    }
-                }
-            }
-            Start-Sleep -Seconds 2
-        }
-        throw "Vanilla server $minecraftVersion did not become ready"
-    } catch {
-        if (-not $process.HasExited) {
-            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-            $process.WaitForExit()
-        }
-        throw
-    }
+if ($KeepOpen -and ($Versions.Count -ne 1 -or $Loaders.Count -ne 1)) {
+    throw '-KeepOpen requires exactly one version and one loader. Start multiple invocations with distinct -Port values for simultaneous clients.'
 }
 
 function Copy-ResultArtifacts {
@@ -219,14 +66,19 @@ function Invoke-ClientTest {
     param(
         [string]$Version,
         [string]$Loader,
-        [string]$ServerLog
+        [string]$ServerLog,
+        [int]$ServerPort,
+        [System.Diagnostics.Process]$ServerProcess,
+        [switch]$KeepOpen
     )
 
     $projectDirectory = Join-Path (Join-Path (Join-Path $RepoRoot $Loader) 'versions') $Version
     $projectBuildDirectory = Join-Path $projectDirectory 'build'
-    $clientTestBuildDirectory = Join-Path $projectBuildDirectory 'client-test'
+    $clientTestDirectoryName = if ($KeepOpen) { "client-test-${ServerPort}" } else { 'client-test' }
+    $runDirectoryName = if ($KeepOpen) { "run-client-test-${ServerPort}" } else { 'run-client-test' }
+    $clientTestBuildDirectory = Join-Path $projectBuildDirectory $clientTestDirectoryName
     $resultPath = Join-Path $clientTestBuildDirectory 'result.json'
-    $runDirectory = Join-Path $projectDirectory 'run-client-test'
+    $runDirectory = Join-Path $projectDirectory $runDirectoryName
     $gradleStdout = Join-Path $clientTestBuildDirectory 'gradle.stdout.log'
     $gradleStderr = Join-Path $clientTestBuildDirectory 'gradle.stderr.log'
     New-Item -ItemType Directory -Force -Path (Split-Path $gradleStdout) | Out-Null
@@ -235,8 +87,14 @@ function Invoke-ClientTest {
     Remove-Item $gradleStdout, $gradleStderr -Force -ErrorAction SilentlyContinue
 
     Write-Host "=== CLIENT TEST $Version / $Loader ==="
-    $env:MIGHTYARCHITECT_CLIENT_TEST_SERVER = "127.0.0.1:$Port"
+    $env:MIGHTYARCHITECT_CLIENT_TEST_SERVER = "127.0.0.1:$ServerPort"
+    $env:MIGHTYARCHITECT_CLIENT_TEST_KEEP_OPEN = $KeepOpen.IsPresent.ToString().ToLowerInvariant()
+    if ($KeepOpen) {
+        $env:MIGHTYARCHITECT_CLIENT_TEST_SESSION_ID = $ServerPort.ToString()
+    }
     $gradleProcess = $null
+    $leaveRunning = $false
+    $artifactsCopied = $false
     try {
         $gradleArguments = [System.Collections.Generic.List[string]]::new()
         $gradleArguments.Add(":${Loader}:${Version}:runAutomatedClientTest")
@@ -252,63 +110,103 @@ function Invoke-ClientTest {
             -RedirectStandardOutput $gradleStdout `
             -RedirectStandardError $gradleStderr `
             -PassThru
-        if (-not $gradleProcess.WaitForExit($ClientTimeoutSeconds * 1000)) {
-            try {
-                $gradleProcess.Kill($true)
-                $gradleProcess.WaitForExit()
-            } catch {
-                Stop-Process -Id $gradleProcess.Id -Force -ErrorAction SilentlyContinue
+
+        if ($KeepOpen) {
+            $deadline = (Get-Date).AddSeconds($ClientTimeoutSeconds)
+            while ((Get-Date) -lt $deadline -and -not (Test-Path $resultPath)) {
+                if ($gradleProcess.HasExited) {
+                    $tail = if (Test-Path $gradleStdout) { (Get-Content $gradleStdout -Tail 30) -join "`n" } else { '' }
+                    throw "Client exited before writing a keep-open result (code $($gradleProcess.ExitCode))`n$tail"
+                }
+                Start-Sleep -Seconds 2
             }
-            throw "Client test exceeded ${ClientTimeoutSeconds}s timeout"
+            if (-not (Test-Path $resultPath)) {
+                throw "Client test exceeded ${ClientTimeoutSeconds}s timeout"
+            }
+        } else {
+            if (-not $gradleProcess.WaitForExit($ClientTimeoutSeconds * 1000)) {
+                throw "Client test exceeded ${ClientTimeoutSeconds}s timeout"
+            }
+            $gradleExit = $gradleProcess.ExitCode
+            if ($gradleExit -ne 0) {
+                if (Test-Path $gradleStdout) {
+                    Get-Content $gradleStdout -Tail 30 | ForEach-Object { Write-Host $_ }
+                }
+                if (Test-Path $gradleStderr) {
+                    Get-Content $gradleStderr -Tail 30 | ForEach-Object { Write-Host $_ -ForegroundColor Red }
+                }
+                throw "Gradle client test exited $gradleExit"
+            }
         }
-        $gradleExit = $gradleProcess.ExitCode
+
+        if (-not (Test-Path $resultPath)) {
+            throw "Client test produced no result: $resultPath"
+        }
+
+        $result = Get-Content $resultPath -Raw | ConvertFrom-Json
+        if ($result.status -ne 'passed') {
+            throw "Client test failed in $($result.stage): $($result.error)"
+        }
+        if ($KeepOpen -and -not $result.keepOpen) {
+            throw 'Client passed but did not acknowledge keep-open mode'
+        }
+
+        Write-Host "PASS $Version / $Loader ($($result.checks.Count) checks)"
+        if ($KeepOpen) {
+            Copy-ResultArtifacts $Version $Loader $resultPath $runDirectory $ServerLog $gradleStdout $gradleStderr
+            $artifactsCopied = $true
+            $session = [pscustomobject]@{
+                mode = 'dev'
+                version = $Version
+                loader = $Loader
+                port = $ServerPort
+                serverProcess = Get-TestProcessIdentity -Process $ServerProcess
+                clientProcesses = @(Get-TestProcessIdentity -Process $gradleProcess)
+                instancePath = $null
+                createdAt = (Get-Date).ToString('o')
+            }
+            $manifest = Write-TestSessionManifest -RepoRoot $RepoRoot `
+                -FileName "dev-$Version-$Loader-$ServerPort.json" -Session $session
+            $leaveRunning = $true
+            return [pscustomobject]@{
+                ManifestPath = $manifest
+                Session = $session
+            }
+        }
     } finally {
         Remove-Item Env:MIGHTYARCHITECT_CLIENT_TEST_SERVER -ErrorAction SilentlyContinue
-        if ($gradleProcess -and -not $gradleProcess.HasExited) {
-            try {
-                $gradleProcess.Kill($true)
-                $gradleProcess.WaitForExit()
-            } catch {
-                Stop-Process -Id $gradleProcess.Id -Force -ErrorAction SilentlyContinue
-            }
+        Remove-Item Env:MIGHTYARCHITECT_CLIENT_TEST_KEEP_OPEN -ErrorAction SilentlyContinue
+        Remove-Item Env:MIGHTYARCHITECT_CLIENT_TEST_SESSION_ID -ErrorAction SilentlyContinue
+        if (-not $leaveRunning) {
+            Stop-TestProcessTree -Process $gradleProcess
         }
-        Copy-ResultArtifacts $Version $Loader $resultPath $runDirectory $ServerLog $gradleStdout $gradleStderr
-    }
-
-    if ($gradleExit -ne 0) {
-        if (Test-Path $gradleStdout) {
-            Get-Content $gradleStdout -Tail 30 | ForEach-Object { Write-Host $_ }
+        if (-not $artifactsCopied) {
+            Copy-ResultArtifacts $Version $Loader $resultPath $runDirectory $ServerLog $gradleStdout $gradleStderr
         }
-        if (Test-Path $gradleStderr) {
-            Get-Content $gradleStderr -Tail 30 | ForEach-Object { Write-Host $_ -ForegroundColor Red }
-        }
-        throw "Gradle client test exited $gradleExit"
     }
-    if (-not (Test-Path $resultPath)) {
-        throw "Client test produced no result: $resultPath"
-    }
-
-    $result = Get-Content $resultPath -Raw | ConvertFrom-Json
-    if ($result.status -ne 'passed') {
-        throw "Client test failed in $($result.stage): $($result.error)"
-    }
-    Write-Host "PASS $Version / $Loader ($($result.checks.Count) checks)"
 }
 
 New-Item -ItemType Directory -Force -Path $RuntimeRoot, $ResultsRoot | Out-Null
 $failures = [System.Collections.Generic.List[string]]::new()
+$keptOpenSession = $null
 
 foreach ($version in $Versions) {
-    $properties = Get-NodeProperties $version
+    $properties = Get-TestNodeProperties -RepoRoot $RepoRoot -Version $version
     $server = $null
     try {
-        $server = Start-TestServer $version $properties
+        $serverNodeId = if ($KeepOpen) { "$version-$($Loaders[0])-$Port" } else { $version }
+        $server = Start-TestVanillaServer -NodeId $serverNodeId -Properties $properties -RuntimeRoot $RuntimeRoot `
+            -Port $Port -Motd 'Mighty Architect Client Test'
         foreach ($loader in $Loaders) {
             $passed = $false
             for ($attempt = 1; $attempt -le 2 -and -not $passed; $attempt++) {
                 try {
-                    Invoke-ClientTest $version $loader $server.Log
+                    $clientSession = Invoke-ClientTest -Version $version -Loader $loader -ServerLog $server.Log `
+                        -ServerPort $Port -ServerProcess $server.Process -KeepOpen:$KeepOpen
                     $passed = $true
+                    if ($KeepOpen) {
+                        $keptOpenSession = $clientSession
+                    }
                 } catch {
                     if ($attempt -lt 2) {
                         Write-Host "RETRY $version / $loader after: $($_.Exception.Message)" -ForegroundColor Yellow
@@ -326,15 +224,24 @@ foreach ($version in $Versions) {
         $failures.Add($message)
         Write-Host "FAIL $message" -ForegroundColor Red
     } finally {
-        if ($server -and $server.Process -and -not $server.Process.HasExited) {
-            Stop-Process -Id $server.Process.Id -Force -ErrorAction SilentlyContinue
-            $server.Process.WaitForExit()
+        if (-not $keptOpenSession) {
+            Stop-TestProcessTree -Process $server.Process
         }
     }
 }
 
 if ($failures.Count -gt 0) {
     throw "Client-test matrix failed:`n - $($failures -join "`n - ")"
+}
+
+if ($keptOpenSession) {
+    $session = $keptOpenSession.Session
+    $stopScript = Join-Path $PSScriptRoot 'stop-kept-open-clients.ps1'
+    Write-Host "KEEP OPEN dev $($session.version) / $($session.loader)"
+    Write-Host "Server: 127.0.0.1:$Port (PID $($session.serverProcess.processId))"
+    Write-Host "Manifest: $($keptOpenSession.ManifestPath)"
+    Write-Host "Stop with: pwsh -File `"$stopScript`" -ManifestPath `"$($keptOpenSession.ManifestPath)`""
+    return
 }
 
 Write-Host "All $($Versions.Count * $Loaders.Count) client-test nodes passed."

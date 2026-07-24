@@ -43,6 +43,8 @@ import java.util.Set;
 
 public final class ClientTestController {
 
+    private static final boolean KEEP_OPEN = Boolean.getBoolean("mightyarchitect.clientTest.keepOpen");
+
     private enum Stage {
         CONNECT,
         WAIT_FOR_WORLD,
@@ -233,7 +235,8 @@ public final class ClientTestController {
         check(hudRenderFrames > 0, "HUD dispatch executed (" + hudRenderFrames + " frames)");
         check(composerOverlayFrames > 0,
             "composer overlay rendered (" + composerOverlayFrames + " frames)");
-        ArchitectManager.unload();
+        if (!KEEP_OPEN)
+            ArchitectManager.unload();
         pass(minecraft);
     }
 
@@ -320,7 +323,10 @@ public final class ClientTestController {
         writeResult("passed", null);
         TheMightyArchitect.logger.info("[CLIENT-TEST] PASS ({} checks)", checks.size());
         stage = Stage.FINISHED;
-        minecraft.stop();
+        if (KEEP_OPEN)
+            TheMightyArchitect.logger.info("[CLIENT-TEST] KEEP OPEN - manual testing can continue");
+        else
+            minecraft.stop();
     }
 
     private static void fail(Minecraft minecraft, Throwable throwable) {
@@ -346,6 +352,7 @@ public final class ClientTestController {
             result.addProperty("status", status);
             result.addProperty("stage", stage.name());
             result.addProperty("ticks", totalTicks);
+            result.addProperty("keepOpen", KEEP_OPEN);
             JsonArray passedChecks = new JsonArray();
             checks.forEach(passedChecks::add);
             result.add("checks", passedChecks);

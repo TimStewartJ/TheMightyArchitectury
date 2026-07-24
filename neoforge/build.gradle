@@ -6,6 +6,12 @@ def archVersion = node.property('architectury_version')
 def neoforgeVersion = node.property('neoforge_version')
 def commonProject = ":common:${stonecutter.current.version}"
 def enableClientTestMod = project.findProperty("enableClientTestMod") == "true"
+def clientTestSessionId = System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SESSION_ID")
+    ?.replaceAll("[^A-Za-z0-9._-]", "-")
+def clientTestRunDir = clientTestSessionId ? "run-client-test-${clientTestSessionId}" : "run-client-test"
+def clientTestResultFile = clientTestSessionId
+    ? layout.buildDirectory.file("client-test-${clientTestSessionId}/result.json")
+    : layout.buildDirectory.file("client-test/result.json")
 
 // Force the matching common node to evaluate first, then read its architectury transform output +
 // compiled classes directly off the project object (see fabric/build.gradle for the full rationale).
@@ -58,14 +64,16 @@ loom {
         automatedClientTest {
             inherit client
             name "Mighty Architect Automated Client Test"
-            runDir "run-client-test"
+            runDir clientTestRunDir
             property "mightyarchitect.clientTest.enabled", "true"
             property "mightyarchitect.clientTest.server",
                 (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SERVER")
                     ?: project.findProperty("clientTestServer")
                     ?: "127.0.0.1:25565").toString()
             property "mightyarchitect.clientTest.result",
-                layout.buildDirectory.file("client-test/result.json").get().asFile.absolutePath
+                clientTestResultFile.get().asFile.absolutePath
+            property "mightyarchitect.clientTest.keepOpen",
+                (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_KEEP_OPEN") ?: "false").toString()
         }
         automatedServerTest {
             inherit server

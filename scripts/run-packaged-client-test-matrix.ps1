@@ -3,156 +3,30 @@ param(
     [ValidateSet('fabric', 'neoforge')]
     [string[]]$Loaders = @('fabric', 'neoforge'),
     [int]$Port = 25565,
-    [int]$ClientTimeoutSeconds = 600
+    [int]$ClientTimeoutSeconds = 600,
+    [switch]$KeepOpen
 )
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
-if ($PSVersionTable.PSVersion.Major -lt 7) {
-    throw 'PowerShell 7 or newer is required.'
-}
+Import-Module (Join-Path $PSScriptRoot 'TestMatrix.Common.psm1') -Force
+Assert-TestMatrixPowerShell
 
 if (-not $IsWindows) {
     throw 'The packaged matrix currently requires Prism Launcher on Windows.'
 }
 
-$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$RepoRoot = Get-TestMatrixRepoRoot -ScriptRoot $PSScriptRoot
 $PrismExe = Join-Path $env:LOCALAPPDATA 'Programs\PrismLauncher\prismlauncher.exe'
 $PrismRoot = Join-Path $env:APPDATA 'PrismLauncher'
 $InstancesRoot = Join-Path $PrismRoot 'instances'
 $RuntimeRoot = Join-Path $RepoRoot 'build\client-test-runtime'
 $ResultsRoot = Join-Path $RepoRoot 'build\packaged-client-test-results'
-$Gradle = Join-Path $RepoRoot 'gradlew.bat'
+$Gradle = Get-TestGradleCommand -RepoRoot $RepoRoot
 
-function Get-NodeProperties {
-    param([string]$Version)
-
-    $properties = @{}
-    foreach ($line in Get-Content (Join-Path $RepoRoot "versions\$Version\gradle.properties")) {
-        if ($line -match '^\s*([^#][^=]*)=(.*)$') {
-            $properties[$matches[1].Trim()] = $matches[2].Trim()
-        }
-    }
-    return $properties
-}
-
-function Resolve-Java {
-    param([int]$Version)
-
-    $environmentName = "JAVA_HOME_${Version}_X64"
-    $javaHome = [Environment]::GetEnvironmentVariable($environmentName)
-    if ($javaHome) {
-        $candidate = Join-Path $javaHome 'bin\java.exe'
-        if (Test-Path $candidate) {
-            return $candidate
-        }
-    }
-
-    $known = if ($Version -eq 25) {
-        Join-Path $env:USERPROFILE '.jdks\jdk-25.0.3+9\bin\java.exe'
-    } else {
-        'C:\Program Files\Eclipse Adoptium\jdk-21.0.3.9-hotspot\bin\java.exe'
-    }
-    if (Test-Path $known) {
-        return $known
-    }
-    throw "Unable to find Java $Version"
-}
-
-function Get-ServerJar {
-    param(
-        [string]$MinecraftVersion,
-        [string]$Directory
-    )
-
-    New-Item -ItemType Directory -Force -Path $Directory | Out-Null
-    $jar = Join-Path $Directory "minecraft-server-$MinecraftVersion.jar"
-    if (Test-Path $jar) {
-        return $jar
-    }
-
-    $manifest = Invoke-RestMethod 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json'
-    $entry = $manifest.versions | Where-Object { $_.id -eq $MinecraftVersion } | Select-Object -First 1
-    if (-not $entry) {
-        throw "No Mojang version manifest entry for $MinecraftVersion"
-    }
-    $detail = Invoke-RestMethod $entry.url
-    Invoke-WebRequest -Uri $detail.downloads.server.url -OutFile $jar
-    return $jar
-}
-
-function Wait-ForPortAvailable {
-    $deadline = (Get-Date).AddSeconds(30)
-    while ((Get-Date) -lt $deadline) {
-        $client = [System.Net.Sockets.TcpClient]::new()
-        try {
-            $client.Connect('127.0.0.1', $Port)
-        } catch {
-            return
-        } finally {
-            $client.Dispose()
-        }
-        Start-Sleep -Milliseconds 250
-    }
-    throw "TCP port $Port is still in use"
-}
-
-function Start-TestServer {
-    param(
-        [string]$NodeVersion,
-        [hashtable]$Properties
-    )
-
-    $directory = Join-Path $RuntimeRoot $NodeVersion
-    New-Item -ItemType Directory -Force -Path $directory | Out-Null
-    Remove-Item (Join-Path $directory 'world'), (Join-Path $directory 'logs') -Recurse -Force -ErrorAction SilentlyContinue
-
-    $jar = Get-ServerJar $Properties.minecraft_version $directory
-    Set-Content (Join-Path $directory 'eula.txt') 'eula=true' -Encoding ascii
-    @(
-        "server-port=$Port"
-        'online-mode=false'
-        'enforce-secure-profile=false'
-        'spawn-protection=0'
-        'view-distance=3'
-        'simulation-distance=3'
-        'generate-structures=false'
-        'level-type=minecraft:flat'
-        'motd=Mighty Architect Packaged Client Test'
-    ) | Set-Content (Join-Path $directory 'server.properties') -Encoding ascii
-
-    Wait-ForPortAvailable
-    $process = Start-Process -FilePath (Resolve-Java ([int]$Properties.java_version)) `
-        -ArgumentList @('-Xms512M', '-Xmx1024M', '-jar', $jar, 'nogui') `
-        -WorkingDirectory $directory `
-        -RedirectStandardOutput (Join-Path $directory 'server.stdout.log') `
-        -RedirectStandardError (Join-Path $directory 'server.stderr.log') `
-        -PassThru
-
-    try {
-        $log = Join-Path $directory 'logs\latest.log'
-        $deadline = (Get-Date).AddSeconds(180)
-        while ((Get-Date) -lt $deadline) {
-            if ($process.HasExited) {
-                throw "Vanilla server $($Properties.minecraft_version) exited early with code $($process.ExitCode)"
-            }
-            if (Test-Path $log) {
-                $text = Get-Content $log -Raw -ErrorAction SilentlyContinue
-                if ($text -match 'Done \(') {
-                    return @{ Process = $process; Log = $log }
-                }
-            }
-            Start-Sleep -Seconds 2
-        }
-        throw "Vanilla server $($Properties.minecraft_version) did not become ready"
-    } catch {
-        if (-not $process.HasExited) {
-            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-            $process.WaitForExit()
-        }
-        throw
-    }
+if ($KeepOpen -and ($Versions.Count -ne 1 -or $Loaders.Count -ne 1)) {
+    throw '-KeepOpen requires exactly one version and one loader. Start multiple invocations with distinct -Port values for simultaneous clients.'
 }
 
 function Get-InstanceProcesses {
@@ -161,11 +35,14 @@ function Get-InstanceProcesses {
     $escaped = [regex]::Escape($InstancePath)
     $escapedForward = [regex]::Escape($InstancePath.Replace('\', '/'))
     $instanceName = [regex]::Escape((Split-Path $InstancePath -Leaf))
+    $pathPattern = "$escaped(?![A-Za-z0-9._-])"
+    $forwardPathPattern = "$escapedForward(?![A-Za-z0-9._-])"
+    $namePattern = "$instanceName(?![A-Za-z0-9._-])"
     return Get-CimInstance Win32_Process | Where-Object {
         $_.ProcessId -ne $PID -and
         $_.Name -match '^(java|javaw|prismlauncher)' -and
         $_.CommandLine -and
-        ($_.CommandLine -match $escaped -or $_.CommandLine -match $escapedForward -or $_.CommandLine -match $instanceName)
+        ($_.CommandLine -match $pathPattern -or $_.CommandLine -match $forwardPathPattern -or $_.CommandLine -match $namePattern)
     }
 }
 
@@ -177,14 +54,76 @@ function Stop-InstanceProcesses {
     }
 }
 
+function Start-PrismClient {
+    param(
+        [hashtable]$Instance,
+        [string]$LauncherDirectory
+    )
+
+    $mutex = [Threading.Mutex]::new($false, 'Global\MightyArchitectPrismLaunch')
+    $acquired = $false
+    $ownedLaunchers = @()
+    try {
+        $acquired = $mutex.WaitOne([TimeSpan]::FromMinutes(5))
+        if (-not $acquired) {
+            throw 'Timed out waiting for another packaged Prism launch to finish'
+        }
+
+        $existingLaunchers = @(Get-Process -Name 'prismlauncher' -ErrorAction SilentlyContinue)
+        if ($existingLaunchers.Count -gt 0) {
+            throw 'Prism Launcher is already open. Close it before running packaged automation; running Minecraft instances may remain open.'
+        }
+
+        $launcher = Start-Process -FilePath $PrismExe `
+            -ArgumentList @('--launch', $Instance.Name) `
+            -RedirectStandardOutput (Join-Path $LauncherDirectory 'prism.stdout.log') `
+            -RedirectStandardError (Join-Path $LauncherDirectory 'prism.stderr.log') `
+            -PassThru
+        $ownedLaunchers = @($launcher)
+
+        $deadline = (Get-Date).AddMinutes(3)
+        do {
+            $clients = @(
+                Get-InstanceProcesses $Instance.Path |
+                    Where-Object { $_.Name -match '^(java|javaw)' }
+            )
+            if ($clients.Count -gt 0) {
+                return $clients
+            }
+            if ($launcher.HasExited) {
+                throw "Prism exited before launching instance $($Instance.Name)"
+            }
+            Start-Sleep -Seconds 1
+        } while ((Get-Date) -lt $deadline)
+
+        throw "Prism did not launch instance $($Instance.Name)"
+    } finally {
+        foreach ($process in $ownedLaunchers) {
+            if (-not $process.HasExited) {
+                Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+                $process.WaitForExit()
+            }
+        }
+        if ($acquired) {
+            $mutex.ReleaseMutex()
+        }
+        $mutex.Dispose()
+    }
+}
+
 function Write-PrismInstance {
     param(
         [string]$Version,
         [string]$Loader,
-        [hashtable]$Properties
+        [hashtable]$Properties,
+        [switch]$KeepOpen
     )
 
-    $instanceName = "MightyArchitect-Matrix-$Version-$Loader"
+    $instanceName = if ($KeepOpen) {
+        "MightyArchitect-Manual-$Version-$Loader-$Port"
+    } else {
+        "MightyArchitect-Matrix-$Version-$Loader-$Port"
+    }
     $instancePath = Join-Path $InstancesRoot $instanceName
     $minecraftDirectory = Join-Path $instancePath '.minecraft'
     New-Item -ItemType Directory -Force -Path (Join-Path $minecraftDirectory 'mods') | Out-Null
@@ -240,10 +179,11 @@ function Write-PrismInstance {
         ConvertTo-Json -Depth 10 |
         Set-Content (Join-Path $instancePath 'mmc-pack.json') -Encoding utf8
 
-    $java = (Resolve-Java ([int]$Properties.java_version)).Replace('\', '/').Replace('java.exe', 'javaw.exe')
+    $java = (Resolve-TestJava -Version ([int]$Properties.java_version)).Replace('\', '/').Replace('java.exe', 'javaw.exe')
     $jvmArgs = "-Dmightyarchitect.clientTest.enabled=true " +
         "-Dmightyarchitect.clientTest.server=127.0.0.1:$Port " +
-        '-Dmightyarchitect.clientTest.result=client-test-result.json'
+        "-Dmightyarchitect.clientTest.result=client-test-result.json " +
+        "-Dmightyarchitect.clientTest.keepOpen=$($KeepOpen.IsPresent.ToString().ToLowerInvariant())"
     @"
 [General]
 ConfigVersion=1.2
@@ -384,11 +324,13 @@ function Invoke-PackagedClientTest {
         [string]$Version,
         [string]$Loader,
         [hashtable]$Properties,
-        [string]$ServerLog
+        [string]$ServerLog,
+        [System.Diagnostics.Process]$ServerProcess,
+        [switch]$KeepOpen
     )
 
     Write-Host "=== PACKAGED CLIENT TEST $Version / $Loader ==="
-    $instance = Write-PrismInstance $Version $Loader $Properties
+    $instance = Write-PrismInstance -Version $Version -Loader $Loader -Properties $Properties -KeepOpen:$KeepOpen
     Stop-InstanceProcesses $instance.Path
     Install-Mods $Version $Loader $Properties $instance.MinecraftDirectory
 
@@ -399,14 +341,13 @@ function Invoke-PackagedClientTest {
 
     $launcherDirectory = Join-Path $instance.MinecraftDirectory 'logs'
     New-Item -ItemType Directory -Force -Path $launcherDirectory | Out-Null
-    Start-Process -FilePath $PrismExe `
-        -ArgumentList @('--launch', $instance.Name) `
-        -RedirectStandardOutput (Join-Path $launcherDirectory 'prism.stdout.log') `
-        -RedirectStandardError (Join-Path $launcherDirectory 'prism.stderr.log') | Out-Null
+    $launchedClients = @(Start-PrismClient -Instance $instance -LauncherDirectory $launcherDirectory)
 
     $resultPath = Join-Path $instance.MinecraftDirectory 'client-test-result.json'
     $deadline = (Get-Date).AddSeconds($ClientTimeoutSeconds)
     $launchStarted = Get-Date
+    $leaveRunning = $false
+    $artifactsCopied = $false
     try {
         while ((Get-Date) -lt $deadline) {
             Assert-NoCrash $instance.MinecraftDirectory
@@ -416,7 +357,40 @@ function Invoke-PackagedClientTest {
                 if ($result.status -ne 'passed') {
                     throw "Client test failed in $($result.stage): $($result.error)"
                 }
+                if ($KeepOpen -and -not $result.keepOpen) {
+                    throw 'Client passed but did not acknowledge keep-open mode'
+                }
                 Write-Host "PASS packaged $Version / $Loader ($($result.checks.Count) checks)"
+                if ($KeepOpen) {
+                    Copy-ResultArtifacts $Version $Loader $instance.MinecraftDirectory $ServerLog
+                    $artifactsCopied = $true
+                    $clientIdentities = @(
+                        $launchedClients |
+                            ForEach-Object { Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue } |
+                            Where-Object { $_ } |
+                            ForEach-Object { Get-TestProcessIdentity -Process $_ }
+                    )
+                    if ($clientIdentities.Count -eq 0) {
+                        throw 'Client passed but no owned Minecraft process remained for keep-open mode'
+                    }
+                    $session = [pscustomobject]@{
+                        mode = 'packaged'
+                        version = $Version
+                        loader = $Loader
+                        port = $Port
+                        serverProcess = Get-TestProcessIdentity -Process $ServerProcess
+                        clientProcesses = $clientIdentities
+                        instancePath = $instance.Path
+                        createdAt = (Get-Date).ToString('o')
+                    }
+                    $manifest = Write-TestSessionManifest -RepoRoot $RepoRoot `
+                        -FileName "packaged-$Version-$Loader-$Port.json" -Session $session
+                    $leaveRunning = $true
+                    return [pscustomobject]@{
+                        ManifestPath = $manifest
+                        Session = $session
+                    }
+                }
                 return
             }
             if (((Get-Date) - $launchStarted).TotalSeconds -gt 30 -and @(Get-InstanceProcesses $instance.Path).Count -eq 0) {
@@ -426,8 +400,12 @@ function Invoke-PackagedClientTest {
         }
         throw "Packaged client test exceeded ${ClientTimeoutSeconds}s timeout"
     } finally {
-        Stop-InstanceProcesses $instance.Path
-        Copy-ResultArtifacts $Version $Loader $instance.MinecraftDirectory $ServerLog
+        if (-not $leaveRunning) {
+            Stop-InstanceProcesses $instance.Path
+        }
+        if (-not $artifactsCopied) {
+            Copy-ResultArtifacts $Version $Loader $instance.MinecraftDirectory $ServerLog
+        }
     }
 }
 
@@ -437,15 +415,22 @@ if (-not (Test-Path $PrismExe)) {
 
 New-Item -ItemType Directory -Force -Path $RuntimeRoot, $ResultsRoot, $InstancesRoot | Out-Null
 $failures = [System.Collections.Generic.List[string]]::new()
+$keptOpenSession = $null
 
 foreach ($version in $Versions) {
-    $properties = Get-NodeProperties $version
+    $properties = Get-TestNodeProperties -RepoRoot $RepoRoot -Version $version
     $server = $null
     try {
-        $server = Start-TestServer $version $properties
+        $serverNodeId = if ($KeepOpen) { "$version-$($Loaders[0])-$Port" } else { $version }
+        $server = Start-TestVanillaServer -NodeId $serverNodeId -Properties $properties -RuntimeRoot $RuntimeRoot `
+            -Port $Port -Motd 'Mighty Architect Packaged Client Test'
         foreach ($loader in $Loaders) {
             try {
-                Invoke-PackagedClientTest $version $loader $properties $server.Log
+                $clientSession = Invoke-PackagedClientTest -Version $version -Loader $loader -Properties $properties `
+                    -ServerLog $server.Log -ServerProcess $server.Process -KeepOpen:$KeepOpen
+                if ($KeepOpen) {
+                    $keptOpenSession = $clientSession
+                }
             } catch {
                 $message = "$version / $loader - $($_.Exception.Message)"
                 $failures.Add($message)
@@ -457,15 +442,25 @@ foreach ($version in $Versions) {
         $failures.Add($message)
         Write-Host "FAIL $message" -ForegroundColor Red
     } finally {
-        if ($server -and $server.Process -and -not $server.Process.HasExited) {
-            Stop-Process -Id $server.Process.Id -Force -ErrorAction SilentlyContinue
-            $server.Process.WaitForExit()
+        if (-not $keptOpenSession) {
+            Stop-TestProcessTree -Process $server.Process
         }
     }
 }
 
 if ($failures.Count -gt 0) {
     throw "Packaged client-test matrix failed:`n - $($failures -join "`n - ")"
+}
+
+if ($keptOpenSession) {
+    $session = $keptOpenSession.Session
+    $stopScript = Join-Path $PSScriptRoot 'stop-kept-open-clients.ps1'
+    Write-Host "KEEP OPEN packaged $($session.version) / $($session.loader)"
+    Write-Host "Server: 127.0.0.1:$Port (PID $($session.serverProcess.processId))"
+    Write-Host "Instance: $($session.instancePath)"
+    Write-Host "Manifest: $($keptOpenSession.ManifestPath)"
+    Write-Host "Stop with: pwsh -File `"$stopScript`" -ManifestPath `"$($keptOpenSession.ManifestPath)`""
+    return
 }
 
 Write-Host "All $($Versions.Count * $Loaders.Count) packaged client-test nodes passed."

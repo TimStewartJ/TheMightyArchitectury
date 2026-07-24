@@ -2,6 +2,7 @@ build/
 *.ipr
 run/
 run-client-test/
+run-client-test-*/
 run-server-test/
 *.iws
 out/
