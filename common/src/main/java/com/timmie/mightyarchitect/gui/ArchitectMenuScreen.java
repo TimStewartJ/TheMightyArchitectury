@@ -390,17 +390,13 @@ public class ArchitectMenuScreen extends Screen {
 		// This keeps the game world visible behind the menu
 	}
 
-	public void drawPassive() {
+	public void drawPassive(GuiGraphics graphics, float partialTicks) {
 		if (isFocused())
 			return;
 
-		// NOT FOCUSED - in 1.21.6 GuiGraphics requires GuiRenderState
-		// This is handled differently now, skip rendering when not focused in screen context
-		Minecraft mc = Minecraft.getInstance();
-		if (mc.screen == null) {
-			// Can't safely render without proper screen context in 1.21.6
-			return;
-		}
+		// Rendered from the in-game HUD hook (ClientGuiEvent.RENDER_HUD) when the menu is not the
+		// focused screen. draw() slides the menu off-screen via its animation when not visible.
+		draw(graphics, partialTicks);
 	}
 
 	@Override
@@ -698,17 +694,13 @@ public class ArchitectMenuScreen extends Screen {
 		// This keeps the game world visible behind the menu
 	}
 
-	public void drawPassive() {
+	public void drawPassive(GuiGraphics graphics, float partialTicks) {
 		if (isFocused())
 			return;
 
-		// NOT FOCUSED - in 1.21.6 GuiGraphics requires GuiRenderState
-		// This is handled differently now, skip rendering when not focused in screen context
-		Minecraft mc = Minecraft.getInstance();
-		if (mc.screen == null) {
-			// Can't safely render without proper screen context in 1.21.6
-			return;
-		}
+		// Rendered from the in-game HUD hook (ClientGuiEvent.RENDER_HUD) when the menu is not the
+		// focused screen. draw() slides the menu off-screen via its animation when not visible.
+		draw(graphics, partialTicks);
 	}
 
 	@Override
@@ -1005,17 +997,13 @@ public class ArchitectMenuScreen extends Screen {
 		// This keeps the game world visible behind the menu
 	}
 
-	public void drawPassive() {
+	public void drawPassive(GuiGraphics graphics, float partialTicks) {
 		if (isFocused())
 			return;
 
-		// NOT FOCUSED - in 1.21.6 GuiGraphics requires GuiRenderState
-		// This is handled differently now, skip rendering when not focused in screen context
-		Minecraft mc = Minecraft.getInstance();
-		if (mc.screen == null) {
-			// Can't safely render without proper screen context in 1.21.6
-			return;
-		}
+		// Rendered from the in-game HUD hook (ClientGuiEvent.RENDER_HUD) when the menu is not the
+		// focused screen. draw() slides the menu off-screen via its animation when not visible.
+		draw(graphics, partialTicks);
 	}
 
 	@Override
@@ -1303,13 +1291,14 @@ public class ArchitectMenuScreen extends Screen {
 		draw(ms, partialTicks);
 	}
 
-	public void drawPassive() {
+	public void drawPassive(GuiGraphics graphics, float partialTicks) {
 		if (isFocused())
 			return;
 
-		// NOT FOCUSED
-		draw(new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource()), Minecraft.getInstance()
-			.getDeltaTracker().getGameTimeDeltaPartialTick(true));
+		// Rendered from the in-game HUD hook (ClientGuiEvent.RENDER_HUD) when the menu is not the
+		// focused screen. Uses the live GuiGraphics from the event; constructing a fresh one here
+		// yields a buffer that is never flushed on some loaders, so nothing reaches the screen.
+		draw(graphics, partialTicks);
 	}
 
 	@Override
@@ -1371,13 +1360,16 @@ public class ArchitectMenuScreen extends Screen {
 			y -= 24;
 		}
 
-		ms.pose().pushPose();
 		float shift = animation.getValue(partialTicks);
 		float sidewaysShift =
 			shift * ((float) menuWidth / (float) menuHeight) + (!focused ? 40 + menuHeight / 4f : 0) + 8;
-		ms.pose().translate(sideways ? sidewaysShift : 0, sideways ? 0 : shift, 0);
-		mouseX -= sideways ? sidewaysShift : 0;
-		mouseY -= sideways ? 0 : shift;
+		// Apply translation directly to coordinates instead of using pose stack
+		int xOffset = sideways ? (int) sidewaysShift : 0;
+		int yOffset = sideways ? 0 : (int) shift;
+		x += xOffset;
+		y += yOffset;
+		mouseX -= xOffset;
+		mouseY -= yOffset;
 
 		ScreenResources gray = ScreenResources.GRAY;
 		RenderSystem.enableBlend();
@@ -1399,19 +1391,19 @@ public class ArchitectMenuScreen extends Screen {
 					String string = "Press " + compose.toUpperCase() + " for Menu";
 					ms.drawString(textRenderer, string,
 							(int) (mainWindow.getGuiScaledWidth() - textRenderer.width(string) - 15 - sidewaysShift), yPos - 14,
-							0xEEEEEE);
+							0xFFEEEEEE);
 				}
 			} else {
-				ms.drawString(textRenderer, "Press " + compose.toUpperCase() + " to focus", xPos, yPos - 14, 0xEEEEEE);
+				ms.drawString(textRenderer, "Press " + compose.toUpperCase() + " to focus", xPos, yPos - 14, 0xFFEEEEEE);
 			}
 		} else {
 			String string = "Press " + compose + " to close";
 			ms.drawString(textRenderer, string,
 					sideways
 							? (int) Math.min(xPos, mainWindow.getGuiScaledWidth() - textRenderer.width(string) - 15 - sidewaysShift)
-							: xPos, yPos - 14, 0xDDDDDD	);
+							: xPos, yPos - 14, 0xFFDDDDDD	);
 		}
-		ms.drawString(textRenderer, title, xPos, yPos, 0xEEEEEE);
+		ms.drawString(textRenderer, title, xPos, yPos, 0xFFEEEEEE);
 
 		boolean hoveredHorizontally = x <= mouseX && mouseX <= x + menuWidth && focused;
 
@@ -1424,7 +1416,7 @@ public class ArchitectMenuScreen extends Screen {
 
 			yPos += textRenderer.lineHeight;
 			int color =
-				hoveredHorizontally && yPos < mouseY && mouseY <= yPos + textRenderer.lineHeight ? 0xFFFFFF : 0xCCDDFF;
+				hoveredHorizontally && yPos < mouseY && mouseY <= yPos + textRenderer.lineHeight ? 0xFFFFFFFF : 0xFFCCDDFF;
 			ms.drawString(textRenderer, "[" + key + "] " + keybinds.get(key), xPos, yPos, color);
 			ms.drawString(textRenderer, ">", xPos - 12, yPos, color);
 		}
@@ -1435,13 +1427,11 @@ public class ArchitectMenuScreen extends Screen {
 			int height = mc.font.wordWrapHeight(text, menuWidth - 8);
 			int lineY = yPos;
 			for (FormattedCharSequence iro : textRenderer.split(Component.literal(text), menuWidth - 8)) {
-				ms.drawString(textRenderer, iro, xPos, lineY, 0xEEEEEE);
+				ms.drawString(textRenderer, iro, xPos, lineY, 0xFFEEEEEE);
 				lineY += textRenderer.lineHeight;
 			}
 			yPos += height + 2;
 		}
-
-		ms.pose().popPose();
 	}
 
 	@Override
@@ -1598,13 +1588,14 @@ public class ArchitectMenuScreen extends Screen {
 		draw(ms, partialTicks);
 	}
 
-	public void drawPassive() {
+	public void drawPassive(GuiGraphics graphics, float partialTicks) {
 		if (isFocused())
 			return;
 
-		// NOT FOCUSED
-		draw(new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource()), Minecraft.getInstance()
-			.getTimer().getGameTimeDeltaPartialTick(true));
+		// Rendered from the in-game HUD hook (ClientGuiEvent.RENDER_HUD) when the menu is not the
+		// focused screen. Uses the live GuiGraphics from the event; constructing a fresh one here
+		// yields a buffer that is never flushed on some loaders, so nothing reaches the screen.
+		draw(graphics, partialTicks);
 	}
 
 	@Override

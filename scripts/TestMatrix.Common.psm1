@@ -292,6 +292,7 @@ function Start-TestVanillaServer {
         -WorkingDirectory $directory `
         -RedirectStandardOutput $stdout `
         -RedirectStandardError $stderr `
+        -WindowStyle Hidden `
         -PassThru
 
     try {

@@ -83,6 +83,7 @@ function Invoke-ServerTest {
         -WorkingDirectory $RepoRoot `
         -RedirectStandardOutput $gradleStdout `
         -RedirectStandardError $gradleStderr `
+        -WindowStyle Hidden `
         -PassThru
 
     $serverLog = Join-Path (Join-Path $runDirectory 'logs') 'latest.log'

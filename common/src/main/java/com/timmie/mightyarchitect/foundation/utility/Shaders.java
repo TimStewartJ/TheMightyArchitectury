@@ -247,28 +247,43 @@ public enum Shaders {
 	}
 
 	private static void loadEffect(Minecraft mc, ResourceLocation location) {
-		try {
-			java.lang.reflect.Method loadEffect = findLoadEffect(mc);
-			loadEffect.setAccessible(true);
-			loadEffect.invoke(mc.gameRenderer, location);
-		} catch (ReflectiveOperationException e) {
-			TheMightyArchitect.logger.error("Unable to load shader {}", location, e);
+		for (java.lang.reflect.Method candidate : findLoadEffectCandidates(mc)) {
+			try {
+				candidate.setAccessible(true);
+				candidate.invoke(mc.gameRenderer, location);
+			} catch (ReflectiveOperationException e) {
+				continue;
+			}
+			PostChain applied = mc.gameRenderer.currentEffect();
+			if (applied != null && applied.getName()
+				.equals(location.toString()))
+				return;
 		}
+		TheMightyArchitect.logger.error("Unable to load shader {}", location);
 	}
 
-	private static java.lang.reflect.Method findLoadEffect(Minecraft mc) throws NoSuchMethodException {
+	//*
+	 //* GameRenderer exposes more than one (ResourceLocation) -> void method (loadEffect and
+	 //* loadBlurEffect), and getDeclaredMethods() order is unspecified. In a remapped runtime the
+	 //* names are obfuscated, so the exact-name lookup fails and a blind scan can silently invoke
+	 //* the wrong one, leaving the blueprint shader inactive with no error. Return every candidate
+	 //* so the caller can invoke each and keep the one that actually applies.
+	 //
+	private static java.util.List<java.lang.reflect.Method> findLoadEffectCandidates(Minecraft mc) {
+		java.util.List<java.lang.reflect.Method> candidates = new java.util.ArrayList<>();
 		try {
-			return mc.gameRenderer.getClass()
-				.getDeclaredMethod("loadEffect", ResourceLocation.class);
+			candidates.add(mc.gameRenderer.getClass()
+				.getDeclaredMethod("loadEffect", ResourceLocation.class));
 		} catch (NoSuchMethodException ignored) {
-			for (java.lang.reflect.Method method : mc.gameRenderer.getClass()
-				.getDeclaredMethods()) {
-				if (method.getParameterCount() == 1 && method.getParameterTypes()[0] == ResourceLocation.class
-					&& method.getReturnType() == Void.TYPE)
-					return method;
-			}
-			throw ignored;
+			// Remapped runtime; fall through to scanning below.
 		}
+		for (java.lang.reflect.Method method : mc.gameRenderer.getClass()
+			.getDeclaredMethods()) {
+			if (method.getParameterCount() == 1 && method.getParameterTypes()[0] == ResourceLocation.class
+				&& method.getReturnType() == Void.TYPE && !candidates.contains(method))
+				candidates.add(method);
+		}
+		return candidates;
 	}
 
 }*///?}

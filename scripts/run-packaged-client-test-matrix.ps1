@@ -269,7 +269,7 @@ function Copy-ResultArtifacts {
     if (Test-Path $resultPath) {
         Copy-Item $resultPath (Join-Path $target 'result.json')
         $result = Get-Content $resultPath -Raw | ConvertFrom-Json
-        foreach ($property in @('baselineScreenshot', 'blueprintScreenshot')) {
+        foreach ($property in @($result.PSObject.Properties.Name | Where-Object { $_ -like '*Screenshot' })) {
             if ($result.$property -and (Test-Path $result.$property)) {
                 Copy-Item $result.$property (Join-Path $target "$property.png")
             }
@@ -418,7 +418,7 @@ foreach ($version in $Versions) {
     $sharedServer = $null
     try {
         if (-not $KeepOpen) {
-            $sharedServer = Start-TestVanillaServer -NodeId $version -Properties $properties -RuntimeRoot $RuntimeRoot `
+            $sharedServer = Start-TestVanillaServer -NodeId "$version-$Port" -Properties $properties -RuntimeRoot $RuntimeRoot `
                 -Port $Port -Motd 'Mighty Architect Packaged Client Test'
         }
 

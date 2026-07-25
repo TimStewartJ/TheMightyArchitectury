@@ -42,7 +42,7 @@ function Copy-ResultArtifacts {
     if (Test-Path $ResultPath) {
         Copy-Item $ResultPath (Join-Path $target 'result.json')
         $result = Get-Content $ResultPath -Raw | ConvertFrom-Json
-        foreach ($property in @('baselineScreenshot', 'blueprintScreenshot')) {
+        foreach ($property in @($result.PSObject.Properties.Name | Where-Object { $_ -like '*Screenshot' })) {
             $source = $result.$property
             if ($source -and (Test-Path $source)) {
                 Copy-Item $source (Join-Path $target "$property.png")
@@ -111,6 +111,7 @@ function Invoke-ClientTest {
             -WorkingDirectory $RepoRoot `
             -RedirectStandardOutput $gradleStdout `
             -RedirectStandardError $gradleStderr `
+            -WindowStyle Hidden `
             -PassThru
 
         if ($KeepOpen) {
@@ -196,7 +197,9 @@ foreach ($version in $Versions) {
     $properties = Get-TestNodeProperties -RepoRoot $RepoRoot -Version $version
     $server = $null
     try {
-        $serverNodeId = if ($KeepOpen) { "$version-$($Loaders[0])-$Port" } else { $version }
+        # Key the server runtime directory by port so concurrent invocations on different
+        # ports never share a world/logs/server.properties directory.
+        $serverNodeId = if ($KeepOpen) { "$version-$($Loaders[0])-$Port" } else { "$version-$Port" }
         $server = Start-TestVanillaServer -NodeId $serverNodeId -Properties $properties -RuntimeRoot $RuntimeRoot `
             -Port $Port -Motd 'Mighty Architect Client Test'
         foreach ($loader in $Loaders) {
