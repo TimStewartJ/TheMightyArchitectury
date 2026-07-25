@@ -106,12 +106,13 @@ function Invoke-ClientTest {
             $gradleArguments.Add('-PenableClientTestMod=true')
         }
         $gradleArguments.Add('-Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64')
+        $hiddenWindow = Get-TestHiddenWindowOption
         $gradleProcess = Start-Process -FilePath $Gradle `
             -ArgumentList $gradleArguments `
             -WorkingDirectory $RepoRoot `
             -RedirectStandardOutput $gradleStdout `
             -RedirectStandardError $gradleStderr `
-            -WindowStyle Hidden `
+            @hiddenWindow `
             -PassThru
 
         if ($KeepOpen) {

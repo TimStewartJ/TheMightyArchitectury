@@ -287,12 +287,13 @@ function Start-TestVanillaServer {
     $stderr = Join-Path $directory 'server.stderr.log'
     Remove-Item $stdout, $stderr -ErrorAction SilentlyContinue
     Wait-TestPortAvailable -Port $Port
+    $hiddenWindow = Get-TestHiddenWindowOption
     $process = Start-Process -FilePath (Resolve-TestJava -Version $javaVersion) `
         -ArgumentList @('-Xms512M', '-Xmx1024M', '-jar', $jar, 'nogui') `
         -WorkingDirectory $directory `
         -RedirectStandardOutput $stdout `
         -RedirectStandardError $stderr `
-        -WindowStyle Hidden `
+        @hiddenWindow `
         -PassThru
 
     try {
@@ -320,6 +321,19 @@ function Start-TestVanillaServer {
         Stop-TestProcessTree -Process $process
         throw
     }
+}
+
+function Get-TestHiddenWindowOption {
+    <#
+        Returns splat arguments that hide the console window on Windows. -WindowStyle is not
+        supported on non-Windows PowerShell editions, so it must be omitted there (CI runs Linux).
+    #>
+    param()
+
+    if ($IsWindows) {
+        return @{ WindowStyle = 'Hidden' }
+    }
+    return @{}
 }
 
 function Expand-TestListArgument {
@@ -498,6 +512,7 @@ Export-ModuleMember -Function @(
     'Stop-TestOwnedProcess',
     'Write-TestSessionManifest',
     'Start-TestVanillaServer',
+    'Get-TestHiddenWindowOption',
     'Expand-TestListArgument',
     'Find-TestGradleArtifact',
     'Get-RuntimeArtifactManifestPath',

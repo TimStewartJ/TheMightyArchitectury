@@ -78,12 +78,13 @@ function Invoke-ServerTest {
     $arguments.Add('--console=plain')
     $arguments.Add('--no-daemon')
     $arguments.Add('-Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64')
+    $hiddenWindow = Get-TestHiddenWindowOption
     $process = Start-Process -FilePath $Gradle `
         -ArgumentList $arguments `
         -WorkingDirectory $RepoRoot `
         -RedirectStandardOutput $gradleStdout `
         -RedirectStandardError $gradleStderr `
-        -WindowStyle Hidden `
+        @hiddenWindow `
         -PassThru
 
     $serverLog = Join-Path (Join-Path $runDirectory 'logs') 'latest.log'
