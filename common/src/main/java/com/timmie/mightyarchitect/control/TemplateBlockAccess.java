@@ -1,4 +1,3 @@
-//? if >=26 {
 package com.timmie.mightyarchitect.control;
 
 import com.timmie.mightyarchitect.control.compose.Cuboid;
@@ -9,658 +8,11 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.Biomes;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap.Types;
-import net.minecraft.world.level.material.Fluid;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.ticks.BlackholeTickAccess;
-import net.minecraft.world.ticks.LevelTickAccess;
-
-import java.util.*;
-import java.util.function.Predicate;
-
-public class TemplateBlockAccess extends WrappedWorld {
-
-	private Map<BlockPos, BlockState> blocks;
-	private Cuboid bounds;
-	private BlockPos anchor;
-	private boolean localMode;
-
-	public TemplateBlockAccess(Map<BlockPos, BlockState> blocks, Cuboid bounds, BlockPos anchor) {
-		super(Minecraft.getInstance().level);
-		this.blocks = blocks;
-		this.bounds = bounds;
-		this.anchor = anchor;
-		updateBlockstates();
-	}
-
-	public void localMode(boolean local) {
-		this.localMode = local;
-	}
-
-	//*
-	 //* Updates block states to reflect their neighbors (e.g., fence connections, wall alignment).
-	 //* Uses direct updateShape() calls instead of updateNeighbourShapes() to avoid cascading
-	 //* neighbor update notifications that trigger "Too many chained neighbor updates" errors.
-	 //
-	private void updateBlockstates() {
-		Direction[] directions = Direction.values();
-		
-		// Multiple passes - blocks may depend on neighbors that haven't been updated yet
-		for (int pass = 0; pass < 2; pass++) {
-			Map<BlockPos, BlockState> updates = new HashMap<>();
-			
-			for (BlockPos pos : blocks.keySet()) {
-				BlockState state = blocks.get(pos);
-				if (state == null || state.isAir())
-					continue;
-				
-				BlockPos worldPos = pos.offset(anchor);
-				BlockState newState = state;
-				
-				// For each direction, compute what this block should look like based on its neighbor
-				for (Direction direction : directions) {
-					BlockPos neighborWorldPos = worldPos.relative(direction);
-					BlockState neighborState = getBlockState(neighborWorldPos);
-					
-					// updateShape returns the potentially modified state based on the neighbor
-					// This does NOT trigger cascading notifications
-					// updateShape signature: (LevelReader, ScheduledTickAccess, BlockPos, Direction, BlockPos, BlockState, RandomSource)
-					newState = newState.updateShape(this, this, worldPos, direction, neighborWorldPos, neighborState, this.getRandom());
-				}
-				
-				if (newState != state) {
-					updates.put(pos, newState);
-				}
-			}
-			
-			// Apply all updates at once (batch)
-			blocks.putAll(updates);
-		}
-	}
-
-	public Set<BlockPos> getAllPositions() {
-		return blocks.keySet();
-	}
-
-	@Override
-	public BlockEntity getBlockEntity(BlockPos pos) {
-		return null;
-	}
-
-	@Override
-	public BlockState getBlockState(BlockPos globalPos) {
-		BlockPos pos = localMode ? globalPos : globalPos.subtract(anchor);
-		if (getBounds().contains(pos) && blocks.containsKey(pos)) {
-			return blocks.get(pos);
-		} else {
-			return Blocks.AIR.defaultBlockState();
-		}
-	}
-
-	public Map<BlockPos, BlockState> getBlockMap() {
-		return blocks;
-	}
-
-	@Override
-	public Holder<Biome> getBiome(BlockPos pos) {
-		return Holder.direct(registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.THE_VOID).value());
-	}
-
-	@Override
-	public int getMaxLocalRawBrightness(BlockPos p_201696_1_) {
-		return 0xF;
-	}
-
-	@Override
-	public List<Entity> getEntities(Entity arg0, AABB arg1, Predicate<? super Entity> arg2) {
-		return Collections.emptyList();
-	}
-
-	@Override
-	public <T extends Entity> List<T> getEntitiesOfClass(Class<T> arg0, AABB arg1,
-		Predicate<? super T> arg2) {
-		return Collections.emptyList();
-	}
-
-	@Override
-	public List<? extends Player> players() {
-		return Collections.emptyList();
-	}
-
-	@Override
-	public int getBrightness(LightLayer lt, BlockPos p_226658_2_) {
-		return lt == LightLayer.BLOCK ? 12 : 14;
-	}
-
-	@Override
-	public int getLightEmission(BlockPos pos) {
-		return super.getLightEmission(pos);
-	}
-
-	@Override
-	public BlockPos getHeightmapPos(Types heightmapType, BlockPos pos) {
-		return BlockPos.ZERO;
-	}
-
-	@Override
-	public int getHeight(Types heightmapType, int x, int z) {
-		return 256;
-	}
-
-	@Override
-	public boolean isStateAtPosition(BlockPos pos, Predicate<BlockState> predicate) {
-		return predicate.test(getBlockState(pos));
-	}
-
-	@Override
-	public boolean destroyBlock(BlockPos arg0, boolean arg1) {
-		return setBlock(arg0, Blocks.AIR.defaultBlockState(), 3);
-	}
-
-	@Override
-	public boolean removeBlock(BlockPos arg0, boolean arg1) {
-		return setBlock(arg0, Blocks.AIR.defaultBlockState(), 3);
-	}
-
-	@Override
-	public boolean setBlock(BlockPos pos, BlockState state, int p_241211_3_, int p_241211_4_) {
-		blocks.put(localMode ? pos : pos.subtract(anchor), state);
-		return true;
-	}
-
-	@Override
-	public LevelTickAccess<Block> getBlockTicks() {
-		return BlackholeTickAccess.emptyLevelList();
-	}
-
-	@Override
-	public LevelTickAccess<Fluid> getFluidTicks() {
-		return BlackholeTickAccess.emptyLevelList();
-	}
-
-	@Override
-	public RandomSource getRandom() {
-		return RandomSource.create();
-	}
-
-	@Override
-	public void updateNeighborsAt(BlockPos p_195593_1_, Block p_195593_2_) {}
-
-	@Override
-	public void sendBlockUpdated(BlockPos pos, BlockState oldState, BlockState newState, int flags) {}
-
-	@Override
-	public void addParticle(ParticleOptions particleData, double x, double y, double z, double xSpeed, double ySpeed,
-		double zSpeed) {}
-
-	@Override
-	public void levelEvent(Entity entity, int type, BlockPos pos, int data) {}
-
-	public Cuboid getBounds() {
-		return bounds;
-	}
-
-}
-//?} else if >=1.21.6 {
-/*package com.timmie.mightyarchitect.control;
-
-import com.timmie.mightyarchitect.control.compose.Cuboid;
-import com.timmie.mightyarchitect.foundation.WrappedWorld;
-import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.core.particles.ParticleOptions;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.Biomes;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap.Types;
-import net.minecraft.world.level.material.Fluid;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.ticks.BlackholeTickAccess;
-import net.minecraft.world.ticks.LevelTickAccess;
-
-import java.util.*;
-import java.util.function.Predicate;
-
-public class TemplateBlockAccess extends WrappedWorld {
-
-	private Map<BlockPos, BlockState> blocks;
-	private Cuboid bounds;
-	private BlockPos anchor;
-	private boolean localMode;
-
-	public TemplateBlockAccess(Map<BlockPos, BlockState> blocks, Cuboid bounds, BlockPos anchor) {
-		super(Minecraft.getInstance().level);
-		this.blocks = blocks;
-		this.bounds = bounds;
-		this.anchor = anchor;
-		updateBlockstates();
-	}
-
-	public void localMode(boolean local) {
-		this.localMode = local;
-	}
-
-	//*
-	 //* Updates block states to reflect their neighbors (e.g., fence connections, wall alignment).
-	 //* Uses direct updateShape() calls instead of updateNeighbourShapes() to avoid cascading
-	 //* neighbor update notifications that trigger "Too many chained neighbor updates" errors.
-	 //
-	private void updateBlockstates() {
-		Direction[] directions = Direction.values();
-		
-		// Multiple passes - blocks may depend on neighbors that haven't been updated yet
-		for (int pass = 0; pass < 2; pass++) {
-			Map<BlockPos, BlockState> updates = new HashMap<>();
-			
-			for (BlockPos pos : blocks.keySet()) {
-				BlockState state = blocks.get(pos);
-				if (state == null || state.isAir())
-					continue;
-				
-				BlockPos worldPos = pos.offset(anchor);
-				BlockState newState = state;
-				
-				// For each direction, compute what this block should look like based on its neighbor
-				for (Direction direction : directions) {
-					BlockPos neighborWorldPos = worldPos.relative(direction);
-					BlockState neighborState = getBlockState(neighborWorldPos);
-					
-					// updateShape returns the potentially modified state based on the neighbor
-					// This does NOT trigger cascading notifications
-					// 1.21.4 signature: (LevelReader, ScheduledTickAccess, BlockPos, Direction, BlockPos, BlockState, RandomSource)
-					newState = newState.updateShape(this, this, worldPos, direction, neighborWorldPos, neighborState, this.getRandom());
-				}
-				
-				if (newState != state) {
-					updates.put(pos, newState);
-				}
-			}
-			
-			// Apply all updates at once (batch)
-			blocks.putAll(updates);
-		}
-	}
-
-	// neighborShapeChanged method removed in 1.21.4 - the method no longer exists in LevelAccessor
-
-	public Set<BlockPos> getAllPositions() {
-		return blocks.keySet();
-	}
-
-	@Override
-	public BlockEntity getBlockEntity(BlockPos pos) {
-		return null;
-	}
-
-	@Override
-	public BlockState getBlockState(BlockPos globalPos) {
-		BlockPos pos = localMode ? globalPos : globalPos.subtract(anchor);
-		if (getBounds().contains(pos) && blocks.containsKey(pos)) {
-			return blocks.get(pos);
-		} else {
-			return Blocks.AIR.defaultBlockState();
-		}
-	}
-
-	public Map<BlockPos, BlockState> getBlockMap() {
-		return blocks;
-	}
-
-	@Override
-	public Holder<Biome> getBiome(BlockPos pos) {
-		return Holder.direct(registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.THE_VOID).value());
-	}
-
-	@Override
-	public int getMaxLocalRawBrightness(BlockPos p_201696_1_) {
-		return 0xF;
-	}
-
-	@Override
-	public List<Entity> getEntities(Entity arg0, AABB arg1, Predicate<? super Entity> arg2) {
-		return Collections.emptyList();
-	}
-
-	@Override
-	public <T extends Entity> List<T> getEntitiesOfClass(Class<T> arg0, AABB arg1,
-		Predicate<? super T> arg2) {
-		return Collections.emptyList();
-	}
-
-	@Override
-	public List<? extends Player> players() {
-		return Collections.emptyList();
-	}
-
-	@Override
-	public int getBrightness(LightLayer lt, BlockPos p_226658_2_) {
-		return lt == LightLayer.BLOCK ? 12 : 14;
-	}
-
-	@Override
-	public int getLightEmission(BlockPos pos) {
-		return super.getLightEmission(pos);
-	}
-
-	@Override
-	public BlockPos getHeightmapPos(Types heightmapType, BlockPos pos) {
-		return BlockPos.ZERO;
-	}
-
-	@Override
-	public int getHeight(Types heightmapType, int x, int z) {
-		return 256;
-	}
-
-	@Override
-	public boolean isStateAtPosition(BlockPos pos, Predicate<BlockState> predicate) {
-		return predicate.test(getBlockState(pos));
-	}
-
-	@Override
-	public boolean destroyBlock(BlockPos arg0, boolean arg1) {
-		return setBlock(arg0, Blocks.AIR.defaultBlockState(), 3);
-	}
-
-	@Override
-	public boolean removeBlock(BlockPos arg0, boolean arg1) {
-		return setBlock(arg0, Blocks.AIR.defaultBlockState(), 3);
-	}
-
-	@Override
-	public boolean setBlock(BlockPos pos, BlockState state, int p_241211_3_, int p_241211_4_) {
-		blocks.put(localMode ? pos : pos.subtract(anchor), state);
-		return true;
-	}
-
-	@Override
-	public LevelTickAccess<Block> getBlockTicks() {
-		return BlackholeTickAccess.emptyLevelList();
-	}
-
-	@Override
-	public LevelTickAccess<Fluid> getFluidTicks() {
-		return BlackholeTickAccess.emptyLevelList();
-	}
-
-	@Override
-	public RandomSource getRandom() {
-		return RandomSource.create();
-	}
-
-	@Override
-	public void updateNeighborsAt(BlockPos p_195593_1_, Block p_195593_2_) {}
-
-	@Override
-	public void sendBlockUpdated(BlockPos pos, BlockState oldState, BlockState newState, int flags) {}
-
-	@Override
-	public void addParticle(ParticleOptions particleData, double x, double y, double z, double xSpeed, double ySpeed,
-		double zSpeed) {}
-
-	@Override
-	public void levelEvent(Entity entity, int type, BlockPos pos, int data) {}
-
-	public Cuboid getBounds() {
-		return bounds;
-	}
-
-}*/
-//?} else if >=1.21.4 {
-/*package com.timmie.mightyarchitect.control;
-
-import com.timmie.mightyarchitect.control.compose.Cuboid;
-import com.timmie.mightyarchitect.foundation.WrappedWorld;
-import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.core.particles.ParticleOptions;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.Biomes;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap.Types;
-import net.minecraft.world.level.material.Fluid;
-import net.minecraft.world.level.redstone.NeighborUpdater;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.ticks.BlackholeTickAccess;
-import net.minecraft.world.ticks.LevelTickAccess;
-
-import java.util.*;
-import java.util.function.Predicate;
-
-public class TemplateBlockAccess extends WrappedWorld {
-
-	private Map<BlockPos, BlockState> blocks;
-	private Cuboid bounds;
-	private BlockPos anchor;
-	private boolean localMode;
-
-	public TemplateBlockAccess(Map<BlockPos, BlockState> blocks, Cuboid bounds, BlockPos anchor) {
-		super(Minecraft.getInstance().level);
-		this.blocks = blocks;
-		this.bounds = bounds;
-		this.anchor = anchor;
-		updateBlockstates();
-	}
-
-	public void localMode(boolean local) {
-		this.localMode = local;
-	}
-
-	//*
-	 //* Updates block states to reflect their neighbors (e.g., fence connections, wall alignment).
-	 //* Uses direct updateShape() calls instead of updateNeighbourShapes() to avoid cascading
-	 //* neighbor update notifications that trigger "Too many chained neighbor updates" errors.
-	 //
-	private void updateBlockstates() {
-		Direction[] directions = Direction.values();
-		
-		// Multiple passes - blocks may depend on neighbors that haven't been updated yet
-		for (int pass = 0; pass < 2; pass++) {
-			Map<BlockPos, BlockState> updates = new HashMap<>();
-			
-			for (BlockPos pos : blocks.keySet()) {
-				BlockState state = blocks.get(pos);
-				if (state == null || state.isAir())
-					continue;
-				
-				BlockPos worldPos = pos.offset(anchor);
-				BlockState newState = state;
-				
-				// For each direction, compute what this block should look like based on its neighbor
-				for (Direction direction : directions) {
-					BlockPos neighborWorldPos = worldPos.relative(direction);
-					BlockState neighborState = getBlockState(neighborWorldPos);
-					
-					// updateShape returns the potentially modified state based on the neighbor
-					// This does NOT trigger cascading notifications
-					// 1.21.4 signature: (LevelReader, ScheduledTickAccess, BlockPos, Direction, BlockPos, BlockState, RandomSource)
-					newState = newState.updateShape(this, this, worldPos, direction, neighborWorldPos, neighborState, this.getRandom());
-				}
-				
-				if (newState != state) {
-					updates.put(pos, newState);
-				}
-			}
-			
-			// Apply all updates at once (batch)
-			blocks.putAll(updates);
-		}
-	}
-
-	// neighborShapeChanged method removed in 1.21.4 - the method no longer exists in LevelAccessor
-
-	public Set<BlockPos> getAllPositions() {
-		return blocks.keySet();
-	}
-
-	@Override
-	public BlockEntity getBlockEntity(BlockPos pos) {
-		return null;
-	}
-
-	@Override
-	public BlockState getBlockState(BlockPos globalPos) {
-		BlockPos pos = localMode ? globalPos : globalPos.subtract(anchor);
-		if (getBounds().contains(pos) && blocks.containsKey(pos)) {
-			return blocks.get(pos);
-		} else {
-			return Blocks.AIR.defaultBlockState();
-		}
-	}
-
-	public Map<BlockPos, BlockState> getBlockMap() {
-		return blocks;
-	}
-
-	@Override
-	public Holder<Biome> getBiome(BlockPos pos) {
-		return Holder.direct(registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.THE_VOID).value());
-	}
-
-	@Override
-	public int getMaxLocalRawBrightness(BlockPos p_201696_1_) {
-		return 0xF;
-	}
-
-	@Override
-	public List<Entity> getEntities(Entity arg0, AABB arg1, Predicate<? super Entity> arg2) {
-		return Collections.emptyList();
-	}
-
-	@Override
-	public <T extends Entity> List<T> getEntitiesOfClass(Class<T> arg0, AABB arg1,
-		Predicate<? super T> arg2) {
-		return Collections.emptyList();
-	}
-
-	@Override
-	public List<? extends Player> players() {
-		return Collections.emptyList();
-	}
-
-	@Override
-	public int getBrightness(LightLayer lt, BlockPos p_226658_2_) {
-		return lt == LightLayer.BLOCK ? 12 : 14;
-	}
-
-	@Override
-	public int getLightEmission(BlockPos pos) {
-		return super.getLightEmission(pos);
-	}
-
-	@Override
-	public BlockPos getHeightmapPos(Types heightmapType, BlockPos pos) {
-		return BlockPos.ZERO;
-	}
-
-	@Override
-	public int getHeight(Types heightmapType, int x, int z) {
-		return 256;
-	}
-
-	@Override
-	public boolean isStateAtPosition(BlockPos pos, Predicate<BlockState> predicate) {
-		return predicate.test(getBlockState(pos));
-	}
-
-	@Override
-	public boolean destroyBlock(BlockPos arg0, boolean arg1) {
-		return setBlock(arg0, Blocks.AIR.defaultBlockState(), 3);
-	}
-
-	@Override
-	public boolean removeBlock(BlockPos arg0, boolean arg1) {
-		return setBlock(arg0, Blocks.AIR.defaultBlockState(), 3);
-	}
-
-	@Override
-	public boolean setBlock(BlockPos pos, BlockState state, int p_241211_3_, int p_241211_4_) {
-		blocks.put(localMode ? pos : pos.subtract(anchor), state);
-		return true;
-	}
-
-	@Override
-	public LevelTickAccess<Block> getBlockTicks() {
-		return BlackholeTickAccess.emptyLevelList();
-	}
-
-	@Override
-	public LevelTickAccess<Fluid> getFluidTicks() {
-		return BlackholeTickAccess.emptyLevelList();
-	}
-
-	@Override
-	public RandomSource getRandom() {
-		return RandomSource.create();
-	}
-
-	@Override
-	public void updateNeighborsAt(BlockPos p_195593_1_, Block p_195593_2_) {}
-
-	@Override
-	public void sendBlockUpdated(BlockPos pos, BlockState oldState, BlockState newState, int flags) {}
-
-	@Override
-	public void playSound(Player player, BlockPos pos, SoundEvent soundIn, SoundSource category, float volume,
-		float pitch) {}
-
-	@Override
-	public void addParticle(ParticleOptions particleData, double x, double y, double z, double xSpeed, double ySpeed,
-		double zSpeed) {}
-
-	@Override
-	public void levelEvent(Player player, int type, BlockPos pos, int data) {}
-
-	public Cuboid getBounds() {
-		return bounds;
-	}
-
-}*/
+//? if >=1.21.6 {
 //?} else {
-/*package com.timmie.mightyarchitect.control;
-
-import com.timmie.mightyarchitect.control.compose.Cuboid;
-import com.timmie.mightyarchitect.foundation.WrappedWorld;
-import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.core.particles.ParticleOptions;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.sounds.SoundEvent;
+/*import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
+*///?}
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -673,7 +25,10 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraft.world.level.redstone.NeighborUpdater;
+//? if >=1.21.6 {
+//?} else {
+/*import net.minecraft.world.level.redstone.NeighborUpdater;
+*///?}
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.ticks.BlackholeTickAccess;
 import net.minecraft.world.ticks.LevelTickAccess;
@@ -700,8 +55,16 @@ public class TemplateBlockAccess extends WrappedWorld {
 		this.localMode = local;
 	}
 
+	//*
+	 //* Updates block states to reflect their neighbors (e.g., fence connections, wall alignment).
+	 //* Uses direct updateShape() calls instead of updateNeighbourShapes() to avoid cascading
+	 //* neighbor update notifications that trigger "Too many chained neighbor updates" errors.
+	 //
 	private void updateBlockstates() {
-		Set<BlockPos> keySet = new HashSet<>(blocks.keySet());
+		//? if >=1.21.4 {
+		Direction[] directions = Direction.values();
+		//?} else {
+		/*Set<BlockPos> keySet = new HashSet<>(blocks.keySet());
 		keySet.forEach(pos -> {
 			BlockState blockState = blocks.get(pos);
 			if (blockState == null)
@@ -709,11 +72,78 @@ public class TemplateBlockAccess extends WrappedWorld {
 			blockState.updateNeighbourShapes(this, pos.offset(anchor), 16);
 		});
 	}
+		*///?}
 
-	@Override
+		//? if >=26 {
+		// Multiple passes - blocks may depend on neighbors that haven't been updated yet
+		for (int pass = 0; pass < 2; pass++) {
+			Map<BlockPos, BlockState> updates = new HashMap<>();
+
+			for (BlockPos pos : blocks.keySet()) {
+				BlockState state = blocks.get(pos);
+				if (state == null || state.isAir())
+					continue;
+
+				BlockPos worldPos = pos.offset(anchor);
+				BlockState newState = state;
+
+				// For each direction, compute what this block should look like based on its neighbor
+				for (Direction direction : directions) {
+					BlockPos neighborWorldPos = worldPos.relative(direction);
+					BlockState neighborState = getBlockState(neighborWorldPos);
+
+					// updateShape returns the potentially modified state based on the neighbor
+					// This does NOT trigger cascading notifications
+					// updateShape signature: (LevelReader, ScheduledTickAccess, BlockPos, Direction, BlockPos, BlockState, RandomSource)
+					newState = newState.updateShape(this, this, worldPos, direction, neighborWorldPos, neighborState, this.getRandom());
+				}
+
+				if (newState != state) {
+					updates.put(pos, newState);
+				}
+			}
+
+			// Apply all updates at once (batch)
+			blocks.putAll(updates);
+		}
+		//?} else if >=1.21.4 {
+		/*// Multiple passes - blocks may depend on neighbors that haven't been updated yet
+		for (int pass = 0; pass < 2; pass++) {
+			Map<BlockPos, BlockState> updates = new HashMap<>();
+
+			for (BlockPos pos : blocks.keySet()) {
+				BlockState state = blocks.get(pos);
+				if (state == null || state.isAir())
+					continue;
+
+				BlockPos worldPos = pos.offset(anchor);
+				BlockState newState = state;
+
+				// For each direction, compute what this block should look like based on its neighbor
+				for (Direction direction : directions) {
+					BlockPos neighborWorldPos = worldPos.relative(direction);
+					BlockState neighborState = getBlockState(neighborWorldPos);
+
+					// updateShape returns the potentially modified state based on the neighbor
+					// This does NOT trigger cascading notifications
+					// 1.21.4 signature: (LevelReader, ScheduledTickAccess, BlockPos, Direction, BlockPos, BlockState, RandomSource)
+					newState = newState.updateShape(this, this, worldPos, direction, neighborWorldPos, neighborState, this.getRandom());
+				}
+
+				if (newState != state) {
+					updates.put(pos, newState);
+				}
+			}
+
+			// Apply all updates at once (batch)
+			blocks.putAll(updates);
+		}
+		*///?} else {
+		/*@Override
 	// revert to original neighbor shape behavior
 	public void neighborShapeChanged(Direction direction, BlockState blockState, BlockPos blockPos, BlockPos blockPos2, int i, int j) {
 		NeighborUpdater.executeShapeUpdate(this, direction, blockState, blockPos, blockPos2, i, j - 1);
+		*///?}
 	}
 
 	public Set<BlockPos> getAllPositions() {
@@ -741,7 +171,11 @@ public class TemplateBlockAccess extends WrappedWorld {
 
 	@Override
 	public Holder<Biome> getBiome(BlockPos pos) {
-		return Holder.direct(registryAccess().registryOrThrow(Registries.BIOME).get(Biomes.THE_VOID));
+		//? if >=1.21.4 {
+		return Holder.direct(registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.THE_VOID).value());
+		//?} else {
+		/*return Holder.direct(registryAccess().registryOrThrow(Registries.BIOME).get(Biomes.THE_VOID));
+		*///?}
 	}
 
 	@Override
@@ -828,18 +262,25 @@ public class TemplateBlockAccess extends WrappedWorld {
 	public void sendBlockUpdated(BlockPos pos, BlockState oldState, BlockState newState, int flags) {}
 
 	@Override
-	public void playSound(Player player, BlockPos pos, SoundEvent soundIn, SoundSource category, float volume,
+	//? if >=1.21.6 {
+	//?} else {
+	/*public void playSound(Player player, BlockPos pos, SoundEvent soundIn, SoundSource category, float volume,
 		float pitch) {}
 
 	@Override
+	*///?}
 	public void addParticle(ParticleOptions particleData, double x, double y, double z, double xSpeed, double ySpeed,
 		double zSpeed) {}
 
 	@Override
-	public void levelEvent(Player player, int type, BlockPos pos, int data) {}
+	//? if >=1.21.6 {
+	public void levelEvent(Entity entity, int type, BlockPos pos, int data) {}
+	//?} else {
+	/*public void levelEvent(Player player, int type, BlockPos pos, int data) {}
+	*///?}
 
 	public Cuboid getBounds() {
 		return bounds;
 	}
 
-}*///?}
+}

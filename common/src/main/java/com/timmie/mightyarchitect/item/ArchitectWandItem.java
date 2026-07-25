@@ -1,13 +1,24 @@
-//? if >=26 {
 package com.timmie.mightyarchitect.item;
 
 import dev.architectury.utils.EnvExecutor;
 import net.fabricmc.api.EnvType;
+//? if >=1.21.10 {
+//?} else {
+/*import net.fabricmc.api.Environment;
+*///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+//? if >=1.21.4 {
+//?} else {
+/*import net.minecraft.world.InteractionResultHolder;
+*///?}
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+//? if >=26 {
+//?} else {
+/*import net.minecraft.world.item.ItemStack;
+*///?}
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
@@ -25,7 +36,11 @@ public class ArchitectWandItem extends Item {
 		Player player = context.getPlayer();
 		Level world = context.getLevel();
 
+		//? if >=1.21.10 {
 		if (!world.isClientSide())
+		//?} else {
+		/*if (!world.isClientSide)
+		*///?}
 			return InteractionResult.SUCCESS;
 
 		if (player.isShiftKeyDown()) {
@@ -40,263 +55,69 @@ public class ArchitectWandItem extends Item {
 				() -> () -> handleUseOnDesignAnchor(player, world, anchor, blockState));
 
 		player.getCooldowns()
+			//? if >=1.21.4 {
 			.addCooldown(context.getItemInHand(), 5);
+			//?} else {
+			/*.addCooldown(this, 5);
+			*///?}
 		return InteractionResult.SUCCESS;
 	}
 
+	//? if >=1.21.10 {
+	//?} else {
+	/*@Environment(EnvType.CLIENT)
+	*///?}
 	protected void resetVisualization() {
 		ArchitectWandClient.resetVisualization();
 	}
 
+	//? if >=1.21.10 {
+	//?} else {
+	/*@Environment(EnvType.CLIENT)
+	*///?}
 	protected void handleUseOnDesignAnchor(Player player, Level world, BlockPos anchor, BlockState blockState) {
 		ArchitectWandClient.handleUseOnDesignAnchor(player, world, anchor, blockState);
 	}
 
 	@Override
+	//? if >=1.21.10 {
 	public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
 		if (worldIn.isClientSide()) {
+	//?} else if >=1.21.4 {
+	/*public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
+		if (worldIn.isClientSide) {
+	*///?} else {
+	/*public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
+		if (worldIn.isClientSide) {
+	*///?}
 			EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> handleRightClick(worldIn, playerIn, handIn));
 			playerIn.getCooldowns()
+				//? if >=1.21.4 {
 				.addCooldown(playerIn.getItemInHand(handIn), 5);
+				//?} else {
+				/*.addCooldown(this, 5);
+				*///?}
 		}
+		//? if >=1.21.4 {
 		return InteractionResult.SUCCESS;
+		//?} else {
+		/*return super.use(worldIn, playerIn, handIn);
+		*///?}
 	}
 
+	//? if >=1.21.10 {
+	//?} else {
+	/*@Environment(EnvType.CLIENT)
+	*///?}
 	protected void handleRightClick(Level worldIn, Player playerIn, InteractionHand handIn) {
 		ArchitectWandClient.handleRightClick(playerIn);
 	}
 
+	//? if >=1.21.10 {
+	//?} else {
+	/*@Environment(EnvType.CLIENT)
+	*///?}
 	private void openGui() {
 		ArchitectWandClient.openGui();
 	}
 }
-//?} else if >=1.21.10 {
-/*package com.timmie.mightyarchitect.item;
-
-import dev.architectury.utils.EnvExecutor;
-import net.fabricmc.api.EnvType;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Rarity;
-import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
-
-public class ArchitectWandItem extends Item {
-
-	public ArchitectWandItem(Properties properties) {
-		super(properties.stacksTo(1)
-			.rarity(Rarity.RARE));
-	}
-
-	@Override
-	public InteractionResult useOn(UseOnContext context) {
-		Player player = context.getPlayer();
-		Level world = context.getLevel();
-
-		if (!world.isClientSide())
-			return InteractionResult.SUCCESS;
-
-		if (player.isShiftKeyDown()) {
-			EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> openGui());
-			return InteractionResult.SUCCESS;
-		}
-
-		BlockPos anchor = context.getClickedPos();
-		BlockState blockState = world.getBlockState(anchor);
-
-		EnvExecutor.runInEnv(EnvType.CLIENT,
-				() -> () -> handleUseOnDesignAnchor(player, world, anchor, blockState));
-
-		player.getCooldowns()
-			.addCooldown(context.getItemInHand(), 5);
-		return InteractionResult.SUCCESS;
-	}
-
-	protected void resetVisualization() {
-		ArchitectWandClient.resetVisualization();
-	}
-
-	protected void handleUseOnDesignAnchor(Player player, Level world, BlockPos anchor, BlockState blockState) {
-		ArchitectWandClient.handleUseOnDesignAnchor(player, world, anchor, blockState);
-	}
-
-	@Override
-	public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
-		if (worldIn.isClientSide()) {
-			EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> handleRightClick(worldIn, playerIn, handIn));
-			playerIn.getCooldowns()
-				.addCooldown(playerIn.getItemInHand(handIn), 5);
-		}
-		return InteractionResult.SUCCESS;
-	}
-
-	protected void handleRightClick(Level worldIn, Player playerIn, InteractionHand handIn) {
-		ArchitectWandClient.handleRightClick(playerIn);
-	}
-
-	private void openGui() {
-		ArchitectWandClient.openGui();
-	}
-}*/
-//?} else if >=1.21.4 {
-/*package com.timmie.mightyarchitect.item;
-
-import dev.architectury.utils.EnvExecutor;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Rarity;
-import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
-
-public class ArchitectWandItem extends Item {
-
-	public ArchitectWandItem(Properties properties) {
-		super(properties.stacksTo(1)
-			.rarity(Rarity.RARE));
-	}
-
-	@Override
-	public InteractionResult useOn(UseOnContext context) {
-		Player player = context.getPlayer();
-		Level world = context.getLevel();
-
-		if (!world.isClientSide)
-			return InteractionResult.SUCCESS;
-
-		if (player.isShiftKeyDown()) {
-			EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> openGui());
-			return InteractionResult.SUCCESS;
-		}
-
-		BlockPos anchor = context.getClickedPos();
-		BlockState blockState = world.getBlockState(anchor);
-
-		EnvExecutor.runInEnv(EnvType.CLIENT,
-				() -> () -> handleUseOnDesignAnchor(player, world, anchor, blockState));
-
-		player.getCooldowns()
-			.addCooldown(context.getItemInHand(), 5);
-		return InteractionResult.SUCCESS;
-	}
-
-	@Environment(EnvType.CLIENT)
-	protected void resetVisualization() {
-		ArchitectWandClient.resetVisualization();
-	}
-
-	@Environment(EnvType.CLIENT)
-	protected void handleUseOnDesignAnchor(Player player, Level world, BlockPos anchor, BlockState blockState) {
-		ArchitectWandClient.handleUseOnDesignAnchor(player, world, anchor, blockState);
-	}
-
-	@Override
-	public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
-		if (worldIn.isClientSide) {
-			EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> handleRightClick(worldIn, playerIn, handIn));
-			playerIn.getCooldowns()
-				.addCooldown(playerIn.getItemInHand(handIn), 5);
-		}
-		return InteractionResult.SUCCESS;
-	}
-
-	@Environment(EnvType.CLIENT)
-	protected void handleRightClick(Level worldIn, Player playerIn, InteractionHand handIn) {
-		ArchitectWandClient.handleRightClick(playerIn);
-	}
-
-	@Environment(EnvType.CLIENT)
-	private void openGui() {
-		ArchitectWandClient.openGui();
-	}
-}*/
-//?} else {
-/*package com.timmie.mightyarchitect.item;
-
-import dev.architectury.utils.EnvExecutor;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Rarity;
-import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
-
-public class ArchitectWandItem extends Item {
-
-	public ArchitectWandItem(Properties properties) {
-		super(properties.stacksTo(1)
-			.rarity(Rarity.RARE));
-	}
-
-	@Override
-	public InteractionResult useOn(UseOnContext context) {
-		Player player = context.getPlayer();
-		Level world = context.getLevel();
-
-		if (!world.isClientSide)
-			return InteractionResult.SUCCESS;
-
-		if (player.isShiftKeyDown()) {
-			EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> openGui());
-			return InteractionResult.SUCCESS;
-		}
-
-		BlockPos anchor = context.getClickedPos();
-		BlockState blockState = world.getBlockState(anchor);
-
-		EnvExecutor.runInEnv(EnvType.CLIENT,
-				() -> () -> handleUseOnDesignAnchor(player, world, anchor, blockState));
-
-		player.getCooldowns()
-			.addCooldown(this, 5);
-		return InteractionResult.SUCCESS;
-	}
-
-	@Environment(EnvType.CLIENT)
-	protected void resetVisualization() {
-		ArchitectWandClient.resetVisualization();
-	}
-
-	@Environment(EnvType.CLIENT)
-	protected void handleUseOnDesignAnchor(Player player, Level world, BlockPos anchor, BlockState blockState) {
-		ArchitectWandClient.handleUseOnDesignAnchor(player, world, anchor, blockState);
-	}
-
-	@Override
-	public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
-		if (worldIn.isClientSide) {
-			EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> handleRightClick(worldIn, playerIn, handIn));
-			playerIn.getCooldowns()
-				.addCooldown(this, 5);
-		}
-		return super.use(worldIn, playerIn, handIn);
-	}
-
-	@Environment(EnvType.CLIENT)
-	protected void handleRightClick(Level worldIn, Player playerIn, InteractionHand handIn) {
-		ArchitectWandClient.handleRightClick(playerIn);
-	}
-
-	@Environment(EnvType.CLIENT)
-	private void openGui() {
-		ArchitectWandClient.openGui();
-	}
-}*///?}
