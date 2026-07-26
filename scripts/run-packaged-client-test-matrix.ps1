@@ -81,16 +81,25 @@ function Start-PrismClient {
         $ownedLaunchers = @($launcher)
 
         $deadline = (Get-Date).AddMinutes(3)
+        $gameLog = Join-Path $Instance.MinecraftDirectory 'logs\latest.log'
+        $clients = @()
         do {
-            $clients = @(
-                Get-InstanceProcesses $Instance.Path |
-                    Where-Object { $_.Name -match '^(java|javaw)' }
-            )
-            if ($clients.Count -gt 0) {
-                return $clients
+            if ($clients.Count -eq 0) {
+                $clients = @(
+                    Get-InstanceProcesses $Instance.Path |
+                        Where-Object { $_.Name -match '^(java|javaw)' }
+                )
+                if ($clients.Count -eq 0 -and $launcher.HasExited) {
+                    throw "Prism exited before launching instance $($Instance.Name)"
+                }
             }
-            if ($launcher.HasExited) {
-                throw "Prism exited before launching instance $($Instance.Name)"
+            # Seeing the JVM is not enough. Prism starts org.prismlauncher.EntryPoint, which then
+            # reads its launch instructions from stdin written by the launcher process. Killing the
+            # launcher during that handshake closes the pipe, so EntryPoint returns without ever
+            # starting Minecraft and the JVM exits silently - no crash report, no latest.log, and a
+            # zero-byte stdout log. Waiting for the game's own log proves the handshake completed.
+            if ($clients.Count -gt 0 -and (Test-Path $gameLog)) {
+                return $clients
             }
             Start-Sleep -Seconds 1
         } while ((Get-Date) -lt $deadline)

@@ -171,6 +171,10 @@ public final class ClientTestController {
                 throw new AssertionError("Timed out in stage " + stage);
 
             releaseMouse(minecraft);
+            if (isFrameCovered(minecraft)) {
+                stageTicks--;
+                return;
+            }
             switch (stage) {
                 case CONNECT -> connect(minecraft);
                 case WAIT_FOR_WORLD -> waitForWorld(minecraft);
@@ -207,6 +211,26 @@ public final class ClientTestController {
         } catch (Throwable ignored) {
             // Cursor handling is a convenience only; never fail a test because of it.
         }
+    }
+
+    /**
+     * True while a full-screen overlay hides the game. The Mojang loading overlay covers every
+     * pixel for as long as resources are reloading, but the client keeps ticking underneath it
+     * and will happily connect to a server. Nothing may run until it clears:
+     * <ul>
+     * <li>Connecting early joins a world whose block models are still baking. A block-break
+     * level event then hands {@code BlockModelShaper.getBlockModel} a state it has no model for,
+     * and vanilla throws a {@link NullPointerException} that disconnects the client with
+     * "Network Protocol Error".</li>
+     * <li>Capturing early compares splash frames instead of game frames, which fails checks that
+     * should pass and silently passes checks that should fail — the red splash on its own carries
+     * enough distinct colours to satisfy the palette grid probe.</li>
+     * </ul>
+     * Waiting here makes the harness behave like a player, who cannot leave the main menu until
+     * the same overlay clears.
+     */
+    private static boolean isFrameCovered(Minecraft minecraft) {
+        return minecraft.getOverlay() != null;
     }
 
     private static void connect(Minecraft minecraft) {
