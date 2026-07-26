@@ -104,10 +104,10 @@ public class MightyClient {
 		Vec3 view = info.getPosition();
 	*///?}
 
-		//? if >=26 {
 		// Reset the per-frame HUD label buffer; outlines re-submit their labels as they render below.
-		com.timmie.mightyarchitect.foundation.utility.HudTextBuffer.beginFrame();
+		com.timmie.mightyarchitect.foundation.utility.HudTextBuffer.beginFrame(view);
 
+		//? if >=26 {
 		// Rendered from a mid-level stage (after translucent particles / features) where the active
 		// RenderSystem modelview still holds the camera view rotation, so only the world-space offset
 		// is applied here. Do not re-apply the camera rotation or it double-transforms.

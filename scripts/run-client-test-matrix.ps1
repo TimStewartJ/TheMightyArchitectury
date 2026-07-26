@@ -86,6 +86,7 @@ function Invoke-ClientTest {
     New-Item -ItemType Directory -Force -Path (Split-Path $gradleStdout) | Out-Null
     Remove-Item $resultPath -Force -ErrorAction SilentlyContinue
     Remove-Item $runDirectory -Recurse -Force -ErrorAction SilentlyContinue
+    Write-TestClientOptions -MinecraftDirectory $runDirectory
     Remove-Item $gradleStdout, $gradleStderr -Force -ErrorAction SilentlyContinue
 
     Write-Host "=== CLIENT TEST $Version / $Loader ==="

@@ -20,6 +20,7 @@ import com.timmie.mightyarchitect.foundation.utility.Shaders;
 import com.timmie.mightyarchitect.gui.ArchitectMenuScreen;
 import com.timmie.mightyarchitect.gui.PalettePickerScreen;
 import com.timmie.mightyarchitect.test.mixin.ArchitectManagerAccessor;
+import com.mojang.blaze3d.platform.Window;
 import dev.architectury.event.events.client.ClientTickEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -56,11 +57,14 @@ public final class ClientTestController {
         CAPTURE_BASELINE,
         START_COMPOSER,
         OPEN_PALETTE,
+        CAPTURE_PALETTE_PREVIEW,
         CAPTURE_BLUEPRINT,
         CAPTURE_HUD_VISIBLE,
         CAPTURE_HUD_HIDDEN,
         CAPTURE_ALIGN_BASELINE,
         CAPTURE_ALIGN_OUTLINE,
+        CAPTURE_LABEL_BASELINE,
+        CAPTURE_LABEL_TEXT,
         VERIFY_RENDER,
         FINISHED
     }
@@ -69,8 +73,14 @@ public final class ClientTestController {
 
     /** Summed |dR|+|dG|+|dB| above which a sampled pixel counts as changed. */
     private static final int PIXEL_DELTA_THRESHOLD = 40;
-    /** Minimum fraction of sampled pixels the passive HUD must paint. */
+    /** Minimum fraction of the sampled region the passive HUD must paint. */
     private static final double MIN_HUD_CHANGED_FRACTION = 0.0015;
+    /**
+     * The passive menu is anchored to the bottom of the screen, so the HUD diff ignores the top
+     * of the frame where chat and toast notifications fade in and out on their own schedule.
+     */
+    private static final double HUD_REGION_MIN_Y = 0.45;
+    private static final double HUD_REGION_MAX_Y = 1.0;
     /** Minimum fraction of the sampled probe region the outline must paint. */
     private static final double MIN_OUTLINE_CHANGED_FRACTION = 0.005;
     /** How far the probe outline's centroid may sit from screen centre, in screen fractions. */
@@ -88,6 +98,21 @@ public final class ClientTestController {
     private static final double PROBE_DISTANCE = 8.0;
     private static final double PROBE_RADIUS = 1.5;
     private static final String PROBE_SLOT = "mightyarchitect-client-test-alignment-probe";
+    private static final String LABEL_SLOT = "mightyarchitect-client-test-label-probe";
+    private static final String PROBE_LABEL_TEXT = "8888m";
+    /** Minimum fraction of the probe region a world-space label must paint. */
+    private static final double MIN_LABEL_CHANGED_FRACTION = 0.0004;
+
+    /** Palette picker window size and the included-palettes grid inside it, in GUI units. */
+    private static final int PALETTE_SCREEN_WIDTH = 256;
+    private static final int PALETTE_SCREEN_HEIGHT = 236;
+    private static final int PALETTE_GRID_X = 10;
+    private static final int PALETTE_GRID_Y = 68;
+    private static final int PALETTE_GRID_SPACING = 23;
+    private static final int PALETTE_GRID_COLUMNS = 5;
+    private static final int PALETTE_GRID_ROWS = 4;
+    /** Distinct colours expected in the grid once the block previews actually draw. */
+    private static final int MIN_PALETTE_GRID_COLOURS = 40;
 
     private static final List<String> checks = new ArrayList<>();
     private static Stage stage = Stage.CONNECT;
@@ -103,6 +128,9 @@ public final class ClientTestController {
     private static Path hudHiddenScreenshot;
     private static Path alignBaselineScreenshot;
     private static Path alignOutlineScreenshot;
+    private static Path labelBaselineScreenshot;
+    private static Path labelTextScreenshot;
+    private static Path palettePickerScreenshot;
     private static int worldRenderFrames;
     private static int hudRenderFrames;
     private static int composerOverlayFrames;
@@ -149,11 +177,14 @@ public final class ClientTestController {
                 case CAPTURE_BASELINE -> captureBaseline(minecraft);
                 case START_COMPOSER -> startComposer(minecraft);
                 case OPEN_PALETTE -> openPalette(minecraft);
+                case CAPTURE_PALETTE_PREVIEW -> capturePalettePreview(minecraft);
                 case CAPTURE_BLUEPRINT -> captureBlueprint(minecraft);
                 case CAPTURE_HUD_VISIBLE -> captureHudVisible(minecraft);
                 case CAPTURE_HUD_HIDDEN -> captureHudHidden(minecraft);
                 case CAPTURE_ALIGN_BASELINE -> captureAlignBaseline(minecraft);
                 case CAPTURE_ALIGN_OUTLINE -> captureAlignOutline(minecraft);
+                case CAPTURE_LABEL_BASELINE -> captureLabelBaseline(minecraft);
+                case CAPTURE_LABEL_TEXT -> captureLabelText(minecraft);
                 case VERIFY_RENDER -> verifyRender(minecraft);
                 case FINISHED -> {
                 }
@@ -253,7 +284,38 @@ public final class ClientTestController {
             return;
 
         check(minecraft.screen instanceof PalettePickerScreen, "palette picker opened");
+        advance(Stage.CAPTURE_PALETTE_PREVIEW);
+    }
+
+    /**
+     * The palette picker shows each palette as a small arrangement of rendered blocks. Those
+     * previews go through the mod's own GUI block renderer, which is easy to break silently:
+     * the buttons still draw their frame, so the screen looks structurally correct while every
+     * preview is blank. Counting distinct colours inside the palette grid separates a grid of
+     * shaded 3D blocks from a grid of flat empty squares.
+     */
+    private static void capturePalettePreview(Minecraft minecraft) {
+        if (stageTicks < 45)
+            return;
+        Path captured = awaitScreenshot(minecraft);
+        if (captured == null)
+            return;
+
+        palettePickerScreenshot = captured;
         minecraft.setScreen(null);
+
+        Window window = minecraft.getWindow();
+        double scale = window.getGuiScale();
+        int topLeftX = (window.getGuiScaledWidth() - PALETTE_SCREEN_WIDTH) / 2;
+        int topLeftY = (window.getGuiScaledHeight() - PALETTE_SCREEN_HEIGHT) / 2;
+        int colours = distinctColours(captured,
+            (int) ((topLeftX + PALETTE_GRID_X) * scale),
+            (int) ((topLeftY + PALETTE_GRID_Y) * scale),
+            (int) (PALETTE_GRID_COLUMNS * PALETTE_GRID_SPACING * scale),
+            (int) (PALETTE_GRID_ROWS * PALETTE_GRID_SPACING * scale));
+
+        check(colours >= MIN_PALETTE_GRID_COLOURS,
+            "palette block previews rendered (" + colours + " distinct colours in grid)");
         advance(Stage.CAPTURE_BLUEPRINT);
     }
 
@@ -302,6 +364,7 @@ public final class ClientTestController {
             menu.setFocused(false);
             menu.setVisible(true);
             menu.updateContents();
+            settleMenuAnimation(menu);
             return;
         }
         if (stageTicks < 45)
@@ -316,7 +379,9 @@ public final class ClientTestController {
 
     private static void captureHudHidden(Minecraft minecraft) {
         if (stageTicks == 1) {
-            ArchitectManagerAccessor.getMenu().setVisible(false);
+            ArchitectMenuScreen menu = ArchitectManagerAccessor.getMenu();
+            menu.setVisible(false);
+            settleMenuAnimation(menu);
             return;
         }
         if (stageTicks < 45)
@@ -325,7 +390,8 @@ public final class ClientTestController {
         if (captured == null)
             return;
 
-        ImageDiff diff = diffImages(hudVisibleScreenshot, captured);
+        ImageDiff diff = diffImages(hudVisibleScreenshot, captured, 0.0, 1.0,
+            HUD_REGION_MIN_Y, HUD_REGION_MAX_Y);
         hudHiddenScreenshot = captured;
         check(diff.changedFraction() >= MIN_HUD_CHANGED_FRACTION,
             "passive HUD overlay painted pixels (" + diff.changedPixels() + " px, "
@@ -335,6 +401,16 @@ public final class ClientTestController {
         menu.setVisible(true);
         menu.updateContents();
         advance(Stage.CAPTURE_ALIGN_BASELINE);
+    }
+
+    /**
+     * The menu slides in and out on an eased chaser, so a frame captured mid-slide compares
+     * against an arbitrary intermediate position. Run the chaser to completion up front so both
+     * HUD frames are taken from a settled layout.
+     */
+    private static void settleMenuAnimation(ArchitectMenuScreen menu) {
+        for (int i = 0; i < 400; i++)
+            menu.onClientTick();
     }
 
     /**
@@ -382,7 +458,48 @@ public final class ClientTestController {
         check(driftX <= MAX_CENTROID_DRIFT && driftY <= MAX_CENTROID_DRIFT,
             "world render aligned with camera; probe centroid (" + round(diff.centroidX()) + ", "
                 + round(diff.centroidY()) + ") within " + round(MAX_CENTROID_DRIFT) + " of centre");
+        advance(Stage.CAPTURE_LABEL_BASELINE);
+    }
+
+    private static void captureLabelBaseline(Minecraft minecraft) {
+        if (stageTicks < 25)
+            return;
+        Path captured = awaitScreenshot(minecraft);
+        if (captured == null)
+            return;
+
+        labelBaselineScreenshot = captured;
+        advance(Stage.CAPTURE_LABEL_TEXT);
+    }
+
+    /**
+     * The composer labels room dimensions with world-space text drawn through the outliner. That
+     * text is easy to lose without any error - an unset alpha byte or a render pass that no longer
+     * displays immediate-mode glyphs both leave the label fully invisible while everything else
+     * still draws. Placing a label in front of the camera and diffing against the same frame
+     * without it proves the glyphs actually reach the screen.
+     */
+    private static void captureLabelText(Minecraft minecraft) {
+        showProbeLabel(minecraft);
+        if (stageTicks < 25)
+            return;
+        Path captured = awaitScreenshot(minecraft);
+        if (captured == null)
+            return;
+
+        ImageDiff diff = diffImages(labelBaselineScreenshot, captured, PROBE_REGION_MIN, PROBE_REGION_MAX);
+        MightyClient.outliner.remove(LABEL_SLOT);
+        labelTextScreenshot = captured;
+        check(diff.changedFraction() >= MIN_LABEL_CHANGED_FRACTION,
+            "world-space measurement label painted pixels (" + diff.changedPixels() + " px, "
+                + round(diff.changedFraction() * 100.0) + "% of probe region)");
         advance(Stage.VERIFY_RENDER);
+    }
+
+    private static void showProbeLabel(Minecraft minecraft) {
+        Vec3 eye = minecraft.player.getEyePosition();
+        Vec3 target = eye.add(minecraft.player.getLookAngle().scale(PROBE_DISTANCE));
+        MightyClient.outliner.chaseText(LABEL_SLOT, target, PROBE_LABEL_TEXT);
     }
 
     private static void showProbeOutline(Minecraft minecraft) {
@@ -494,15 +611,20 @@ public final class ClientTestController {
     }
 
     private static ImageDiff diffImages(Path first, Path second) {
-        return diffImages(first, second, 0.0, 1.0);
+        return diffImages(first, second, 0.0, 1.0, 0.0, 1.0);
+    }
+
+    private static ImageDiff diffImages(Path first, Path second, double min, double max) {
+        return diffImages(first, second, min, max, min, max);
     }
 
     /**
-     * Compares two frames within the given fractional region and reports how much changed
-     * and where the change is centred. Both the region bounds and the returned centroid are
+     * Compares two frames within the given fractional window and reports how much changed
+     * and where the change is centred. Both the window bounds and the returned centroid are
      * fractions of the full frame, so results are independent of window size.
      */
-    private static ImageDiff diffImages(Path first, Path second, double regionMin, double regionMax) {
+    private static ImageDiff diffImages(Path first, Path second, double minX, double maxX,
+                                        double minY, double maxY) {
         try {
             BufferedImage before = ImageIO.read(first.toFile());
             BufferedImage after = ImageIO.read(second.toFile());
@@ -511,16 +633,16 @@ public final class ClientTestController {
 
             int width = Math.min(before.getWidth(), after.getWidth());
             int height = Math.min(before.getHeight(), after.getHeight());
-            int minX = (int) (width * regionMin);
-            int maxX = (int) (width * regionMax);
-            int minY = (int) (height * regionMin);
-            int maxY = (int) (height * regionMax);
+            int startX = (int) (width * minX);
+            int endX = (int) (width * maxX);
+            int startY = (int) (height * minY);
+            int endY = (int) (height * maxY);
             long changed = 0;
             long samples = 0;
             double sumX = 0;
             double sumY = 0;
-            for (int y = minY; y < maxY; y += 2) {
-                for (int x = minX; x < maxX; x += 2) {
+            for (int y = startY; y < endY; y += 2) {
+                for (int x = startX; x < endX; x += 2) {
                     samples++;
                     int a = before.getRGB(x, y);
                     int b = after.getRGB(x, y);
@@ -543,6 +665,37 @@ public final class ClientTestController {
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to compare screenshots " + first + " and " + second,
                 exception);
+        }
+    }
+
+    /**
+     * Counts distinct colours in a region, quantised so that shading gradients within one block
+     * face do not inflate the count. Flat, unrendered UI yields a handful of colours; a grid of
+     * textured 3D blocks yields many.
+     */
+    private static int distinctColours(Path path, int x, int y, int width, int height) {
+        try {
+            BufferedImage image = ImageIO.read(path.toFile());
+            if (image == null)
+                throw new IllegalStateException("ImageIO could not decode " + path);
+
+            int minX = Math.max(0, x);
+            int minY = Math.max(0, y);
+            int maxX = Math.min(image.getWidth(), x + width);
+            int maxY = Math.min(image.getHeight(), y + height);
+            if (minX >= maxX || minY >= maxY)
+                throw new IllegalStateException("Palette grid region fell outside the frame");
+
+            Set<Integer> seen = new HashSet<>();
+            for (int py = minY; py < maxY; py++) {
+                for (int px = minX; px < maxX; px++) {
+                    int rgb = image.getRGB(px, py);
+                    seen.add(((rgb >>> 19 & 0x1f) << 10) | ((rgb >>> 11 & 0x1f) << 5) | (rgb >>> 3 & 0x1f));
+                }
+            }
+            return seen.size();
+        } catch (Exception exception) {
+            throw new IllegalStateException("Unable to analyze palette grid in " + path, exception);
         }
     }
 
@@ -610,6 +763,14 @@ public final class ClientTestController {
             if (alignOutlineScreenshot != null)
                 result.addProperty("alignOutlineScreenshot",
                     alignOutlineScreenshot.toAbsolutePath().toString());
+            if (labelBaselineScreenshot != null)
+                result.addProperty("labelBaselineScreenshot",
+                    labelBaselineScreenshot.toAbsolutePath().toString());
+            if (labelTextScreenshot != null)
+                result.addProperty("labelTextScreenshot", labelTextScreenshot.toAbsolutePath().toString());
+            if (palettePickerScreenshot != null)
+                result.addProperty("palettePickerScreenshot",
+                    palettePickerScreenshot.toAbsolutePath().toString());
             if (throwable != null) {
                 result.addProperty("error", throwable.toString());
                 StringWriter stack = new StringWriter();

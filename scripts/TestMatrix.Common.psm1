@@ -336,6 +336,26 @@ function Get-TestHiddenWindowOption {
     return @{}
 }
 
+function Write-TestClientOptions {
+    <#
+        Pins the client's GUI scale for tests. At the default scale the harness window is only
+        427 GUI units wide, which is below the threshold where the mod tucks its composer menu
+        away sideways and leaves almost nothing on screen - that makes HUD assertions measure
+        noise. Scale 1 keeps the full HUD visible and makes screenshots comparable across nodes.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$MinecraftDirectory
+    )
+
+    New-Item -ItemType Directory -Force -Path $MinecraftDirectory | Out-Null
+    @(
+        'guiScale:1'
+        'pauseOnLostFocus:false'
+        'fov:1.0'
+    ) | Set-Content (Join-Path $MinecraftDirectory 'options.txt') -Encoding ascii
+}
+
 function Expand-TestListArgument {
     <#
         Normalizes list parameters so that both `-Versions a,b` (PowerShell array) and
@@ -513,6 +533,7 @@ Export-ModuleMember -Function @(
     'Write-TestSessionManifest',
     'Start-TestVanillaServer',
     'Get-TestHiddenWindowOption',
+    'Write-TestClientOptions',
     'Expand-TestListArgument',
     'Find-TestGradleArtifact',
     'Get-RuntimeArtifactManifestPath',

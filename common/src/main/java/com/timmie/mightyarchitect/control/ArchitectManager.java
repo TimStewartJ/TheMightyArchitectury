@@ -381,10 +381,7 @@ public class ArchitectManager {
 		/*com.mojang.blaze3d.systems.RenderSystem.enableBlend();*///?}
 
 		// Draw world-space measurement labels submitted during the world render pass as HUD text.
-		//? if >=26 {
 		com.timmie.mightyarchitect.foundation.utility.HudTextBuffer.render(poseStack);
-		//?} else {
-		/**///?}
 	}
 
 	//? if >=1.21.4 {

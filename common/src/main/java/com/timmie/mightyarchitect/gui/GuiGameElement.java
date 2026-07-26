@@ -67,6 +67,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemDisplayContext;
 *///?}
 import net.minecraft.world.item.ItemStack;
+//? if >=1.21.6 {
+import org.joml.Matrix3x2fStack;
+//?} else {
+/*
+*///?}
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Blocks;
 //? if >=1.21.6 {
@@ -236,53 +241,99 @@ public class GuiGameElement {
 		@Override
 		//? if >=26 {
 		public void render(GuiGraphicsExtractor guiGraphics) {
-			// pose() is a Matrix3x2fStack for 2D GUI; 3D block rendering needs its own PoseStack.
-			PoseStack ms = new PoseStack();
+			renderAsGuiItem(guiGraphics);
+		}
+
+		//*
+		 //* From 1.21.6 the GUI is recorded into a deferred render state and replayed later, so
+		 //* tesselating a block into a buffer source and flushing it mid-draw never reaches the
+		 //* screen - the panel behind it is composited afterwards and covers it, leaving an empty
+		 //* frame. Draw the block through the GUI's own item pipeline instead, which is recorded
+		 //* alongside everything else and ends up correctly ordered.
+		 //
+		private void renderAsGuiItem(GuiGraphicsExtractor guiGraphics) {
+			ItemStack stack = new ItemStack(blockState.getBlock());
+			if (stack.isEmpty())
+				return;
+
+			float size = (float) scale;
+			float guiX = (float) (xBeforeScale + x * scale);
+			float guiY = (float) (yBeforeScale + y * scale) - size;
+			Matrix3x2fStack pose = guiGraphics.pose();
+			pose.pushMatrix();
+			pose.translate(guiX, guiY);
+			pose.scale(size / 16f, size / 16f);
+			guiGraphics.item(stack, 0, 0);
+			pose.popMatrix();
+		}
 		//?} else if >=1.21.6 {
 		/*public void render(GuiGraphics guiGraphics) {
-			// In 1.21.6, guiGraphics.pose() returns Matrix3x2fStack for 2D GUI.
-			// For 3D block rendering, create a new PoseStack
-			PoseStack ms = new PoseStack();
-		*///?} else {
+			renderAsGuiItem(guiGraphics);
+		}
+
+		//*
+		 //* From 1.21.6 the GUI is recorded into a deferred render state and replayed later, so
+		 //* tesselating a block into a buffer source and flushing it mid-draw never reaches the
+		 //* screen - the panel behind it is composited afterwards and covers it, leaving an empty
+		 //* frame. Draw the block through the GUI's own item pipeline instead, which is recorded
+		 //* alongside everything else and ends up correctly ordered.
+		 //
+		private void renderAsGuiItem(GuiGraphics guiGraphics) {
+			ItemStack stack = new ItemStack(blockState.getBlock());
+			if (stack.isEmpty())
+				return;
+
+			float size = (float) scale;
+			float guiX = (float) (xBeforeScale + x * scale);
+			float guiY = (float) (yBeforeScale + y * scale) - size;
+			Matrix3x2fStack pose = guiGraphics.pose();
+			pose.pushMatrix();
+			pose.translate(guiX, guiY);
+			pose.scale(size / 16f, size / 16f);
+			guiGraphics.renderItem(stack, 0, 0);
+			pose.popMatrix();
+		}
+		*///?} else if >=1.21.4 {
 		/*public void render(GuiGraphics guiGraphics) {
 			var ms = guiGraphics.pose();
-		*///?}
 			prepareMatrix(ms);
 
 			Minecraft mc = Minecraft.getInstance();
-			//? if >=26 {
-			//?} else {
-			/*BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
-			*///?}
+			BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
 			MultiBufferSource.BufferSource buffer = mc.renderBuffers()
 				.bufferSource();
-			//? if >=1.21.6 {
-			//?} else if >=1.21.4 {
-			/*RenderType renderType = blockState.getBlock() == Blocks.AIR ? Sheets.translucentItemSheet()
+			RenderType renderType = blockState.getBlock() == Blocks.AIR ? Sheets.translucentItemSheet()
 				: ItemBlockRenderTypes.getRenderType(blockState);
 			VertexConsumer vb = buffer.getBuffer(renderType);
-			*///?} else {
-			/*RenderType renderType = blockState.getBlock() == Blocks.AIR ? Sheets.translucentCullBlockSheet()
-				: ItemBlockRenderTypes.getRenderType(blockState, true);
-			VertexConsumer vb = buffer.getBuffer(renderType);
-			*///?}
 
 			transformMatrix(ms);
 
-			//? if >=26 {
-			renderModel(mc, buffer, ms);
-			//?} else if >=1.21.6 {
-			/*renderModel(blockRenderer, buffer, ms);
-			*///?} else if >=1.21.4 {
-			/*RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
+			RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
 			renderModel(blockRenderer, buffer, renderType, vb, ms);
-			*///?} else {
-			/*RenderSystem.setShaderTexture(0, InventoryMenu.BLOCK_ATLAS);
-			renderModel(blockRenderer, buffer, renderType, vb, ms);
-			*///?}
 
 			cleanUpMatrix(ms);
 		}
+		*///?} else {
+		/*public void render(GuiGraphics guiGraphics) {
+			var ms = guiGraphics.pose();
+			prepareMatrix(ms);
+
+			Minecraft mc = Minecraft.getInstance();
+			BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
+			MultiBufferSource.BufferSource buffer = mc.renderBuffers()
+				.bufferSource();
+			RenderType renderType = blockState.getBlock() == Blocks.AIR ? Sheets.translucentCullBlockSheet()
+				: ItemBlockRenderTypes.getRenderType(blockState, true);
+			VertexConsumer vb = buffer.getBuffer(renderType);
+
+			transformMatrix(ms);
+
+			RenderSystem.setShaderTexture(0, InventoryMenu.BLOCK_ATLAS);
+			renderModel(blockRenderer, buffer, renderType, vb, ms);
+
+			cleanUpMatrix(ms);
+		}
+		*///?}
 
 		//? if >=26 {
 		protected void renderModel(Minecraft minecraft, MultiBufferSource.BufferSource buffer, PoseStack ms) {

@@ -119,10 +119,12 @@ function Write-PrismInstance {
         [switch]$KeepOpen
     )
 
+    # Automated runs are serialised by the Prism launch mutex, so they reuse one instance per
+    # target. Manual sessions run concurrently, so those stay keyed by port.
     $instanceName = if ($KeepOpen) {
         "MightyArchitect-Manual-$Version-$Loader-$InstancePort"
     } else {
-        "MightyArchitect-Matrix-$Version-$Loader-$InstancePort"
+        "MightyArchitect-Matrix-$Version-$Loader"
     }
     $instancePath = Join-Path $InstancesRoot $instanceName
     $minecraftDirectory = Join-Path $instancePath '.minecraft'
@@ -306,6 +308,7 @@ function Invoke-PackagedClientTest {
         (Join-Path $instance.MinecraftDirectory 'crash-reports'),
         (Join-Path $instance.MinecraftDirectory 'screenshots') -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item (Join-Path $instance.MinecraftDirectory 'client-test-result.json') -Force -ErrorAction SilentlyContinue
+    Write-TestClientOptions -MinecraftDirectory $instance.MinecraftDirectory
 
     $launcherDirectory = Join-Path $instance.MinecraftDirectory 'logs'
     New-Item -ItemType Directory -Force -Path $launcherDirectory | Out-Null
