@@ -46,7 +46,7 @@ public class LerpedFloat {
 		this.chaseFunction = chaseFunction;
 		return this;
 	}
-	
+
 	public LerpedFloat disableSmartAngleChasing() {
 		angularChase = false;
 		return this;
@@ -117,13 +117,22 @@ public class LerpedFloat {
 
 	public void readNBT(CompoundTag compoundNBT, boolean clientPacket) {
 		if (!clientPacket || compoundNBT.contains("Force"))
-			startWithValue(compoundNBT.getFloat("Value"));
+			//? if >=1.21.6 {
+			startWithValue(compoundNBT.getFloat("Value").orElse(0f));
+			//?} else {
+			/*startWithValue(compoundNBT.getFloat("Value"));
+			*///?}
 		readChaser(compoundNBT);
 	}
 
 	protected void readChaser(CompoundTag compoundNBT) {
-		chaseSpeed = compoundNBT.getFloat("Speed");
+		//? if >=1.21.6 {
+		chaseSpeed = compoundNBT.getFloat("Speed").orElse(0f);
+		chaseTarget = compoundNBT.getFloat("Target").orElse(0f);
+		//?} else {
+		/*chaseSpeed = compoundNBT.getFloat("Speed");
 		chaseTarget = compoundNBT.getFloat("Target");
+		*///?}
 	}
 
 	@FunctionalInterface

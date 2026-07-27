@@ -1,7 +1,6 @@
 package com.timmie.mightyarchitect;
 
 import dev.architectury.event.events.client.ClientLifecycleEvent;
-import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.utils.EnvExecutor;
 import net.fabricmc.api.EnvType;
@@ -32,7 +31,8 @@ public class TheMightyArchitect {
 		BLOCKS.register();
 		ITEMS.register();
 
-		LifecycleEvent.SETUP.register(AllPackets::registerPackets);
+		// Force packet registration via static initialization
+		AllPackets.init();
 		EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> ClientLifecycleEvent.CLIENT_SETUP.register((c) -> MightyClient.init()));
 	}
 }

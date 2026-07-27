@@ -1,6 +1,5 @@
 package com.timmie.mightyarchitect.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.design.*;
 import com.timmie.mightyarchitect.gui.widgets.IconButton;
@@ -8,7 +7,15 @@ import com.timmie.mightyarchitect.gui.widgets.Indicator;
 import com.timmie.mightyarchitect.gui.widgets.Indicator.State;
 import com.timmie.mightyarchitect.gui.widgets.Label;
 import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
+//? if >=26 {
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;*///?}
 import net.minecraft.client.gui.components.EditBox;
+//? if >=1.21.10 {
+import net.minecraft.client.input.MouseButtonEvent;
+//?} else {
+/**///?}
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -186,7 +193,7 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 			.setState(theme.getMaxFloorHeight())
 			.calling(position -> {
 				labelRoomHeight.setText(position + "m");
-				labelRoomHeight.x = position > 9 ? topLeftX + 102 : topLeftX + 106;
+				labelRoomHeight.setX(position > 9 ? topLeftX + 102 : topLeftX + 106);
 			});
 		widgets.add(areaRoomHeight);
 		widgets.add(labelRoomHeight);
@@ -200,9 +207,15 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public boolean mouseClicked(double x, double y, int button) {
+	//? if >=1.21.10 {
+	public boolean mouseClicked(MouseButtonEvent event, boolean flag) {
+	//?} else {
+	/*public boolean mouseClicked(double x, double y, int button) {*///?}
 
-		if (button == 0) {
+		//? if >=1.21.10 {
+		if (event.button() == 0) {
+		//?} else {
+		/*if (button == 0) {*///?}
 			for (IconButton button2 : toggleButtons) {
 				if (button2.isHoveredOrFocused()) {
 					buttonClicked(button2);
@@ -211,7 +224,10 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 			}
 		}
 
-		return super.mouseClicked(x, y, button);
+		//? if >=1.21.10 {
+		return super.mouseClicked(event, flag);
+		//?} else {
+		/*return super.mouseClicked(x, y, button);*///?}
 	}
 
 	protected void buttonClicked(IconButton button) {
@@ -263,20 +279,38 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public void renderWindow(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
-		ScreenResources.THEME_EDITOR.draw(ms, this, topLeftX, topLeftY);
+	//? if >=26 {
+	public void renderWindow(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
+	//?} else {
+	/*public void renderWindow(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {*///?}
+		ScreenResources.THEME_EDITOR.draw(ms, topLeftX, topLeftY);
 
 		int x = topLeftX + 10;
 		int y = topLeftY + 14;
 
-		font.draw(ms, "Theme name", x, y, ScreenResources.FONT_COLOR);
-		font.draw(ms, "Designer", x, y + 20, ScreenResources.FONT_COLOR);
+		//? if >=26 {
+		ms.text(font, "Theme name", x, y, ScreenResources.FONT_COLOR);
+		//?} else {
+		/*ms.drawString(font, "Theme name", x, y, ScreenResources.FONT_COLOR);*///?}
+		//? if >=26 {
+		ms.text(font, "Designer", x, y + 20, ScreenResources.FONT_COLOR);
+		//?} else {
+		/*ms.drawString(font, "Designer", x, y + 20, ScreenResources.FONT_COLOR);*///?}
 
 		y = topLeftY + 75;
 
-		font.draw(ms, "Styles included", x, y - 17, ScreenResources.FONT_COLOR);
-		font.draw(ms, "Shapes and Roof Types included", x, y + 32, ScreenResources.FONT_COLOR);
-		font.draw(ms, "Max. Room Height", x, y + 87, ScreenResources.FONT_COLOR);
+		//? if >=26 {
+		ms.text(font, "Styles included", x, y - 17, ScreenResources.FONT_COLOR);
+		//?} else {
+		/*ms.drawString(font, "Styles included", x, y - 17, ScreenResources.FONT_COLOR);*///?}
+		//? if >=26 {
+		ms.text(font, "Shapes and Roof Types included", x, y + 32, ScreenResources.FONT_COLOR);
+		//?} else {
+		/*ms.drawString(font, "Shapes and Roof Types included", x, y + 32, ScreenResources.FONT_COLOR);*///?}
+		//? if >=26 {
+		ms.text(font, "Max. Room Height", x, y + 87, ScreenResources.FONT_COLOR);
+		//?} else {
+		/*ms.drawString(font, "Max. Room Height", x, y + 87, ScreenResources.FONT_COLOR);*///?}
 	}
 
 	@Override
@@ -327,7 +361,10 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 		ThemeStorage.exportTheme(theme);
 		ThemeStorage.reloadExternal();
 		ArchitectManager.editTheme(theme);
-		minecraft.player.displayClientMessage(Component.literal("Theme settings have been updated."), true);
+		//? if >=26 {
+		minecraft.player.sendOverlayMessage(Component.literal("Theme settings have been updated."));
+		//?} else {
+		/*minecraft.player.displayClientMessage(Component.literal("Theme settings have been updated."), true);*///?}
 	}
 
 	private boolean roofLayerExists() {

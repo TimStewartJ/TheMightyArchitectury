@@ -1,6 +1,5 @@
 package com.timmie.mightyarchitect.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.control.design.DesignExporter;
 import com.timmie.mightyarchitect.control.design.DesignLayer;
 import com.timmie.mightyarchitect.control.design.DesignTheme;
@@ -9,6 +8,10 @@ import com.timmie.mightyarchitect.control.phase.export.PhaseEditTheme;
 import com.timmie.mightyarchitect.gui.widgets.Label;
 import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
 import com.timmie.mightyarchitect.gui.widgets.SelectionScrollInput;
+//? if >=26 {
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;*///?}
 
 import java.util.ArrayList;
 import java.util.List;
@@ -231,24 +234,50 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	protected void renderWindow(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
-		ScreenResources.EXPORTER.draw(ms, this, topLeftX, topLeftY);
+	//? if >=26 {
+	protected void renderWindow(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
+	//?} else {
+	/*protected void renderWindow(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {*///?}
+		ScreenResources.EXPORTER.draw(ms, topLeftX, topLeftY);
 
-		ms.pushPose();
-		ms.translate(0, 0, -200);
-		ms.translate((this.width - this.sWidth) / 2 + 150, 120, 0);
-		ms.scale(10, 10, 10);
+		//? if >=1.21.6 {
+		// pose() is a Matrix3x2fStack for 2D GUI; 3D block/item previews go through GuiGameElement.
+		GuiGameElement.of(minecraft.player.getMainHandItem())
+			.at((this.width - this.sWidth) / 2 + 150, 120, -200)
+			.scale(10)
+			.rotate(-1, 0, 20)
+			.render(ms);
+		//?} else {
+		/*ms.pose().pushPose();
+		ms.pose().translate(0, 0, -200);
+		ms.pose().translate((this.width - this.sWidth) / 2 + 150, 120, 0);
+		ms.pose().scale(10, 10, 10);
 		GuiGameElement.of(minecraft.player.getMainHandItem())
 			.rotate(-1, 0, 20)
 			.render(ms);
-		ms.popPose();
+		ms.pose().popPose();*///?}
 
 		int color = ScreenResources.FONT_COLOR;
-		font.draw(ms, "Export custom Designs", topLeftX + 10, topLeftY + 10, color);
-		font.draw(ms, "Theme", topLeftX + 10, topLeftY + 28, color);
-		font.draw(ms, "Building Layer", topLeftX + 10, topLeftY + 48, color);
-		font.draw(ms, "Design Type", topLeftX + 10, topLeftY + 68, color);
-		font.draw(ms, additionalDataKey, topLeftX + 10, topLeftY + 88, color);
+		//? if >=26 {
+		ms.text(font, "Export custom Designs", topLeftX + 10, topLeftY + 10, color);
+		//?} else {
+		/*ms.drawString(font, "Export custom Designs", topLeftX + 10, topLeftY + 10, color);*///?}
+		//? if >=26 {
+		ms.text(font, "Theme", topLeftX + 10, topLeftY + 28, color);
+		//?} else {
+		/*ms.drawString(font, "Theme", topLeftX + 10, topLeftY + 28, color);*///?}
+		//? if >=26 {
+		ms.text(font, "Building Layer", topLeftX + 10, topLeftY + 48, color);
+		//?} else {
+		/*ms.drawString(font, "Building Layer", topLeftX + 10, topLeftY + 48, color);*///?}
+		//? if >=26 {
+		ms.text(font, "Design Type", topLeftX + 10, topLeftY + 68, color);
+		//?} else {
+		/*ms.drawString(font, "Design Type", topLeftX + 10, topLeftY + 68, color);*///?}
+		//? if >=26 {
+		ms.text(font, additionalDataKey, topLeftX + 10, topLeftY + 88, color);
+		//?} else {
+		/*ms.drawString(font, additionalDataKey, topLeftX + 10, topLeftY + 88, color);*///?}
 	}
 
 	@Override

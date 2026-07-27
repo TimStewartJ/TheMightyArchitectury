@@ -6,7 +6,11 @@ import com.timmie.mightyarchitect.AllSpecialTextures;
 import com.timmie.mightyarchitect.foundation.RenderTypes;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+//? if >=1.21.11 {
+import net.minecraft.client.renderer.rendertype.RenderType;
+//?} else {
+/*import net.minecraft.client.renderer.RenderType;
+*///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
@@ -52,7 +56,11 @@ public class BlockClusterOutline extends Outline {
 		VertexConsumer builder = buffer.getBuffer(translucentType);
 
 		Vec3 center = VecHelper.getCenterOf(pos);
-		Vec3 offset = Vec3.atLowerCornerOf(face.getNormal());
+		//? if >=1.21.4 {
+		Vec3 offset = Vec3.atLowerCornerOf(face.getUnitVec3i());
+		//?} else {
+		/*Vec3 offset = Vec3.atLowerCornerOf(face.getNormal());
+		*///?}
 		Vec3 plane = VecHelper.axisAlingedPlaneOf(offset);
 		Axis axis = face.getAxis();
 

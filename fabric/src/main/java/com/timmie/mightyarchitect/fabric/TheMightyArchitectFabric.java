@@ -10,6 +10,6 @@ public class TheMightyArchitectFabric implements ModInitializer {
 	public void onInitialize()
 	{
 		TheMightyArchitect.Init();
-		EnvExecutor.runInEnv(Env.CLIENT, () -> () -> OnRenderWorld.RegisterRenderEvent());
+		EnvExecutor.runInEnv(Env.CLIENT, () -> MightyArchitectFabricClient::init);
 	}
 }

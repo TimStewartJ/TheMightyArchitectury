@@ -5,6 +5,7 @@ import com.timmie.mightyarchitect.control.design.partials.Design;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 
 import java.io.IOException;
@@ -70,20 +71,20 @@ public class DesignResourceLoader {
 		final Map<DesignLayer, Map<DesignType, Set<CompoundTag>>> compoundMap = new HashMap<>();
 
 		CompoundTag importedThemeFile = new CompoundTag();
-		
+
 		if (theme.getFilePath().endsWith(".theme")) {
 			try {
 				InputStream inputStream = Files.newInputStream(Paths.get("themes/" + theme.getFilePath()),
 						StandardOpenOption.READ);
-				importedThemeFile = NbtIo.readCompressed(inputStream);
+				importedThemeFile = NbtIo.readCompressed(inputStream, NbtAccounter.unlimitedHeap());
 				inputStream.close();
 			} catch (IOException e) {
 				e.printStackTrace();
-			}			
+			}
 		} else {
 			importedThemeFile = FilesHelper.loadJsonAsNBT("themes/" + theme.getFilePath());
 		}
-		
+
 		final CompoundTag themeFile = importedThemeFile;
 
 		if (themeFile.contains("Designs")) {
@@ -93,11 +94,23 @@ public class DesignResourceLoader {
 				theme.getTypes().forEach(type -> {
 
 					Set<CompoundTag> designs = new HashSet<>();
-					CompoundTag tagLayers = themeFile.getCompound("Designs");
+					//? if >=1.21.6 {
+					CompoundTag tagLayers = themeFile.getCompound("Designs").orElse(new CompoundTag());
+					//?} else {
+					/*CompoundTag tagLayers = themeFile.getCompound("Designs");
+					*///?}
 					if (tagLayers.contains(layer.name())) {
-						CompoundTag tagTypes = tagLayers.getCompound(layer.name());
+						//? if >=1.21.6 {
+						CompoundTag tagTypes = tagLayers.getCompound(layer.name()).orElse(new CompoundTag());
+						//?} else {
+						/*CompoundTag tagTypes = tagLayers.getCompound(layer.name());
+						*///?}
 						if (tagTypes.contains(type.name())) {
-							ListTag tagDesigns = tagTypes.getList(type.name(), 10);
+							//? if >=1.21.6 {
+							ListTag tagDesigns = tagTypes.getList(type.name()).orElse(new ListTag());
+							//?} else {
+							/*ListTag tagDesigns = tagTypes.getList(type.name(), 10);
+							*///?}
 							tagDesigns.forEach(tag -> designs.add((CompoundTag) tag));
 						}
 					}

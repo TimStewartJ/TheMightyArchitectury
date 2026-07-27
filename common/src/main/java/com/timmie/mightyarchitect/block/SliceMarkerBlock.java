@@ -5,7 +5,6 @@ import com.timmie.mightyarchitect.control.design.DesignSlice.DesignSliceTrait;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction.Axis;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -15,7 +14,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.world.level.material.Material;
+//? if >=1.21.4 {
+//?} else {
+/*import net.minecraft.world.level.material.MapColor;
+*///?}
 import net.minecraft.world.phys.BlockHitResult;
 
 public class SliceMarkerBlock extends Block {
@@ -24,8 +26,13 @@ public class SliceMarkerBlock extends Block {
 	public static final EnumProperty<DesignSliceTrait> VARIANT = EnumProperty.<DesignSliceTrait>create("variant",
 			DesignSliceTrait.class);
 
-	public SliceMarkerBlock() {
-		super(Properties.of(Material.STONE));
+	//? if >=1.21.4 {
+	public SliceMarkerBlock(Properties properties) {
+		super(properties);
+	//?} else {
+	/*public SliceMarkerBlock() {
+		super(Properties.of().mapColor(MapColor.STONE));
+	*///?}
 		this.registerDefaultState(defaultBlockState().setValue(VARIANT, DesignSliceTrait.Standard));
 	}
 
@@ -43,19 +50,27 @@ public class SliceMarkerBlock extends Block {
 	}
 
 	@Override
-	public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn,
+	protected InteractionResult useWithoutItem(BlockState state, Level worldIn, BlockPos pos, Player player,
 			BlockHitResult hit) {
 		if (hit.getDirection().getAxis() == Axis.Y)
 			return InteractionResult.PASS;
-		if (AllItems.ARCHITECT_WAND.typeOf(player.getItemInHand(handIn)))
+		if (AllItems.ARCHITECT_WAND.typeOf(player.getMainHandItem()) || AllItems.ARCHITECT_WAND.typeOf(player.getOffhandItem()))
 			return InteractionResult.PASS;
-		if (worldIn.isClientSide)
+		//? if >=1.21.10 {
+		if (worldIn.isClientSide())
+		//?} else {
+		/*if (worldIn.isClientSide)
+		*///?}
 			return InteractionResult.SUCCESS;
 
 		DesignSliceTrait currentTrait = state.getValue(VARIANT);
 		DesignSliceTrait newTrait = currentTrait.cycle(player.isShiftKeyDown() ? -1 : 1);
 		worldIn.setBlockAndUpdate(pos, state.setValue(VARIANT, newTrait));
-		player.displayClientMessage(Component.literal(newTrait.getDescription()), true);
+		//? if >=26 {
+		player.sendOverlayMessage(Component.literal(newTrait.getDescription()));
+		//?} else {
+		/*player.displayClientMessage(Component.literal(newTrait.getDescription()), true);
+		*///?}
 
 		return InteractionResult.SUCCESS;
 	}

@@ -7,6 +7,15 @@ import com.timmie.mightyarchitect.control.compose.planner.Tools;
 import com.timmie.mightyarchitect.gui.ToolSelectionScreen;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+//? if >=26 {
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.KeyEvent;
+//?} else if >=1.21.10 {
+/*import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.KeyEvent;
+*///?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -56,7 +65,12 @@ public class PhasePreviewing extends PhaseBase implements IRenderGameOverlay {
 
 	@Override
 	public void onKey(int key, boolean released) {
-		if (MightyClient.TOOL_MENU.matches(key, 0)) {
+		//? if >=1.21.10 {
+		KeyEvent keyEvent = new KeyEvent(key, 0, 0);
+		if (MightyClient.TOOL_MENU.matches(keyEvent)) {
+		//?} else {
+		/*if (MightyClient.TOOL_MENU.matches(key, 0)) {
+		*///?}
 			if (released && toolSelection.focused) {
 				toolSelection.focused = false;
 				toolSelection.onClose();
@@ -72,7 +86,11 @@ public class PhasePreviewing extends PhaseBase implements IRenderGameOverlay {
 			return;
 
 		if (toolSelection.focused) {
-			Optional<KeyMapping> mapping = Arrays.stream(Minecraft.getInstance().options.keyHotbarSlots).filter(keyMapping -> keyMapping.matches(key, 0)).findFirst();
+			//? if >=1.21.10 {
+			Optional<KeyMapping> mapping = Arrays.stream(Minecraft.getInstance().options.keyHotbarSlots).filter(keyMapping -> keyMapping.matches(keyEvent)).findFirst();
+			//?} else {
+			/*Optional<KeyMapping> mapping = Arrays.stream(Minecraft.getInstance().options.keyHotbarSlots).filter(keyMapping -> keyMapping.matches(key, 0)).findFirst();
+			*///?}
 			if (mapping.isEmpty())
 				return;
 
@@ -115,7 +133,11 @@ public class PhasePreviewing extends PhaseBase implements IRenderGameOverlay {
 	}
 
 	@Override
-	public void renderGameOverlay(PoseStack ms, float partialTicks) {
+	//? if >=26 {
+	public void renderGameOverlay(GuiGraphicsExtractor ms, float partialTicks) {
+	//?} else {
+	/*public void renderGameOverlay(GuiGraphics ms, float partialTicks) {
+	*///?}
 		toolSelection.renderPassive(ms, partialTicks);
 		activeTool.getTool()
 			.renderOverlay(ms);

@@ -1,0 +1,231 @@
+def node = rootProject.project(":${stonecutter.current.version}")
+def unobf = node.findProperty('unobfuscated') == 'true'
+def javaVer = (node.findProperty('java_version') ?: '21') as int
+def mcVersion = node.property('minecraft_version')
+def archVersion = node.property('architectury_version')
+def neoforgeVersion = node.property('neoforge_version')
+def commonProject = ":common:${stonecutter.current.version}"
+def enableClientTestMod = project.findProperty("enableClientTestMod") == "true"
+def clientTestSessionId = System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SESSION_ID")
+    ?.replaceAll("[^A-Za-z0-9._-]", "-")
+def clientTestRunDir = clientTestSessionId ? "run-client-test-${clientTestSessionId}" : "run-client-test"
+def clientTestResultFile = clientTestSessionId
+    ? layout.buildDirectory.file("client-test-${clientTestSessionId}/result.json")
+    : layout.buildDirectory.file("client-test/result.json")
+
+// Force the matching common node to evaluate first, then read its architectury transform output +
+// compiled classes directly off the project object (see fabric/build.gradle for the full rationale).
+def commonNode = evaluationDependsOn(commonProject)
+
+apply plugin: unobf ? "mightyarchitect.loom-noremap" : "mightyarchitect.loom-remap"
+apply plugin: "mightyarchitect.shadow"
+apply plugin: "java"
+apply plugin: "maven-publish"
+
+base { archivesName = rootProject.archives_base_name }
+version = "${rootProject.mod_version}+mc${mcVersion}"
+group = rootProject.maven_group
+
+repositories {
+    maven { url "https://maven.neoforged.net/releases/" }
+}
+
+architectury {
+    platformSetupLoomIde()
+    neoForge()
+}
+
+sourceSets {
+    clientTest {
+        java.srcDirs = [
+            rootProject.file("client-test/src/main/java"),
+            rootProject.file("neoforge/src/clientTest/java")
+        ]
+        resources.srcDirs = [
+            rootProject.file("client-test/src/main/resources"),
+            rootProject.file("neoforge/src/clientTest/resources")
+        ]
+        output.resourcesDir = layout.buildDirectory.dir("classes/java/clientTest").get().asFile
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath + sourceSets.main.runtimeClasspath
+    }
+}
+
+def clientTestJarTask = tasks.register("clientTestJar", Jar) {
+    dependsOn tasks.named("clientTestClasses")
+    from sourceSets.clientTest.output
+    archiveClassifier.set(unobf ? "neoforge-client-test" : "neoforge-client-test-dev")
+}
+
+loom {
+    silentMojangMappingsLicense()
+
+    runs {
+        automatedClientTest {
+            inherit client
+            name "Mighty Architect Automated Client Test"
+            runDir clientTestRunDir
+            property "mightyarchitect.clientTest.enabled", "true"
+            property "mightyarchitect.clientTest.server",
+                (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SERVER")
+                    ?: project.findProperty("clientTestServer")
+                    ?: "127.0.0.1:25565").toString()
+            property "mightyarchitect.clientTest.result",
+                clientTestResultFile.get().asFile.absolutePath
+            property "mightyarchitect.clientTest.keepOpen",
+                (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_KEEP_OPEN") ?: "false").toString()
+        }
+        automatedServerTest {
+            inherit server
+            name "Mighty Architect Automated Server Test"
+            runDir "run-server-test"
+        }
+    }
+}
+
+configurations {
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    // Dependency bucket for common's named (dev) classes+resources. Extending compileClasspath +
+    // runtimeClasspath + developmentNeoForge from it mirrors the canonical architectury loader wiring:
+    // developmentNeoForge is what architectury-loom hands to FML as the mod-in-dev, so common classes
+    // are resolvable at dev runtime (runClient). Plain runtimeOnly does NOT reach that layer.
+    common {
+        canBeResolved = false
+        canBeConsumed = false
+    }
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentNeoForge.extendsFrom common
+}
+
+configurations {
+    clientTestImplementation.extendsFrom implementation, common
+    clientTestRuntimeOnly.extendsFrom runtimeOnly
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${mcVersion}"
+    neoForge "net.neoforged:neoforge:${neoforgeVersion}"
+    if (unobf) {
+        implementation "dev.architectury:architectury-neoforge:${archVersion}"
+    } else {
+        mappings loom.officialMojangMappings()
+        // modImplementation (not plain implementation): Loom must process architectury-neoforge as a
+        // mod so its mixin refmap is registered for the dev run. With plain implementation the refmap
+        // is not loaded, so architectury's neoforge.MixinChunkMap @ModifyArg can't resolve its lambda
+        // target when the integrated server loads ChunkMap -> singleplayer world-load crash.
+        modImplementation "dev.architectury:architectury-neoforge:${archVersion}"
+    }
+
+    // common's named (dev) classes+resources as a JAR — feeds the loader's compile classpath (to
+    // compile the neoforge/ source, which imports common) AND the dev-run classpath via
+    // developmentNeoForge. Must be a jar (not raw output dirs): architectury's dev-time transformer
+    // opens developmentNeoForge entries as jar filesystems. architectury-neoforge provides the
+    // fabric-dialect EnvType/@Environment shims at runtime; the packaged jar uses the transformed copy.
+    common files(commonNode.tasks.named('jar').flatMap { it.archiveFile })
+    // The architectury-transformed (fabric-dialect -> neoforge) common jar, bundled via shadow.
+    shadowBundle commonNode.configurations.getByName("transformProductionNeoForge").artifacts.files
+    clientTestImplementation sourceSets.main.output
+    if (enableClientTestMod) {
+        localRuntime files(clientTestJarTask.flatMap { it.archiveFile })
+    }
+}
+
+tasks.named("compileJava") {
+    dependsOn commonNode.tasks.named("classes")
+}
+
+tasks.named("runAutomatedClientTest") {
+    dependsOn clientTestJarTask
+}
+
+processResources {
+    def metaProps = [
+        "version"                 : project.version,
+        "meta_mc_range"           : node.property('meta_mc_range'),
+        "meta_mc_max"             : node.property('meta_mc_max'),
+        "meta_pack_format"        : node.property('meta_pack_format'),
+        "meta_neoforge_range"     : node.property('meta_neoforge_range'),
+        "meta_architectury_range" : node.property('meta_architectury_range')
+    ]
+    inputs.properties(metaProps)
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand(metaProps)
+    }
+    filesMatching("pack.mcmeta") {
+        expand(metaProps)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.release = javaVer
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(javaVer)
+    }
+}
+
+def packagedClientTestJar
+if (unobf) {
+    packagedClientTestJar = clientTestJarTask
+} else {
+    packagedClientTestJar = tasks.register("remapClientTestJar", tasks.named("remapJar").get().class) {
+        inputFile.set(clientTestJarTask.flatMap { it.archiveFile })
+        dependsOn clientTestJarTask
+        archiveClassifier.set("neoforge-client-test")
+    }
+}
+
+tasks.register("buildClientTestMod") {
+    group = "verification"
+    description = "Builds the distributable NeoForge client-test companion mod."
+    dependsOn packagedClientTestJar
+}
+
+if (unobf) {
+    // Unobfuscated 26.1: no remap step. The plain jar is unpacked into the shadowJar, which bundles
+    // the transformed common classes and becomes the published neoforge artifact.
+    jar {
+        archiveClassifier.set("raw")
+    }
+    shadowJar {
+        dependsOn(jar)
+        mainSpec.sourcePaths.clear()
+        from(zipTree(jar.archiveFile))
+        exclude "fabric.mod.json"
+        exclude "architectury.common.json"
+        configurations = [project.configurations.shadowBundle]
+        archiveClassifier.set("neoforge")
+    }
+} else {
+    shadowJar {
+        exclude "fabric.mod.json"
+        exclude "architectury.common.json"
+        configurations = [project.configurations.shadowBundle]
+        archiveClassifier.set("dev-shadow")
+    }
+    remapJar {
+        inputFile.set shadowJar.archiveFile
+        dependsOn shadowJar
+        archiveClassifier.set("neoforge")
+    }
+    jar {
+        archiveClassifier.set("dev")
+    }
+}
+
+publishing {
+    publications {
+        mavenNeoForge(MavenPublication) {
+            artifactId = rootProject.archives_base_name + "-neoforge"
+            from components.java
+        }
+    }
+    repositories {}
+}

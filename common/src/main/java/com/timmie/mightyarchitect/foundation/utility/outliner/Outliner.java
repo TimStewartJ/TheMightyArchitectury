@@ -29,7 +29,7 @@ public class Outliner {
 		((LineOutline) entry.outline).set(start, end);
 		return entry.outline.getParams();
 	}
-	
+
 	public OutlineParams chaseLine(Object slot, Vec3 start, Vec3 end) {
 		if (!outlines.containsKey(slot)) {
 			ChasingLineOutline outline = new ChasingLineOutline();
@@ -41,7 +41,7 @@ public class Outliner {
 		((ChasingLineOutline) entry.outline).target(start, end);
 		return entry.outline.getParams();
 	}
-	
+
 	public OutlineParams chaseText(Object slot, Vec3 location, String text) {
 		if (!outlines.containsKey(slot)) {
 			OutlinedText outline = new OutlinedText();
@@ -89,9 +89,9 @@ public class Outliner {
 		return entry.getOutline()
 			.getParams();
 	}
-	
+
 	public OutlineParams show(Object slot, Outline outline) {
-		if (!outlines.containsKey(slot)) 
+		if (!outlines.containsKey(slot))
 			outlines.put(slot, new OutlineEntry(outline));
 		OutlineEntry entry = outlines.get(slot);
 		entry.ticksTillRemoval = 1;
@@ -163,7 +163,11 @@ public class Outliner {
 				float lastAlpha = prevTicks >= 0 ? 1 : 1 + (prevTicks / fadeticks);
 				float currentAlpha = 1 + (entry.ticksTillRemoval / fadeticks);
 				float alpha = Mth.lerp(Minecraft.getInstance()
-					.getFrameTime(), lastAlpha, currentAlpha);
+					//? if >=1.21.4 {
+					.getDeltaTracker().getGameTimeDeltaPartialTick(true), lastAlpha, currentAlpha);
+					//?} else {
+					/*.getTimer().getGameTimeDeltaPartialTick(true), lastAlpha, currentAlpha);
+					*///?}
 
 				outline.params.alpha = alpha * alpha * alpha;
 				if (outline.params.alpha < 1 / 8f)

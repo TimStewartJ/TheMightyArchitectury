@@ -12,7 +12,10 @@ import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+//? if >=1.21.4 {
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+//?} else {
+/*import net.minecraft.world.level.block.state.properties.DirectionProperty;*///?}
 import net.minecraft.world.level.block.state.properties.Property;
 
 import java.util.Collection;
@@ -127,11 +130,20 @@ public class PaletteDefinition {
 
 		if (compound != null) {
 			if (compound.contains("Palette")) {
-				CompoundTag paletteTag = compound.getCompound("Palette");
-				palette.name = paletteTag.getString("Name");
+				//? if >=1.21.6 {
+			CompoundTag paletteTag = compound.getCompound("Palette").orElse(new CompoundTag());
+			//?} else {
+			/*CompoundTag paletteTag = compound.getCompound("Palette");*///?}
+				//? if >=1.21.6 {
+		palette.name = paletteTag.getString("Name").orElse("");
+		//?} else {
+		/*palette.name = paletteTag.getString("Name");*///?}
 				for (Palette key : Palette.values()) {
 					if (paletteTag.contains(key.name())) {
-						palette.put(key, NbtUtils.readBlockState(holderGetter, paletteTag.getCompound(key.name())));
+						//? if >=1.21.6 {
+				palette.put(key, NbtUtils.readBlockState(holderGetter, paletteTag.getCompound(key.name()).orElse(new CompoundTag())));
+				//?} else {
+				/*palette.put(key, NbtUtils.readBlockState(holderGetter, paletteTag.getCompound(key.name())));*///?}
 					}
 				}
 			}
@@ -148,14 +160,23 @@ public class PaletteDefinition {
 		Collection<Property<?>> properties = state.getProperties();
 
 		for (Property<?> property : properties) {
-			if (property instanceof DirectionProperty) {
-				Direction facing = (Direction) state.getValue(property);
+			//? if >=1.21.4 {
+			if (property instanceof EnumProperty<?> enumProperty && enumProperty.getValueClass() == Direction.class) {
+				@SuppressWarnings("unchecked")
+				EnumProperty<Direction> directionProperty = (EnumProperty<Direction>) property;
+				Direction facing = state.getValue(directionProperty);
+			//?} else {
+			/*if (property instanceof DirectionProperty) {
+				Direction facing = (Direction) state.getValue(property);*///?}
 				if (facing.getAxis() == Axis.Y)
 					continue;
 
 				if ((paletteInfo.mirrorZ && facing.getAxis() != Axis.Z)
 						|| (paletteInfo.mirrorX && facing.getAxis() != Axis.X))
-					state = state.setValue((DirectionProperty) property, facing.getOpposite());
+					//? if >=1.21.4 {
+					state = state.setValue(directionProperty, facing.getOpposite());
+					//?} else {
+					/*state = state.setValue((DirectionProperty) property, facing.getOpposite());*///?}
 			}
 		}
 

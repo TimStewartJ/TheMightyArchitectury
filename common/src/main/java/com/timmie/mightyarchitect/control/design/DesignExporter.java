@@ -17,7 +17,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
+//? if >=26 {
+//?} else {
+/*import net.minecraft.nbt.NbtUtils;
+*///?}
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -93,7 +96,11 @@ public class DesignExporter {
 
 		// Assemble nbt
 		CompoundTag compound = new CompoundTag();
-		compound.put("Size", NbtUtils.writeBlockPos(size));
+		//? if >=1.21.6 {
+		compound.putIntArray("Size", new int[] { size.getX(), size.getY(), size.getZ() });
+		//?} else {
+		/*compound.put("Size", NbtUtils.writeBlockPos(size));
+		*///?}
 
 		ListTag layers = new ListTag();
 
@@ -111,10 +118,18 @@ public class DesignExporter {
 					Palette block = scanningPalette.scan(blockState);
 
 					if (block == null && blockState.getBlock() != Blocks.AIR) {
-						Minecraft.getInstance().player.displayClientMessage(
+						//? if >=26 {
+						Minecraft.getInstance().player.sendSystemMessage(Component.literal(blockState.getBlock()
+						//?} else {
+						/*Minecraft.getInstance().player.displayClientMessage(
 							Component.literal(blockState.getBlock()
+						*///?}
 							.getDescriptionId() + " @" + pos.getX() + "," + pos.getY() + "," + pos.getZ()
-							+ " does not belong to the Scanner Palette"), false);
+							//? if >=26 {
+							+ " does not belong to the Scanner Palette"));
+							//?} else {
+							/*+ " does not belong to the Scanner Palette"), false);
+							*///?}
 						return "Export failed";
 					}
 
@@ -186,8 +201,7 @@ public class DesignExporter {
 		if (worldIn.getBlockState(signPos)
 			.getBlock() == Blocks.SPRUCE_SIGN) {
 			SignBlockEntity sign = (SignBlockEntity) worldIn.getBlockEntity(signPos);
-			filename = sign.getMessage(1, false)
-				.getString();
+			filename = sign.getFrontText().toString();
 			designPath = typePath + "/" + filename;
 
 		} else {
@@ -202,8 +216,13 @@ public class DesignExporter {
 			}
 		}
 
-		AllPackets.channel.sendToServer(new PlaceSignPacket(layer.getDisplayName()
+		//? if >=1.21.10 {
+		AllPackets.sendToServer(new PlaceSignPacket(layer.getDisplayName()
 			.substring(0, 1) + ". " + type.getDisplayName(), filename, signPos));
+		//?} else {
+		/*new PlaceSignPacket(layer.getDisplayName()
+			.substring(0, 1) + ". " + type.getDisplayName(), filename, signPos).sendToServer();
+		*///?}
 		FilesHelper.saveTagCompoundAsJson(compound, designPath);
 		return designPath;
 		//

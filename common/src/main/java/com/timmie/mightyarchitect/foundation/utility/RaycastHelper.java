@@ -66,7 +66,11 @@ public class RaycastHelper {
 		BlockPos currentPos = new BlockPos(x, y, z);
 
 		if (predicate.test(currentPos))
-			return new PredicateTraceResult(currentPos, Direction.getNearest(dx - x, dy - y, dz - z));
+			//? if >=1.21.4 {
+			return new PredicateTraceResult(currentPos, Direction.getNearest(dx - x, dy - y, dz - z, Direction.UP));
+			//?} else {
+			/*return new PredicateTraceResult(currentPos, Direction.getNearest(dx - x, dy - y, dz - z));
+			*///?}
 
 		int remainingDistance = 200;
 
@@ -174,7 +178,7 @@ public class RaycastHelper {
 			this.pos = pos;
 			this.facing = facing;
 		}
-		
+
 		public PredicateTraceResult() {
 			// missed, no result
 		}
@@ -186,7 +190,7 @@ public class RaycastHelper {
 		public BlockPos getPos() {
 			return pos;
 		}
-		
+
 		public boolean missed() {
 			return this.pos == null;
 		}

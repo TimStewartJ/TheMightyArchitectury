@@ -5,7 +5,10 @@ import com.google.gson.JsonParser;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
+//? if >=1.21.6 {
+//?} else {
+/*import com.mojang.brigadier.exceptions.CommandSyntaxException;
+*///?}
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
@@ -82,11 +85,19 @@ public class FilesHelper {
 			JsonElement element = Streams.parse(reader);
 			reader.close();
 			inputStream.close();
-			return TagParser.parseTag(element.toString());
+			//? if >=1.21.6 {
+			return TagParser.create(net.minecraft.nbt.NbtOps.INSTANCE).parseCompoundFully(element.toString());
+		} catch (Exception e) {
+			//?} else {
+			/*return TagParser.parseTag(element.toString());
 		} catch (IOException e) {
+			*///?}
 			e.printStackTrace();
-		} catch (CommandSyntaxException e) {
+		//? if >=1.21.6 {
+		//?} else {
+		/*} catch (CommandSyntaxException e) {
 			e.printStackTrace();
+		*///?}
 		}
 		return null;
 	}

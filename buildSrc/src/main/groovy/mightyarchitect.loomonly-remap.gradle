@@ -1,0 +1,5 @@
+// Loom-only (no architectury-plugin) for OBFUSCATED loader nodes that bundle common via source
+// inclusion. Avoids architectury's transform machinery, which conflicts with sourceSet mutation.
+plugins {
+    id "dev.architectury.loom"
+}

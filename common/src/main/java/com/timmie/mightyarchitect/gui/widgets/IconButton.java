@@ -1,9 +1,29 @@
 package com.timmie.mightyarchitect.gui.widgets;
 
-import com.mojang.blaze3d.systems.RenderSystem;
+//? if >=1.21.10 {
+//?} else if >=1.21.6 {
+/*import com.mojang.blaze3d.systems.RenderSystem;
+*///?} else {
+/*import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+*///?}
 import com.timmie.mightyarchitect.gui.ScreenResources;
+//? if >=26 {
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+//? if >=1.21.10 {
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
+//?} else if >=1.21.6 {
+/*import net.minecraft.client.renderer.RenderPipelines;
+*///?} else if >=1.21.4 {
+/*import net.minecraft.client.renderer.RenderType;
+*///?} else {
+/*
+*///?}
 import net.minecraft.network.chat.Component;
 
 public class IconButton extends AbstractSimiWidget {
@@ -17,30 +37,59 @@ public class IconButton extends AbstractSimiWidget {
 	}
 
 	@Override
-	public void renderWidget(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+	//? if >=26 {
+	public void extractWidgetRenderState(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
+	//?} else {
+	/*public void renderWidget(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+	*///?}
 		if (this.visible) {
 			this.isHovered =
-				mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
+				//? if >=26 {
+				mouseX >= this.getX() && mouseY >= this.getY() && mouseX < this.getX() + this.width && mouseY < this.getY() + this.height;
+				//?} else {
+				/*mouseX >= getX() && mouseY >= getY() && mouseX < getX() + this.width && mouseY < getY() + this.height;
+				*///?}
 
 			ScreenResources button = (pressed || !active) ? button = ScreenResources.BUTTON_DOWN
 				: (isHovered) ? ScreenResources.BUTTON_HOVER : ScreenResources.BUTTON;
 
-			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+			//? if >=26 {
+			ms.blit(RenderPipelines.GUI_TEXTURED, ScreenResources.BUTTON.location, getX(), getY(), (float) button.startX, (float) button.startY, button.width, button.height, 256, 256);
+			//?} else if >=1.21.6 {
+			/*// In 1.21.6, use RenderPipelines.GUI_TEXTURED for GUI texture rendering
+			ms.blit(RenderPipelines.GUI_TEXTURED, ScreenResources.BUTTON.location, getX(), getY(), (float) button.startX, (float) button.startY, button.width, button.height, 256, 256);
+			*///?} else if >=1.21.4 {
+			/*RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 			ScreenResources.BUTTON.bind();
-			blit(matrixStack, x, y, button.startX, button.startY, button.width, button.height);
-			icon.draw(matrixStack, this, x + 1, y + 1);
+			ms.blit(RenderType::guiTextured, ScreenResources.GRAY.location, getX(), getY(), button.startX, button.startY, button.width, button.height, 256, 256);
+			*///?} else {
+			/*RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+			ScreenResources.BUTTON.bind();
+			ms.blit(ScreenResources.GRAY.location, getX(), getY(), button.startX, button.startY, button.width, button.height);
+			*///?}
+			icon.draw(ms, getX() + 1, getY() + 1);
 		}
 	}
 
 	@Override
-	public void onClick(double p_onClick_1_, double p_onClick_3_) {
+	//? if >=1.21.10 {
+	public void onClick(MouseButtonEvent event, boolean flag) {
+		super.onClick(event, flag);
+	//?} else {
+	/*public void onClick(double p_onClick_1_, double p_onClick_3_) {
 		super.onClick(p_onClick_1_, p_onClick_3_);
+	*///?}
 		this.pressed = true;
 	}
 
 	@Override
-	public void onRelease(double p_onRelease_1_, double p_onRelease_3_) {
+	//? if >=1.21.10 {
+	public void onRelease(MouseButtonEvent event) {
+		super.onRelease(event);
+	//?} else {
+	/*public void onRelease(double p_onRelease_1_, double p_onRelease_3_) {
 		super.onRelease(p_onRelease_1_, p_onRelease_3_);
+	*///?}
 		this.pressed = false;
 	}
 

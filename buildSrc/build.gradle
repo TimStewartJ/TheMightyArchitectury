@@ -1,0 +1,19 @@
+plugins {
+    id "groovy-gradle-plugin"
+}
+
+repositories {
+    maven { url "https://maven.fabricmc.net/" }
+    maven { url "https://maven.architectury.dev/" }
+    maven { url "https://maven.neoforged.net/releases/" }
+    gradlePluginPortal()
+    mavenCentral()
+}
+
+// These plugins become available to the convention scripts below, loaded on ONE shared buildSrc
+// classloader — so every Stonecutter node reuses a single Loom class (no ClassCastException).
+dependencies {
+    implementation "dev.architectury:architectury-loom:1.17.491"
+    implementation "architectury-plugin:architectury-plugin.gradle.plugin:3.5.169"
+    implementation "com.gradleup.shadow:com.gradleup.shadow.gradle.plugin:9.6.1"
+}

@@ -1,0 +1,5 @@
+// Convention plugin for OBFUSCATED nodes (<=1.21.x): real remap via Architectury Loom.
+plugins {
+    id "dev.architectury.loom"
+    id "architectury-plugin"
+}

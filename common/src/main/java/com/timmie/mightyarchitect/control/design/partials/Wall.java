@@ -18,7 +18,11 @@ public class Wall extends Design {
 	public Design fromNBT(CompoundTag compound) {
 		Wall wall = new Wall();
 		wall.applyNBT(compound);
-		wall.expandBehaviour = ExpandBehaviour.valueOf(compound.getString("ExpandBehaviour"));
+		//? if >=1.21.6 {
+		wall.expandBehaviour = ExpandBehaviour.valueOf(compound.getString("ExpandBehaviour").orElse("None"));
+		//?} else {
+		/*wall.expandBehaviour = ExpandBehaviour.valueOf(compound.getString("ExpandBehaviour"));
+		*///?}
 		return wall;
 	}
 
@@ -40,7 +44,7 @@ public class Wall extends Design {
 	public void getBlocks(DesignInstance instance, Map<BlockPos, PaletteBlockInfo> blocks) {
 		if (expandBehaviour == ExpandBehaviour.None) {
 			super.getBlocks(instance, blocks);
-			
+
 		} else {
 			boolean merge = expandBehaviour == ExpandBehaviour.MergedRepeat;
 			int instances = merge ? (instance.width - 1) / (defaultWidth - 1) : instance.width / defaultWidth;

@@ -11,53 +11,57 @@ import java.util.Map;
 public class FlatRoof extends Design {
 
 	protected int margin;
-	
+
 	@Override
 	public Design fromNBT(CompoundTag compound) {
 		FlatRoof flatRoof = new FlatRoof();
 		flatRoof.applyNBT(compound);
-		
-		flatRoof.margin = compound.getInt("Margin");
+
+		//? if >=1.21.6 {
+		flatRoof.margin = compound.getInt("Margin").orElse(0);
+		//?} else {
+		/*flatRoof.margin = compound.getInt("Margin");
+		*///?}
 		flatRoof.defaultWidth = (flatRoof.defaultWidth - flatRoof.margin) * 2 - 1;
-		
+
 		return flatRoof;
 	}
-	
+
 	@Override
 	public DesignInstance create(BlockPos anchor, int rotation, int width, int depth) {
 		return new DesignInstance(this, anchor, rotation, width, size.getY(), depth);
 	}
-	
+
 	@Override
 	public boolean fitsVertically(int height) {
 		return true;
 	}
-	
+
 	@Override
 	public boolean fitsHorizontally(int width) {
 		return width >= defaultWidth;
 	}
-	
+
 	@Override
 	public void getBlocks(DesignInstance instance, Map<BlockPos, PaletteBlockInfo> blocks) {
 		int xShift = margin;
 		int zShift = margin;
-		
+
 		// Drag roof blocks into depth
 		BlockPos position = instance.localAnchor;
 		List<DesignSlice> printedSlices = selectPrintedLayers(instance.height);
-		
+
 		for (int y = 0; y < printedSlices.size(); y++) {
 			for (int x = 0; x < size.getX(); x++) {
 				for (int z = size.getZ() - 1; z < instance.depth - size.getZ() + 2 * margin; z++) {
 					PaletteBlockInfo block = printedSlices.get(y).getBlockAt(x, 0, instance.rotationY);
 					if (block == null) continue;
 					BlockPos pos = position.offset(rotateAroundZero(new BlockPos(x - xShift, y + yShift, -z + zShift), instance.rotationY));
-					putBlock(blocks, pos, block); 
+					putBlock(blocks, pos, block);
 				}
 			}
 		}
-		
+
 		// Drag roof blocks into width
 		for (int y = 0; y < printedSlices.size(); y++) {
 			for (int x = size.getX(); x <= instance.width - (size.getX() - margin - 1); x++) {
@@ -65,11 +69,11 @@ public class FlatRoof extends Design {
 					PaletteBlockInfo block = printedSlices.get(y).getBlockAt(size.getX() - 1, Math.max(z, 0), instance.rotationY);
 					if (block == null) continue;
 					BlockPos pos = position.offset(rotateAroundZero(new BlockPos(x - xShift, y + yShift, z + zShift - size.getZ() + 1), instance.rotationY));
-					putBlock(blocks, pos, block); 
+					putBlock(blocks, pos, block);
 				}
 			}
 		}
-		
+
 		// Print the facade
 		BlockPos totalShift = new BlockPos(-xShift, yShift, zShift - size.getZ() + 1);
 		BlockPos mirrorShift = new BlockPos(xShift, yShift, zShift - size.getZ() + 1);

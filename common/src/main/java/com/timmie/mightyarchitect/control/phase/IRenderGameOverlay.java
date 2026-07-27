@@ -1,9 +1,20 @@
+//? if >=26 {
 package com.timmie.mightyarchitect.control.phase;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 public interface IRenderGameOverlay {
 
-	public void renderGameOverlay(PoseStack ms, float partialTicks);
+	void renderGameOverlay(GuiGraphicsExtractor ms, float partialTicks);
 	
 }
+//?} else {
+/*package com.timmie.mightyarchitect.control.phase;
+
+import net.minecraft.client.gui.GuiGraphics;
+
+public interface IRenderGameOverlay {
+
+	void renderGameOverlay(GuiGraphics ms, float partialTicks);
+	
+}*///?}

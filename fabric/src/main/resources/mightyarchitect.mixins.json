@@ -1,0 +1,10 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.timmie.mightyarchitect.fabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ${client_mixins},
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -177,7 +177,11 @@ public class ThemeStatistics {
 	}
 
 	private void chat(String message) {
-		Minecraft.getInstance().player.displayClientMessage(Component.literal(message), false);
+		//? if >=26 {
+		Minecraft.getInstance().player.sendSystemMessage(Component.literal(message));
+		//?} else {
+		/*Minecraft.getInstance().player.displayClientMessage(Component.literal(message), false);
+		*///?}
 	}
 
 	public DesignType fallbackRoof(Room room, boolean tower) {

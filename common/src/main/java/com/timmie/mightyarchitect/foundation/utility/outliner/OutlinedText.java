@@ -1,14 +1,23 @@
 package com.timmie.mightyarchitect.foundation.utility.outliner;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.timmie.mightyarchitect.foundation.RenderTypes;
+import com.timmie.mightyarchitect.foundation.utility.HudTextBuffer;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.world.phys.Vec3;
 
 public class OutlinedText extends Outline {
+
+	//*
+	 //* Outline colours are written as plain RGB (the default is 0xFFFFFF), so the alpha byte is
+	 //* zero. Font.drawInBatch takes the alpha at face value and renders nothing, unlike the GUI
+	 //* text helpers which promote an unset alpha to opaque. Do the same promotion here so the
+	 //* label is actually visible.
+	 //
+	private static int opaque(int color) {
+		return (color & 0xFF000000) == 0 ? color | 0xFF000000 : color;
+	}
 
 	private String text;
 	Vec3 targetLocation;
@@ -39,56 +48,21 @@ public class OutlinedText extends Outline {
 
 	@Override
 	public void render(PoseStack ms, MultiBufferSource buffer) {
-		if (text == null)
+		if (text == null || text.isEmpty())
 			return;
-		
+
 		Minecraft mc = Minecraft.getInstance();
-		float pt = mc.getFrameTime();
+		//? if >=1.21.4 {
+		float pt = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+		//?} else {
+		/*float pt = mc.getTimer().getGameTimeDeltaPartialTick(true);
+		*///?}
 		Vec3 vec = VecHelper.lerp(prevLocation, location, pt);
-		EntityRenderDispatcher renderManager = mc.getEntityRenderDispatcher();
-		float stringLength = mc.font.width(text);
 
-		ms.pushPose();
-		ms.translate(vec.x, vec.y, vec.z);
-		ms.mulPose(renderManager.cameraOrientation());
-
-//		if (scalesUp) {
-		double distance = mc.player.getEyePosition(mc.getFrameTime())
-			.distanceToSqr(vec);
-		float scale = (float) (distance / 512f);
-		ms.scale(2 + scale, 2 + scale, 2 + scale);
-//		}	
-
-		float scaleMod = 0.025F;
-		float f = -stringLength / 2;
-		float h = mc.font.lineHeight;
-
-		ms.pushPose();
-		Vec3 v1 = new Vec3(-f + 2, -scaleMod * (h - 1), 0);
-		Vec3 v2 = new Vec3(-f + 2, scaleMod, 0);
-		Vec3 v3 = new Vec3(f - 2, scaleMod, 0);
-		Vec3 v4 = new Vec3(f - 2, -scaleMod * (h - 1), 0);
-
-		ms.pushPose();
-		ms.scale(-scaleMod, 1, scaleMod);
-		ms.translate(0, 0, .5f);
-
-		putQuadUV(ms, buffer.getBuffer(RenderTypes.getOutlineSolid()), v1, v2, v3, v4,0, 0, 1, 1, null, true);
-
-		ms.popPose();
-
-		ms.scale(scaleMod, 1, 1);
-		ms.translate(0, -2 * scaleMod, 0);
-		renderCuboidLine(ms, buffer, v4, v1);
-		ms.popPose();
-
-		ms.pushPose();
-		ms.scale(-scaleMod, -scaleMod, scaleMod);
-		//mc.font.drawInBatch(text, f, 0, params.color, false, matrix4f, buffer, true, 0, 0xF000F0);
-		mc.font.draw(ms, text, f, 0, params.color);
-		ms.popPose();
-
-		ms.popPose();
+		// Drawing this label as world geometry does not work: immediate-mode glyphs submitted to a
+		// custom buffer never reach the screen, so the label's backing quad appears without any
+		// text. Submit the anchor instead and let the overlay pass draw it as HUD text.
+		HudTextBuffer.submit(vec, text, opaque(params.color));
 	}
 
 	public String getText() {

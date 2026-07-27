@@ -16,7 +16,11 @@ public class Roof extends Design {
 	public Design fromNBT(CompoundTag compound) {
 		Roof roof = new Roof();
 		roof.applyNBT(compound);
-		roof.defaultWidth = compound.getInt("Roofspan");
+		//? if >=1.21.6 {
+		roof.defaultWidth = compound.getInt("Roofspan").orElse(0);
+		//?} else {
+		/*roof.defaultWidth = compound.getInt("Roofspan");
+		*///?}
 		return roof;
 	}
 
@@ -64,7 +68,7 @@ public class Roof extends Design {
 							.offset(rotateAroundZero(new BlockPos(x, y, z).offset(totalShift), instance.rotationY));
 					putBlock(blocks, pos, block);
 				}
-								
+
 				for (int z = 0; z < size.getZ(); z++) {
 					PaletteBlockInfo block = layer.getBlockAt(x, z, instance.rotationY);
 

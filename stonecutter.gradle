@@ -1,0 +1,25 @@
+plugins {
+    id "dev.kikugie.stonecutter"
+}
+
+stonecutter.active "26.1" /* [SC] DO NOT EDIT */
+
+// Aggregate task: build every Stonecutter version node for both loaders (the full release set)
+// with one command — `./gradlew buildAll` — so local builds match the CI matrix without naming
+// all 14 node paths by hand.
+tasks.register("buildAll") {
+    group = "build"
+    description = "Builds all version nodes for both loaders (Fabric + NeoForge)."
+    dependsOn stonecutter.versions.collect { v ->
+        [":fabric:${v.project}:build", ":neoforge:${v.project}:build"]
+    }.flatten()
+}
+
+// Convenience: assemble (no tests/checks) the full release set of jars.
+tasks.register("assembleAll") {
+    group = "build"
+    description = "Assembles all version nodes for both loaders without running checks."
+    dependsOn stonecutter.versions.collect { v ->
+        [":fabric:${v.project}:assemble", ":neoforge:${v.project}:assemble"]
+    }.flatten()
+}

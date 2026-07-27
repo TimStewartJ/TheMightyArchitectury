@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.timmie.mightyarchitect.test.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "ArchitectManagerProbeMixin",
+    "ArchitectManagerAccessor",
+    "MightyClientProbeMixin",
+    "PhaseComposingProbeMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

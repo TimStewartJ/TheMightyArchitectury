@@ -30,8 +30,8 @@ public class SelectionScrollInput extends ScrollInput {
 	}
 
 	@Override
-	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-		return super.mouseScrolled(mouseX, mouseY, -delta);
+	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+		return super.mouseScrolled(mouseX, mouseY, horizontalAmount, -verticalAmount);
 	}
 
 	@Override

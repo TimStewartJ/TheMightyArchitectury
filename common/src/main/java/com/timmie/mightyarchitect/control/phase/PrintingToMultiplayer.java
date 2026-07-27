@@ -22,7 +22,11 @@ public class PrintingToMultiplayer extends PhaseBase {
 	@Override
 	public void whenEntered() {
 		// check for permissions for the setblock command
-		if (!Minecraft.getInstance().player.hasPermissions(2)) {
+		//? if >=1.21.11 {
+		if (!Minecraft.getInstance().player.permissions().hasPermission(net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER)) {
+		//?} else {
+		/*if (!Minecraft.getInstance().player.hasPermissions(2)) {
+		*///?}
 			success = false;
 
 			return;
@@ -32,11 +36,19 @@ public class PrintingToMultiplayer extends PhaseBase {
 
 		// todo: /me doesn't work anymore
 		// String cmd = "me is printing a structure created by the Mighty Architect.";
-		// Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+		// Minecraft.getInstance().player.connection.sendCommand(cmd);
 		String cmd = "gamerule sendCommandFeedback false";
-		Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+		//? if >=1.21.6 {
+		Minecraft.getInstance().player.connection.sendCommand(cmd);
+		//?} else {
+		/*Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+		*///?}
 		cmd = "gamerule logAdminCommands false";
-		Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+		//? if >=1.21.6 {
+		Minecraft.getInstance().player.connection.sendCommand(cmd);
+		//?} else {
+		/*Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+		*///?}
 
 		remaining = new LinkedList<>(getModel().getMaterializedSketch().getAllPositions());
 		remaining.sort((o1, o2) -> Integer.compare(o1.getY(), o2.getY()));
@@ -46,8 +58,13 @@ public class PrintingToMultiplayer extends PhaseBase {
 	public void update() {
 		// exit state if not successful
 		if (!success) {
-			Minecraft.getInstance().player.displayClientMessage(Component.literal(
+			//? if >=26 {
+			Minecraft.getInstance().player.sendSystemMessage(Component.literal(
+							ChatFormatting.RED + "You do not have permission to print on this server."));
+			//?} else {
+			/*Minecraft.getInstance().player.displayClientMessage(Component.literal(
 							ChatFormatting.RED + "You do not have permission to print on this server."), false);
+			*///?}
 			ArchitectManager.enterPhase(ArchitectPhases.Previewing);
 			return;
 		}
@@ -68,7 +85,11 @@ public class PrintingToMultiplayer extends PhaseBase {
 				String blockstring = state.toString().replaceFirst("Block\\{", "").replaceFirst("\\}", "");
 
 				String cmd = "setblock " + pos.getX() + " " + pos.getY() + " " + pos.getZ() + " " + blockstring;
-				Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+				//? if >=1.21.6 {
+				Minecraft.getInstance().player.connection.sendCommand(cmd);
+				//?} else {
+				/*Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+				*///?}
 			} else {
 				ArchitectManager.unload();
 				break;
@@ -83,12 +104,24 @@ public class PrintingToMultiplayer extends PhaseBase {
 	@Override
 	public void whenExited() {
 		if (success) {
-			Minecraft.getInstance().player.displayClientMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"),
+			//? if >=26 {
+			Minecraft.getInstance().player.sendSystemMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"));
+			//?} else {
+			/*Minecraft.getInstance().player.displayClientMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"),
 					false);
+			*///?}
 			String cmd = "gamerule logAdminCommands true";
-			Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+			//? if >=1.21.6 {
+			Minecraft.getInstance().player.connection.sendCommand(cmd);
+			//?} else {
+			/*Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+			*///?}
 			cmd = "gamerule sendCommandFeedback true";
-			Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+			//? if >=1.21.6 {
+			Minecraft.getInstance().player.connection.sendCommand(cmd);
+			//?} else {
+			/*Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
+			*///?}
 		}
 	}
 

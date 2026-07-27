@@ -1,0 +1,61 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Minecraft Client (:fabric)",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/fabric/run",
+      "console": "integratedTerminal",
+      "stopOnEntry": false,
+      "mainClass": "dev.architectury.transformer.TransformerRuntime",
+      "vmArgs": "-Dfabric.dli.config\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\loom-cache\\launch.cfg -Dfabric.dli.env\u003dclient -Dfabric.dli.main\u003dnet.fabricmc.loader.impl.launch.knot.KnotClient -Darchitectury.main.class\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\architectury\\.main_class -Darchitectury.runtime.transformer\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\architectury\\.transforms -Darchitectury.properties\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\architectury\\.properties -Djdk.attach.allowAttachSelf\u003dtrue -javaagent:E:\\TheMightyArchitectury\\.gradle\\architectury\\architectury-transformer-agent.jar",
+      "args": "",
+      "env": {},
+      "projectName": "fabric"
+    },
+    {
+      "type": "java",
+      "name": "Minecraft Server (:fabric)",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/fabric/run",
+      "console": "integratedTerminal",
+      "stopOnEntry": false,
+      "mainClass": "dev.architectury.transformer.TransformerRuntime",
+      "vmArgs": "-Dfabric.dli.config\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\loom-cache\\launch.cfg -Dfabric.dli.env\u003dserver -Dfabric.dli.main\u003dnet.fabricmc.loader.impl.launch.knot.KnotServer -Darchitectury.main.class\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\architectury\\.main_class -Darchitectury.runtime.transformer\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\architectury\\.transforms -Darchitectury.properties\u003dE:\\TheMightyArchitectury\\fabric\\.gradle\\architectury\\.properties -Djdk.attach.allowAttachSelf\u003dtrue -javaagent:E:\\TheMightyArchitectury\\.gradle\\architectury\\architectury-transformer-agent.jar",
+      "args": "nogui",
+      "env": {},
+      "projectName": "fabric"
+    },
+    {
+      "type": "java",
+      "name": "Minecraft Client (:forge)",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/forge/run",
+      "console": "integratedTerminal",
+      "stopOnEntry": false,
+      "mainClass": "dev.architectury.transformer.TransformerRuntime",
+      "vmArgs": "-Dfabric.dli.config\u003dE:\\TheMightyArchitectury\\forge\\.gradle\\loom-cache\\launch.cfg -Dfabric.dli.env\u003dclient -p C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\cpw.mods\\securejarhandler\\3.0.8\\c0ef95cecd8699a0449053ac7d9c160748d902cd\\securejarhandler-3.0.8.jar;C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm-commons\\9.7\\e86dda4696d3c185fcc95d8d311904e7ce38a53f\\asm-commons-9.7.jar;C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm-util\\9.7\\c0655519f24d92af2202cb681cd7c1569df6ead6\\asm-util-9.7.jar;C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm-analysis\\9.7\\e4a258b7eb96107106c0599f0061cfc1832fe07a\\asm-analysis-9.7.jar;C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm-tree\\9.7\\e446a17b175bfb733b87c5c2560ccb4e57d69f1a\\asm-tree-9.7.jar;C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm\\9.7\\73d7b3086e14beb604ced229c302feff6449723\\asm-9.7.jar;C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\net.neoforged\\JarJarFileSystems\\0.4.1\\78f59f89defcd032ed788b151ca6a0d40ace796a\\JarJarFileSystems-0.4.1.jar --add-modules ALL-MODULE-PATH --add-opens java.base/java.util.jar\u003dcpw.mods.securejarhandler --add-opens java.base/java.lang.invoke\u003dcpw.mods.securejarhandler --add-exports java.base/sun.security.util\u003dcpw.mods.securejarhandler --add-exports jdk.naming.dns/com.sun.jndi.dns\u003djava.naming -Dfabric.dli.main\u003dcpw.mods.bootstraplauncher.BootstrapLauncher -Darchitectury.main.class\u003dE:\\TheMightyArchitectury\\forge\\.gradle\\architectury\\.main_class -Darchitectury.runtime.transformer\u003dE:\\TheMightyArchitectury\\forge\\.gradle\\architectury\\.transforms -Darchitectury.properties\u003dE:\\TheMightyArchitectury\\forge\\.gradle\\architectury\\.properties -Djdk.attach.allowAttachSelf\u003dtrue -javaagent:E:\\TheMightyArchitectury\\.gradle\\architectury\\architectury-transformer-agent.jar",
+      "args": "",
+      "env": {
+        "MOD_CLASSES": "main%%E:\\TheMightyArchitectury\\forge\\build\\resources\\main;main%%E:\\TheMightyArchitectury\\forge\\build\\classes\\java\\main"
+      },
+      "projectName": "forge"
+    },
+    {
+      "type": "java",
+      "name": "Minecraft Server (:forge)",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/forge/run",
+      "console": "integratedTerminal",
+      "stopOnEntry": false,
+      "mainClass": "dev.architectury.transformer.TransformerRuntime",
+      "vmArgs": "-Dfabric.dli.config\u003dE:\\TheMightyArchitectury\\forge\\.gradle\\loom-cache\\launch.cfg -Dfabric.dli.env\u003dserver -p C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\cpw.mods\\securejarhandler\\3.0.8\\c0ef95cecd8699a0449053ac7d9c160748d902cd\\securejarhandler-3.0.8.jar;C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm-commons\\9.7\\e86dda4696d3c185fcc95d8d311904e7ce38a53f\\asm-commons-9.7.jar;C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm-util\\9.7\\c0655519f24d92af2202cb681cd7c1569df6ead6\\asm-util-9.7.jar;C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm-analysis\\9.7\\e4a258b7eb96107106c0599f0061cfc1832fe07a\\asm-analysis-9.7.jar;C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm-tree\\9.7\\e446a17b175bfb733b87c5c2560ccb4e57d69f1a\\asm-tree-9.7.jar;C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\org.ow2.asm\\asm\\9.7\\73d7b3086e14beb604ced229c302feff6449723\\asm-9.7.jar;C:\\Users\\timmie\\.gradle\\caches\\modules-2\\files-2.1\\net.neoforged\\JarJarFileSystems\\0.4.1\\78f59f89defcd032ed788b151ca6a0d40ace796a\\JarJarFileSystems-0.4.1.jar --add-modules ALL-MODULE-PATH --add-opens java.base/java.util.jar\u003dcpw.mods.securejarhandler --add-opens java.base/java.lang.invoke\u003dcpw.mods.securejarhandler --add-exports java.base/sun.security.util\u003dcpw.mods.securejarhandler --add-exports jdk.naming.dns/com.sun.jndi.dns\u003djava.naming -Dfabric.dli.main\u003dcpw.mods.bootstraplauncher.BootstrapLauncher -Darchitectury.main.class\u003dE:\\TheMightyArchitectury\\forge\\.gradle\\architectury\\.main_class -Darchitectury.runtime.transformer\u003dE:\\TheMightyArchitectury\\forge\\.gradle\\architectury\\.transforms -Darchitectury.properties\u003dE:\\TheMightyArchitectury\\forge\\.gradle\\architectury\\.properties -Djdk.attach.allowAttachSelf\u003dtrue -javaagent:E:\\TheMightyArchitectury\\.gradle\\architectury\\architectury-transformer-agent.jar",
+      "args": "nogui",
+      "env": {
+        "MOD_CLASSES": "main%%E:\\TheMightyArchitectury\\forge\\build\\resources\\main;main%%E:\\TheMightyArchitectury\\forge\\build\\classes\\java\\main"
+      },
+      "projectName": "forge"
+    }
+  ]
+}

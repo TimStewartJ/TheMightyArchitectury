@@ -1,29 +1,123 @@
-name: Run Gradle Build
-on: push
+name: Build (all versions)
+
+on: [push, pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  gradle:
+  build:
+    name: MC ${{ matrix.mc }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # One job per Minecraft version; each builds BOTH loaders (they share the
+        # :common:<mc> compile under Stonecutter, so pairing them avoids a double compile).
+        mc: ["1.21.1", "1.21.4", "1.21.6", "1.21.8", "1.21.10", "1.21.11", "26.1"]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+        with:
+          # Root build.gradle derives the CI version from `git rev-list --count HEAD`.
+          fetch-depth: 0
+
+      # Install both toolchains: obf nodes (<=1.21.x) use JDK 21, the unobfuscated 26.1 node uses JDK 25.
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: |
+            21
+            25
 
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+      - uses: gradle/actions/setup-gradle@v4
 
-      - name: Execute Gradle Build
-        run: chmod +x gradlew && ./gradlew build
+      - name: Build ${{ matrix.mc }} (both loaders)
+        run: |
+          chmod +x ./gradlew
+          ./gradlew ":fabric:${{ matrix.mc }}:build" ":neoforge:${{ matrix.mc }}:build" \
+            -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64 \
+            --stacktrace
 
-      - name: Upload Forge build
-        uses: actions/upload-artifact@v3
+      # Guards the exact bug packaged E2E caught: metadata must declare THIS version's
+      # dependency range, not the 26.1 base's hardcoded one. Expected values are read from
+      # the version's own gradle.properties so the assertion cannot drift from the build.
+      - name: Verify mod metadata version range
+        run: |
+          set -euo pipefail
+          props="versions/${{ matrix.mc }}/gradle.properties"
+          prop() { grep -E "^$1=" "$props" | head -n1 | cut -d= -f2- | tr -d '\r'; }
+          mc_min=$(prop meta_mc_range)
+          mc_max=$(prop meta_mc_max)
+          pack_format=$(prop meta_pack_format)
+          [ -n "$mc_min" ] && [ -n "$mc_max" ] && [ -n "$pack_format" ] \
+            || { echo "::error::$props is missing meta_mc_range, meta_mc_max or meta_pack_format"; exit 1; }
+
+          nf_jar=$(ls neoforge/versions/${{ matrix.mc }}/build/libs/*neoforge.jar | grep -Ev 'sources|dev|raw' | head -n1)
+          unzip -p "$nf_jar" META-INF/neoforge.mods.toml > /tmp/nf.toml
+          echo "--- neoforge.mods.toml ---"; cat /tmp/nf.toml
+          grep -A2 'modId = "minecraft"' /tmp/nf.toml | grep -qF "versionRange = \"[$mc_min,$mc_max)\"" \
+            || { echo "::error::neoforge minecraft versionRange is not [$mc_min,$mc_max)"; exit 1; }
+
+          unzip -p "$nf_jar" pack.mcmeta > /tmp/nf.mcmeta
+          echo "--- pack.mcmeta ---"; cat /tmp/nf.mcmeta
+          grep -qE "\"pack_format\"[[:space:]]*:[[:space:]]*$pack_format[[:space:]]*$" /tmp/nf.mcmeta \
+            || { echo "::error::neoforge pack_format is not $pack_format"; exit 1; }
+
+          fb_jar=$(ls fabric/versions/${{ matrix.mc }}/build/libs/*fabric.jar | grep -Ev 'sources|dev|raw' | head -n1)
+          unzip -p "$fb_jar" fabric.mod.json > /tmp/fb.json
+          echo "--- fabric.mod.json ---"; cat /tmp/fb.json
+          grep -qF "\"minecraft\": \">=$mc_min <$mc_max\"" /tmp/fb.json \
+            || { echo "::error::fabric minecraft depend is not >=$mc_min <$mc_max"; exit 1; }
+
+      - name: Dedicated server smoke (both loaders)
+        shell: pwsh
+        run: ./scripts/run-server-test-matrix.ps1 -Versions '${{ matrix.mc }}'
+
+      - name: Install virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgl1 libgl1-mesa-dri mesa-utils
+
+      - name: Automated client feature tests (both loaders)
+        env:
+          CI: true
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          ALSOFT_DRIVERS: "null"
+        run: |
+          xvfb-run -a -s "-screen 0 1280x720x24" \
+            pwsh -NoProfile -File ./scripts/run-client-test-matrix.ps1 -Versions '${{ matrix.mc }}'
+
+      - name: Upload runtime test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: MightyArchitect-FORGE
-          path: forge/build/libs/*FORGE.jar
+          name: mightyarchitect-runtime-tests-${{ matrix.mc }}
+          if-no-files-found: warn
+          path: |
+            build/client-test-results/${{ matrix.mc }}/
+            build/server-test-results/${{ matrix.mc }}/
 
-      - name: Upload Fabric Build
-        uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: MightyArchitect-FABRIC
-          path: fabric/build/libs/*FABRIC.jar
+          name: mightyarchitect-${{ matrix.mc }}
+          if-no-files-found: error
+          path: |
+            fabric/versions/${{ matrix.mc }}/build/libs/*fabric.jar
+            neoforge/versions/${{ matrix.mc }}/build/libs/*neoforge.jar
+
+  # Single aggregated status to use as the required check in branch protection:
+  # a PR only passes when all 7 versions x 2 loaders build green + metadata verifies.
+  all-green:
+    name: All versions green
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any matrix job failed
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "One or more version builds failed."
+            exit 1
+          fi
+          echo "All 7 versions x 2 loaders built green."

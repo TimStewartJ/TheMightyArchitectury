@@ -1,6 +1,9 @@
 build/
 *.ipr
 run/
+run-client-test/
+run-client-test-*/
+run-server-test/
 *.iws
 out/
 *.iml
@@ -14,6 +17,4 @@ libs/
 .idea/
 classes/
 .metadata
-.vscode
 .settings
-*.launch

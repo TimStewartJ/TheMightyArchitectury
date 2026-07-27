@@ -29,7 +29,7 @@ public class VecHelper {
 		return VecHelper.rotate(vec.subtract(shift), deg, axis)
 			.add(shift);
 	}
-	
+
 	public static Vec3 lerp(Vec3 start, Vec3 end, double pct) {
 		return start.add(end.subtract(start).scale(pct));
 	}
@@ -57,7 +57,11 @@ public class VecHelper {
 	}
 
 	public static boolean isVecPointingTowards(Vec3 vec, Direction direction) {
-		return Vec3.atLowerCornerOf(direction.getNormal()).distanceTo(vec.normalize()) < .75;
+		//? if >=1.21.4 {
+		return Vec3.atLowerCornerOf(direction.getUnitVec3i()).distanceTo(vec.normalize()) < .75;
+		//?} else {
+		/*return Vec3.atLowerCornerOf(direction.getNormal()).distanceTo(vec.normalize()) < .75;
+		*///?}
 	}
 
 	public static Vec3 getCenterOf(Vec3i pos) {
@@ -75,9 +79,13 @@ public class VecHelper {
 		vec = vec.normalize();
 		return new Vec3(1, 1, 1).subtract(Math.abs(vec.x), Math.abs(vec.y), Math.abs(vec.z));
 	}
-	
+
 	public static Vec3 axisAlingedPlaneOf(Direction face) {
-		return axisAlingedPlaneOf(Vec3.atLowerCornerOf(face.getNormal()));
+		//? if >=1.21.4 {
+		return axisAlingedPlaneOf(Vec3.atLowerCornerOf(face.getUnitVec3i()));
+		//?} else {
+		/*return axisAlingedPlaneOf(Vec3.atLowerCornerOf(face.getNormal()));
+		*///?}
 	}
 
 	public static ListTag writeNBT(Vec3 vec) {
@@ -91,7 +99,11 @@ public class VecHelper {
 	public static Vec3 readNBT(ListTag list) {
 		if (list.isEmpty())
 			return Vec3.ZERO;
-		return new Vec3(list.getDouble(0), list.getDouble(1), list.getDouble(2));
+		//? if >=1.21.6 {
+		return new Vec3(list.getDoubleOr(0, 0.0), list.getDoubleOr(1, 0.0), list.getDoubleOr(2, 0.0));
+		//?} else {
+		/*return new Vec3(list.getDouble(0), list.getDouble(1), list.getDouble(2));
+		*///?}
 	}
 
 	public static Vec3 voxelSpace(double x, double y, double z) {

@@ -1,6 +1,9 @@
 package com.timmie.mightyarchitect.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+//? if >=1.21.10 {
+//?} else {
+/*import com.mojang.blaze3d.vertex.PoseStack;
+*///?}
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.design.DesignExporter;
@@ -10,11 +13,28 @@ import com.timmie.mightyarchitect.control.palette.PaletteStorage;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import com.timmie.mightyarchitect.gui.widgets.IconButton;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
+//? if >=1.21.11 {
+import net.minecraft.util.Util;
+//?} else {
+/*import net.minecraft.Util;
+*///?}
 import net.minecraft.client.Minecraft;
+//? if >=26 {
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else if >=1.21.10 {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?} else {
+/*import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+//? if >=1.21.10 {
+import net.minecraft.client.input.MouseButtonEvent;
+//?} else {
+/*
+*///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 
@@ -34,7 +54,11 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 
 	public PalettePickerScreen(boolean scanPicker) {
 		super();
-		minecraft = Minecraft.getInstance();
+
+		//? if >=1.21.11 {
+		//?} else {
+		/*minecraft = Minecraft.getInstance();
+		*///?}
 		this.scanPicker = scanPicker;
 
 	}
@@ -96,12 +120,21 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 
 		if (scanPicker) {
 			if (primary.palette.hasDuplicates())
-				minecraft.player.displayClientMessage(
+				//? if >=26 {
+				minecraft.player.sendSystemMessage(Component.literal(ChatFormatting.RED + "Warning: Ambiguous Scanner Palette "
+						+ ChatFormatting.WHITE + "( " + primary.palette.getDuplicates() + " )"));
+				//?} else {
+				/*minecraft.player.displayClientMessage(
 					Component.literal(ChatFormatting.RED + "Warning: Ambiguous Scanner Palette "
 						+ ChatFormatting.WHITE + "( " + primary.palette.getDuplicates() + " )"),
 					false);
+				*///?}
 
-			minecraft.player.displayClientMessage(Component.literal("Updated Default Palette"), true);
+			//? if >=26 {
+			minecraft.player.sendOverlayMessage(Component.literal("Updated Default Palette"));
+			//?} else {
+			/*minecraft.player.displayClientMessage(Component.literal("Updated Default Palette"), true);
+			*///?}
 			DesignExporter.theme.setDefaultPalette(primary.palette);
 			DesignExporter.theme.setDefaultSecondaryPalette(secondary.palette);
 		}
@@ -133,28 +166,55 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public void renderWindow(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
-		ScreenResources.PALETTES.draw(ms, this, topLeftX, topLeftY);
+	//? if >=26 {
+	public void renderWindow(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
+	//?} else {
+	/*public void renderWindow(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+	*///?}
+		ScreenResources.PALETTES.draw(ms, topLeftX, topLeftY);
 
 		int color = ScreenResources.FONT_COLOR;
 
 		if (scanPicker) {
-			font.draw(ms, "Choose a palette for", topLeftX + 8, topLeftY + 10, color);
-			font.draw(ms, "your theme.", topLeftX + 8, topLeftY + 18, color);
+			//? if >=26 {
+			ms.text(font, "Choose a palette for", topLeftX + 8, topLeftY + 10, color);
+			ms.text(font, "your theme.", topLeftX + 8, topLeftY + 18, color);
+			//?} else {
+			/*ms.drawString(font, "Choose a palette for", topLeftX + 8, topLeftY + 10, color);
+			ms.drawString(font, "your theme.", topLeftX + 8, topLeftY + 18, color);
+			*///?}
 
 		} else {
-			font.draw(ms, "Palette Picker", topLeftX + 8, topLeftY + 10, color);
-			font.draw(ms, "Primary", topLeftX + 134, topLeftY + 30, color);
-			font.draw(ms, "Secondary", topLeftX + 191, topLeftY + 30, color);
+			//? if >=26 {
+			ms.text(font, "Palette Picker", topLeftX + 8, topLeftY + 10, color);
+			ms.text(font, "Primary", topLeftX + 134, topLeftY + 30, color);
+			ms.text(font, "Secondary", topLeftX + 191, topLeftY + 30, color);
+			//?} else {
+			/*ms.drawString(font, "Palette Picker", topLeftX + 8, topLeftY + 10, color);
+			ms.drawString(font, "Primary", topLeftX + 134, topLeftY + 30, color);
+			ms.drawString(font, "Secondary", topLeftX + 191, topLeftY + 30, color);
+			*///?}
 
 		}
 
-		font.draw(ms, "Included Palettes", topLeftX + 8, topLeftY + 53, color);
-		font.draw(ms, "My Palettes", topLeftX + 134, topLeftY + 53, color);
+		//? if >=26 {
+		ms.text(font, "Included Palettes", topLeftX + 8, topLeftY + 53, color);
+		ms.text(font, "My Palettes", topLeftX + 134, topLeftY + 53, color);
+		//?} else {
+		/*ms.drawString(font, "Included Palettes", topLeftX + 8, topLeftY + 53, color);
+		ms.drawString(font, "My Palettes", topLeftX + 134, topLeftY + 53, color);
+		*///?}
 	}
 
 	@Override
-	public boolean mouseClicked(double mouseX, double mouseY, int mouseButton) {
+	//? if >=1.21.10 {
+	public boolean mouseClicked(MouseButtonEvent event, boolean flag) {
+		double mouseX = event.x();
+		double mouseY = event.y();
+		int mouseButton = event.button();
+	//?} else {
+	/*public boolean mouseClicked(double mouseX, double mouseY, int mouseButton) {
+	*///?}
 		for (int i = 0; i < this.widgets.size(); ++i) {
 			AbstractWidget guibutton = this.widgets.get(i);
 
@@ -167,7 +227,11 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 				return true;
 			}
 		}
-		return super.mouseClicked(mouseX, mouseY, mouseButton);
+		//? if >=1.21.10 {
+		return super.mouseClicked(event, flag);
+		//?} else {
+		/*return super.mouseClicked(mouseX, mouseY, mouseButton);
+		*///?}
 	}
 
 	protected void buttonClicked(AbstractWidget button) {
@@ -236,31 +300,76 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 			this.setTooltip(Tooltip.create(tooltipText));
 		}
 
-		private void preview(PoseStack ms, Minecraft mc) {
-			ms.pushPose();
-			ms.translate(x + 1, y + 9, 100);
-			ms.scale(1 + 1/64f, 1 + 1/64f, 1);
+		//? if >=26 {
+		private void preview(GuiGraphicsExtractor ms, Minecraft mc) {
+			// pose() is a Matrix3x2fStack (2D); positioning is passed to GuiGameElement.
+			float baseX = getX() + 1;
+			float baseY = getY() + 9;
+			float baseZ = 100;
+			float scale = 1 + 1/64f;
+			renderBlock(ms, mc, new BlockPos(0, 1, 0), Palette.INNER_PRIMARY, baseX, baseY, baseZ, scale);
+			renderBlock(ms, mc, new BlockPos(1, 1, 0), Palette.INNER_DETAIL, baseX, baseY, baseZ, scale);
+			renderBlock(ms, mc, new BlockPos(0, 0, 0), Palette.HEAVY_PRIMARY, baseX, baseY, baseZ, scale);
+			renderBlock(ms, mc, new BlockPos(1, 0, 0), Palette.ROOF_PRIMARY, baseX, baseY, baseZ, scale);
+		//?} else if >=1.21.6 {
+		/*private void preview(GuiGraphics ms, Minecraft mc) {
+			// In 1.21.6, GuiGraphics.pose() returns Matrix3x2fStack (2D).
+			// We pass positioning to GuiGameElement instead
+			float baseX = getX() + 1;
+			float baseY = getY() + 9;
+			float baseZ = 100;
+			float scale = 1 + 1/64f;
+			renderBlock(ms, mc, new BlockPos(0, 1, 0), Palette.INNER_PRIMARY, baseX, baseY, baseZ, scale);
+			renderBlock(ms, mc, new BlockPos(1, 1, 0), Palette.INNER_DETAIL, baseX, baseY, baseZ, scale);
+			renderBlock(ms, mc, new BlockPos(0, 0, 0), Palette.HEAVY_PRIMARY, baseX, baseY, baseZ, scale);
+			renderBlock(ms, mc, new BlockPos(1, 0, 0), Palette.ROOF_PRIMARY, baseX, baseY, baseZ, scale);
+		*///?} else {
+		/*private void preview(GuiGraphics ms, Minecraft mc) {
+			ms.pose().pushPose();
+			ms.pose().translate(getX() + 1, getY() + 9, 100);
+			ms.pose().scale(1 + 1/64f, 1 + 1/64f, 1);
 			renderBlock(ms, mc, new BlockPos(0, 1, 0), Palette.INNER_PRIMARY);
 			renderBlock(ms, mc, new BlockPos(1, 1, 0), Palette.INNER_DETAIL);
 			renderBlock(ms, mc, new BlockPos(0, 0, 0), Palette.HEAVY_PRIMARY);
 			renderBlock(ms, mc, new BlockPos(1, 0, 0), Palette.ROOF_PRIMARY);
-			ms.popPose();
+			ms.pose().popPose();
+		*///?}
 		}
 
-		protected void renderBlock(PoseStack ms, Minecraft mc, BlockPos pos, Palette key) {
-			ms.pushPose();
+		//? if >=26 {
+		protected void renderBlock(GuiGraphicsExtractor ms, Minecraft mc, BlockPos pos, Palette key, float baseX, float baseY, float baseZ, float baseScale) {
+		//?} else if >=1.21.6 {
+		/*protected void renderBlock(GuiGraphics ms, Minecraft mc, BlockPos pos, Palette key, float baseX, float baseY, float baseZ, float baseScale) {
+		*///?} else {
+		/*protected void renderBlock(GuiGraphics ms, Minecraft mc, BlockPos pos, Palette key) {
+			ms.pose().pushPose();
 
+		*///?}
 			GuiGameElement.of(palette.get(key))
-				.atLocal(pos.getX(), pos.getY(), pos.getZ())
+				//? if >=1.21.6 {
+				.at(baseX, baseY, baseZ)
+				.atLocal(pos.getX() * baseScale, pos.getY() * baseScale, pos.getZ() * baseScale)
+				.scale(7.9f * baseScale)
+				//?} else {
+				/*.atLocal(pos.getX(), pos.getY(), pos.getZ())
 				.scale(7.9f)
+				*///?}
 				.render(ms);
-
-			ms.popPose();
+			//? if >=1.21.6 {
+			//?} else {
+			/*
+			ms.pose().popPose();
+			*///?}
 		}
 
 		@Override
-		public void renderWidget(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
+		//? if >=26 {
+		public void extractWidgetRenderState(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
+			super.extractWidgetRenderState(ms, mouseX, mouseY, partialTicks);
+		//?} else {
+		/*public void renderWidget(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
 			super.renderWidget(ms, mouseX, mouseY, partialTicks);
+		*///?}
 			preview(ms, minecraft);
 		}
 	}

@@ -1,17 +1,77 @@
+// Read this node's toolchain from the root version node (versions/<node>/gradle.properties).
+def node = rootProject.project(":${stonecutter.current.version}")
+def unobf = node.findProperty('unobfuscated') == 'true'
+def javaVer = (node.findProperty('java_version') ?: '21') as int
+def mcVersion = node.property('minecraft_version')
+def archVersion = node.property('architectury_version')
+def floaderVersion = node.property('fabric_loader_version')
+
+apply plugin: unobf ? "mightyarchitect.loom-noremap" : "mightyarchitect.loom-remap"
+apply plugin: "java"
+apply plugin: "maven-publish"
+
+base { archivesName = "${rootProject.archives_base_name}-${mcVersion}" }
+version = "${rootProject.mod_version}+mc${mcVersion}"
+group = rootProject.maven_group
+
+repositories {
+    maven { url "https://maven.neoforged.net/releases/" }
+}
+
 architectury {
+    minecraft = mcVersion
     common(rootProject.enabled_platforms.split(","))
 }
 
 loom {
-    accessWidenerPath = file("src/main/resources/mightyarchitect.accesswidener")
+    silentMojangMappingsLicense()
+    // Obfuscated nodes need the access widener (loadEffect / AbstractWidget.x,y / GuiGraphics.<init>);
+    // 26.1 ships unobfuscated so those are already accessible and no AW is applied.
+    if (!unobf) {
+        accessWidenerPath = rootProject.file("common/src/main/resources/mightyarchitect.accesswidener")
+    }
 }
 
 dependencies {
-    // We depend on fabric loader here to use the fabric @Environment annotations and get the mixin dependencies
-    // Do NOT use other classes from fabric loader
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
-    // Remove the next line if you don't want to depend on the API
-    modApi "dev.architectury:architectury:${rootProject.architectury_version}"
+    minecraft "com.mojang:minecraft:${mcVersion}"
+    if (unobf) {
+        // Unobfuscated 26.1: no remap; deps consumed as-is, no mappings.
+        implementation "net.fabricmc:fabric-loader:${floaderVersion}"
+        implementation "dev.architectury:architectury:${archVersion}"
+    } else {
+        // Obfuscated: Loom remaps intermediary -> named, so mod deps must use modImplementation/modApi.
+        mappings loom.officialMojangMappings()
+        modImplementation "net.fabricmc:fabric-loader:${floaderVersion}"
+        modApi "dev.architectury:architectury:${archVersion}"
+    }
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+}
+
+// Blueprint post-processing shader/effect resources differ per MC version in BOTH format and file
+// layout (old GameRenderer.loadEffect PostChain vs new post_effect API; program vs vertex/fragment
+// passes; core/screenquad vs post/blit vertex; GLSL #version 120/150/330). A single shared copy in
+// common/ can't satisfy all versions, so each node pulls the matching variant set from
+// common/shader-variants/<group>/ as an extra resources source directory.
+def oldApiVersions = ["1.20.1", "1.21.1"]  // GameRenderer.loadEffect PostChain (shaders/post + shaders/program)
+def t4ShaderVersions = ["1.21.4"]          // transitional: post_effect (program) + shaders/post program def
+def p6ShaderVersions = ["1.21.6", "1.21.8"] // post_effect (post/blit vertex) + #version 150 fragment
+// Everything newer (1.21.10, 1.21.11, 26.1, ...) uses post_effect (core/screenquad) + #version 330 fragment.
+def shaderVariant =
+    oldApiVersions.contains(stonecutter.current.version)   ? "old" :
+    t4ShaderVersions.contains(stonecutter.current.version) ? "t4"  :
+    p6ShaderVersions.contains(stonecutter.current.version) ? "p6"  : "p10"
+sourceSets.main.resources.srcDir rootProject.file("common/shader-variants/${shaderVariant}")
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.release = javaVer
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(javaVer)
+    }
+    withSourcesJar()
 }
 
 publishing {
@@ -21,9 +81,29 @@ publishing {
             from components.java
         }
     }
+    repositories {}
+}
 
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-    repositories {
-        // Add repositories to publish to here.
+// Expose this node's Stonecutter-processed source + resource DIRECTORIES as consumable configs.
+// The loader modules compile these directories in directly (source inclusion) via the compile
+// TASK (not a sourceSet srcDir), which is the proven Structurify/MultiLoader pattern and avoids
+// architectury's cross-project transform config (unusable between sibling Stonecutter nodes).
+// Safe here: the mod uses no @ExpectPlatform, only architectury's runtime API.
+configurations {
+    commonJava {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+    commonResources {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+}
+
+afterEvaluate {
+    artifacts {
+        def main = sourceSets.main
+        main.java.sourceDirectories.files.each { add("commonJava", it) }
+        main.resources.sourceDirectories.files.each { add("commonResources", it) }
     }
 }

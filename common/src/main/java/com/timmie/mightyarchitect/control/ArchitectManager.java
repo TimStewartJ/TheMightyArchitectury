@@ -1,6 +1,5 @@
 package com.timmie.mightyarchitect.control;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.MightyClient;
@@ -23,8 +22,21 @@ import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.event.events.client.ClientRawInputEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.event.events.common.InteractionEvent;
+//? if >=1.21.10 {
+import net.minecraft.client.input.KeyEvent;
+//?} else {
+/**///?}
+//? if >=1.21.10 {
+import net.minecraft.client.input.MouseButtonInfo;
+//?} else {
+/**///?}
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+//? if >=26 {
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;*///?}
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -32,6 +44,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
+//? if >=1.21.4 {
+import net.minecraft.world.InteractionResult;
+//?} else {
+/**///?}
 import net.minecraft.world.entity.player.Player;
 import org.apache.commons.io.IOUtils;
 import org.lwjgl.glfw.GLFW;
@@ -131,7 +147,10 @@ public class ArchitectManager {
 
 		if (mc.hasSingleplayerServer()) {
 			for (InstantPrintPacket packet : getModel().getPackets())
-				AllPackets.channel.sendToServer(packet);
+				//? if >=1.21.10 {
+				AllPackets.sendToServer(packet);
+				//?} else {
+				/*packet.sendToServer();*///?}
 			MightyClient.renderer.setActive(false);
 			status("Printed result into world.");
 			unload();
@@ -173,12 +192,18 @@ public class ArchitectManager {
 				.getOrigin());
 		Component component = Component.literal("Deploy Schematic at: " + ChatFormatting.BLUE + "["
 			+ pos.getX() + "," + pos.getY() + "," + pos.getZ() + "]");
-		Minecraft.getInstance().player.displayClientMessage(component, false);
+		//? if >=26 {
+		Minecraft.getInstance().player.sendSystemMessage(component);
+		//?} else {
+		/*Minecraft.getInstance().player.displayClientMessage(component, false);*///?}
 		unload();
 	}
 
 	public static void status(String message) {
-		Minecraft.getInstance().player.displayClientMessage(Component.literal(message), true);
+		//? if >=26 {
+		Minecraft.getInstance().player.sendOverlayMessage(Component.literal(message));
+		//?} else {
+		/*Minecraft.getInstance().player.displayClientMessage(Component.literal(message), true);*///?}
 	}
 
 	public static void pickPalette() {
@@ -271,11 +296,11 @@ public class ArchitectManager {
 
 	}
 
-	public static EventResult onMouseScrolled(Minecraft minecraft, double v) {
+	public static EventResult onMouseScrolled(Minecraft minecraft, double horizontalAmount, double verticalAmount) {
 		if (Minecraft.getInstance().screen != null)
 			return EventResult.pass();
 		if (phase.getPhaseHandler()
-			.onScroll((int) Math.signum(v)))
+			.onScroll((int) Math.signum(verticalAmount)))
 			return EventResult.interruptTrue();
 		return EventResult.pass();
 	}
@@ -286,17 +311,27 @@ public class ArchitectManager {
 				.render(ms, buffer);
 	}
 
-	public static EventResult onClick(Minecraft minecraft, int button, int action, int modifiers) {
+	//? if >=1.21.10 {
+	public static EventResult onClick(Minecraft minecraft, MouseButtonInfo buttonInfo, int action) {
+	//?} else {
+	/*public static EventResult onClick(Minecraft minecraft, int button, int action, int modifiers) {*///?}
 		if (Minecraft.getInstance().screen != null)
 			return EventResult.pass();
 		if (action != Keyboard.PRESS)
 			return EventResult.pass();
 		phase.getPhaseHandler()
-			.onClick(button);
+		//? if >=1.21.10 {
+			.onClick(buttonInfo.button());
+		//?} else {
+		/*.onClick(button);*///?}
 		return EventResult.pass();
 	}
 
-	public static EventResult onKeyTyped(Minecraft minecraft, int keyCode, int scanCode, int action, int modifiers) {
+	//? if >=1.21.10 {
+	public static EventResult onKeyTyped(Minecraft minecraft, int action, KeyEvent event) {
+		int keyCode = event.key();
+	//?} else {
+	/*public static EventResult onKeyTyped(Minecraft minecraft, int keyCode, int scanCode, int action, int modifiers) {*///?}
 		if (keyCode == GLFW.GLFW_KEY_ESCAPE && action == Keyboard.PRESS) {
 			if (inPhase(ArchitectPhases.Composing) || inPhase(ArchitectPhases.Previewing)) {
 				enterPhase(ArchitectPhases.Paused);
@@ -332,17 +367,27 @@ public class ArchitectManager {
 			((IDrawBlockHighlights) phaseHandler).tickHighlightOutlines();
 	}
 
-	public static void onDrawGameOverlay(PoseStack poseStack, float partialTicks) {
+	//? if >=26 {
+	public static void onDrawGameOverlay(GuiGraphicsExtractor poseStack, DeltaTracker deltaTracker) {
+	//?} else {
+	/*public static void onDrawGameOverlay(GuiGraphics poseStack, DeltaTracker deltaTracker) {*///?}
 		IArchitectPhase phaseHandler = phase.getPhaseHandler();
 		if (phaseHandler instanceof IRenderGameOverlay) {
-			((IRenderGameOverlay) phaseHandler).renderGameOverlay(poseStack, partialTicks);
+			((IRenderGameOverlay) phaseHandler).renderGameOverlay(poseStack, deltaTracker.getGameTimeDeltaPartialTick(true));
 		}
 
-		menu.drawPassive();
-		RenderSystem.enableBlend();
+		menu.drawPassive(poseStack, deltaTracker.getGameTimeDeltaPartialTick(true));
+		//? if <1.21.6 {
+		/*com.mojang.blaze3d.systems.RenderSystem.enableBlend();*///?}
+
+		// Draw world-space measurement labels submitted during the world render pass as HUD text.
+		com.timmie.mightyarchitect.foundation.utility.HudTextBuffer.render(poseStack);
 	}
 
-	public static EventResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return EventResult.pass(); }
+	//? if >=1.21.4 {
+	public static InteractionResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return InteractionResult.PASS; }
+	//?} else {
+	/*public static EventResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return EventResult.pass(); }*///?}
 
 	public static void resetSchematic() {
 		model = new Schematic();

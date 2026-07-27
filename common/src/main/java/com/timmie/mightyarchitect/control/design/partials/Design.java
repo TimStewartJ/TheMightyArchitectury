@@ -7,7 +7,10 @@ import com.timmie.mightyarchitect.control.palette.PaletteBlockInfo;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
+//? if >=26 {
+//?} else {
+/*import net.minecraft.nbt.NbtUtils;
+*///?}
 
 import java.util.LinkedList;
 import java.util.List;
@@ -24,32 +27,57 @@ public abstract class Design {
 	protected int yShift;
 
 	public abstract Design fromNBT(CompoundTag compound);
-	
+
 	protected void applyNBT(CompoundTag compound) {
-		size = NbtUtils.readBlockPos(compound.getCompound("Size"));
+		// Handle both old format (CompoundTag with X,Y,Z) and new format (IntArrayTag)
+		//? if >=1.21.6 {
+		if (compound.get("Size") instanceof net.minecraft.nbt.IntArrayTag intArrayTag) { // IntArrayTag (new format)
+			int[] arr = intArrayTag.getAsIntArray();
+			size = arr.length >= 3 ? new BlockPos(arr[0], arr[1], arr[2]) : BlockPos.ZERO;
+		} else if (compound.get("Size") instanceof CompoundTag) { // CompoundTag (old format)
+			CompoundTag sizeTag = compound.getCompound("Size").orElse(new CompoundTag());
+			size = new BlockPos(sizeTag.getInt("X").orElse(0), sizeTag.getInt("Y").orElse(0), sizeTag.getInt("Z").orElse(0));
+		//?} else {
+		/*if (compound.contains("Size", 11)) { // 11 = IntArrayTag (new format)
+			size = NbtUtils.readBlockPos(compound, "Size").orElse(BlockPos.ZERO);
+		} else if (compound.contains("Size", 10)) { // 10 = CompoundTag (old format)
+			CompoundTag sizeTag = compound.getCompound("Size");
+			size = new BlockPos(sizeTag.getInt("X"), sizeTag.getInt("Y"), sizeTag.getInt("Z"));
+		*///?}
+		} else {
+			size = BlockPos.ZERO;
+		}
 		defaultWidth = size.getX();
 		slices = new DesignSlice[size.getY()];
-		
+
 		defaultHeight = 0;
 		yShift = 0;
 		heights = ImmutableSet.of(0);
-		ListTag sliceTagList = compound.getList("Layers", 10);
-		
+		//? if >=1.21.6 {
+		ListTag sliceTagList = compound.getList("Layers").orElse(new ListTag());
+		//?} else {
+		/*ListTag sliceTagList = compound.getList("Layers", 10);
+		*///?}
+
 		for (int sliceIndex = 0; sliceIndex < slices.length; sliceIndex++) {
-			DesignSlice slice = DesignSlice.fromNBT(sliceTagList.getCompound(sliceIndex));
+			//? if >=1.21.6 {
+			DesignSlice slice = DesignSlice.fromNBT(sliceTagList.getCompound(sliceIndex).orElse(new CompoundTag()));
+			//?} else {
+			/*DesignSlice slice = DesignSlice.fromNBT(sliceTagList.getCompound(sliceIndex));
+			*///?}
 			defaultHeight = slice.adjustDefaultHeight(defaultHeight);
 			heights = slice.adjustHeigthsList(heights);
 			slices[sliceIndex] = slice;
-			
+
 			if (slice.getTrait() == DesignSliceTrait.MaskBelow)
 				yShift -= 1;
-		}		
+		}
 	}
-	
+
 	public void getBlocks(DesignInstance instance, Map<BlockPos, PaletteBlockInfo> blocks) {
 		getBlocksShifted(instance, blocks, BlockPos.ZERO);
 	}
-	
+
 	protected void getBlocksShifted(DesignInstance instance, Map<BlockPos, PaletteBlockInfo> blocks, BlockPos localShift) {
 		BlockPos position = instance.localAnchor;
 		BlockPos totalShift = localShift.offset(0, yShift, 0);
@@ -69,7 +97,7 @@ public abstract class Design {
 			}
 		}
 	}
-	
+
 	protected List<DesignSlice> selectPrintedLayers(int targetHeight) {
 		List<DesignSlice> toPrint = new LinkedList<>();
 		int currentHeight = defaultHeight;
@@ -91,7 +119,7 @@ public abstract class Design {
 		}
 		return String.format("Design with ") + heights;
 	}
-	
+
 	public boolean fitsHorizontally(int width) {
 		return this.defaultWidth == width;
 	}
@@ -142,7 +170,7 @@ public abstract class Design {
 		public void getBlocks(Map<BlockPos, PaletteBlockInfo> blocks) {
 			template.getBlocks(this, blocks);
 		}
-		
+
 		public Design getTemplate() {
 			return template;
 		}

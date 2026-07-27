@@ -9,11 +9,14 @@ import com.timmie.mightyarchitect.foundation.RenderTypes;
 import com.timmie.mightyarchitect.foundation.utility.AngleHelper;
 import com.timmie.mightyarchitect.foundation.utility.ColorHelper;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
-import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
+//? if >=26 {
+import net.minecraft.util.LightCoordsUtil;
+//?} else {
+/*import net.minecraft.client.renderer.LightTexture;*///?}
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3f;
@@ -62,7 +65,10 @@ public abstract class Outline {
 		Vec3 extension = diff.normalize()
 			.scale(lineWidth / 2);
 		Vec3 plane = VecHelper.axisAlingedPlaneOf(diff);
-		Direction face = Direction.getNearest(diff.x, diff.y, diff.z);
+		//? if >=1.21.4 {
+		Direction face = Direction.getNearest((int) Math.signum(diff.x), (int) Math.signum(diff.y), (int) Math.signum(diff.z), Direction.UP);
+		//?} else {
+		/*Direction face = Direction.getNearest(diff.x, diff.y, diff.z);*///?}
 		Axis axis = face.getAxis();
 
 		start = start.subtract(extension);
@@ -95,16 +101,28 @@ public abstract class Outline {
 		putQuad(ms, builder, b4, b3, b2, b1, face);
 		putQuad(ms, builder, a1, a2, a3, a4, face.getOpposite());
 		Vec3 vec = a1.subtract(a4);
-		face = Direction.getNearest(vec.x, vec.y, vec.z);
+		//? if >=1.21.4 {
+		face = Direction.getNearest((int) Math.signum(vec.x), (int) Math.signum(vec.y), (int) Math.signum(vec.z), Direction.UP);
+		//?} else {
+		/*face = Direction.getNearest(vec.x, vec.y, vec.z);*///?}
 		putQuad(ms, builder, a1, b1, b2, a2, face);
 		vec = VecHelper.rotate(vec, -90, axis);
-		face = Direction.getNearest(vec.x, vec.y, vec.z);
+		//? if >=1.21.4 {
+		face = Direction.getNearest((int) Math.signum(vec.x), (int) Math.signum(vec.y), (int) Math.signum(vec.z), Direction.UP);
+		//?} else {
+		/*face = Direction.getNearest(vec.x, vec.y, vec.z);*///?}
 		putQuad(ms, builder, a2, b2, b3, a3, face);
 		vec = VecHelper.rotate(vec, -90, axis);
-		face = Direction.getNearest(vec.x, vec.y, vec.z);
+		//? if >=1.21.4 {
+		face = Direction.getNearest((int) Math.signum(vec.x), (int) Math.signum(vec.y), (int) Math.signum(vec.z), Direction.UP);
+		//?} else {
+		/*face = Direction.getNearest(vec.x, vec.y, vec.z);*///?}
 		putQuad(ms, builder, a3, b3, b4, a4, face);
 		vec = VecHelper.rotate(vec, -90, axis);
-		face = Direction.getNearest(vec.x, vec.y, vec.z);
+		//? if >=1.21.4 {
+		face = Direction.getNearest((int) Math.signum(vec.x), (int) Math.signum(vec.y), (int) Math.signum(vec.z), Direction.UP);
+		//?} else {
+		/*face = Direction.getNearest(vec.x, vec.y, vec.z);*///?}
 		putQuad(ms, builder, a4, b4, b1, a1, face);
 	}
 
@@ -142,14 +160,16 @@ public abstract class Outline {
 		if (useFaceColor && params.faceRgb != null)
 			color = params.faceRgb;
 
-		builder.vertex(peek.pose(), (float) pos.x, (float) pos.y, (float) pos.z)
-			.color((float) color.x, (float) color.y, (float) color.z, params.alpha)
-			.uv(u, v)
-			.overlayCoords(OverlayTexture.NO_OVERLAY)
-			.uv2(params.lightMap)
-			//.uv2(LightTexture.FULL_BRIGHT)
-			.normal(peek.normal(), xOffset, yOffset, zOffset)
-			.endVertex();
+		builder.addVertex(peek.pose(), (float) pos.x, (float) pos.y, (float) pos.z)
+			.setColor((float) color.x, (float) color.y, (float) color.z, params.alpha)
+			.setUv(u, v)
+			.setOverlay(OverlayTexture.NO_OVERLAY)
+			.setLight(params.lightMap)
+			//? if >=26 {
+			//.uv2(LightCoordsUtil.FULL_BRIGHT)
+			//?} else {
+			/*//.uv2(LightTexture.FULL_BRIGHT)*///?}
+			.setNormal(peek, xOffset, yOffset, zOffset);
 
 		transformNormals = null;
 	}
@@ -188,7 +208,10 @@ public abstract class Outline {
 			faceRgb = null;
 			fadeTicks = 8;
 
-			lightMap = LightTexture.FULL_BRIGHT;
+			//? if >=26 {
+			lightMap = LightCoordsUtil.FULL_BRIGHT;
+			//?} else {
+			/*lightMap = LightTexture.FULL_BRIGHT;*///?}
 		}
 
 		// builder

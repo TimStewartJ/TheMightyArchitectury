@@ -7,7 +7,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
-import net.minecraft.resources.ResourceLocation;
+//? if >=1.21.11 {
+import net.minecraft.resources.Identifier;
+//?} else {
+/*import net.minecraft.resources.ResourceLocation;
+*///?}
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -26,7 +30,11 @@ public class AABBOutline extends Outline {
 
 	public void renderBB(PoseStack ms, MultiBufferSource buffer, AABB bb) {
 		Vec3 projectedView = Minecraft.getInstance().gameRenderer.getMainCamera()
-			.getPosition();
+			//? if >=1.21.11 {
+			.position();
+			//?} else {
+			/*.getPosition();
+			*///?}
 		boolean noCull = bb.contains(projectedView);
 		bb = bb.inflate(noCull ? -1 / 128d : 1 / 128d);
 		noCull |= params.disableCull;
@@ -71,12 +79,16 @@ public class AABBOutline extends Outline {
 
 	protected void renderFace(PoseStack ms, MultiBufferSource buffer, Direction direction, Vec3 p1, Vec3 p2, Vec3 p3,
 		Vec3 p4, boolean noCull) {
-		if (!params.faceTexture.isPresent())
+		if (params.faceTexture.isEmpty())
 			return;
 		if (params.isFaceHidden(direction))
 			return;
 
-		ResourceLocation faceTexture = params.faceTexture.get()
+		//? if >=1.21.11 {
+		Identifier faceTexture = params.faceTexture.get()
+		//?} else {
+		/*ResourceLocation faceTexture = params.faceTexture.get()
+		*///?}
 			.getLocation();
 		float alphaBefore = params.alpha;
 		params.alpha =

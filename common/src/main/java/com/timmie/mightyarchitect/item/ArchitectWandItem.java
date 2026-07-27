@@ -1,25 +1,24 @@
 package com.timmie.mightyarchitect.item;
 
-import com.timmie.mightyarchitect.AllBlocks;
-import com.timmie.mightyarchitect.control.ArchitectManager;
-import com.timmie.mightyarchitect.control.design.DesignExporter;
-import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
-import com.timmie.mightyarchitect.control.phase.export.PhaseEditTheme;
-import com.timmie.mightyarchitect.gui.DesignExporterScreen;
-import com.timmie.mightyarchitect.gui.ScreenHelper;
-import dev.architectury.platform.Platform;
-import dev.architectury.utils.Env;
 import dev.architectury.utils.EnvExecutor;
 import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
+//? if >=1.21.10 {
+//?} else {
+/*import net.fabricmc.api.Environment;
+*///?}
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
+//? if >=1.21.4 {
+//?} else {
+/*import net.minecraft.world.InteractionResultHolder;
+*///?}
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
+//? if >=26 {
+//?} else {
+/*import net.minecraft.world.item.ItemStack;
+*///?}
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
@@ -37,7 +36,11 @@ public class ArchitectWandItem extends Item {
 		Player player = context.getPlayer();
 		Level world = context.getLevel();
 
-		if (!world.isClientSide)
+		//? if >=1.21.10 {
+		if (!world.isClientSide())
+		//?} else {
+		/*if (!world.isClientSide)
+		*///?}
 			return InteractionResult.SUCCESS;
 
 		if (player.isShiftKeyDown()) {
@@ -52,60 +55,69 @@ public class ArchitectWandItem extends Item {
 				() -> () -> handleUseOnDesignAnchor(player, world, anchor, blockState));
 
 		player.getCooldowns()
-			.addCooldown(this, 5);
+			//? if >=1.21.4 {
+			.addCooldown(context.getItemInHand(), 5);
+			//?} else {
+			/*.addCooldown(this, 5);
+			*///?}
 		return InteractionResult.SUCCESS;
 	}
 
-	@Environment(EnvType.CLIENT)
+	//? if >=1.21.10 {
+	//?} else {
+	/*@Environment(EnvType.CLIENT)
+	*///?}
 	protected void resetVisualization() {
-		PhaseEditTheme.resetVisualization();
+		ArchitectWandClient.resetVisualization();
 	}
 
-	@Environment(EnvType.CLIENT)
+	//? if >=1.21.10 {
+	//?} else {
+	/*@Environment(EnvType.CLIENT)
+	*///?}
 	protected void handleUseOnDesignAnchor(Player player, Level world, BlockPos anchor, BlockState blockState) {
-		if (AllBlocks.DESIGN_ANCHOR.typeOf(blockState)) {
-			if (!ArchitectManager.inPhase(ArchitectPhases.EditingThemes))
-				return;
-
-			String name = DesignExporter.exportDesign(world, anchor);
-			if (!name.isEmpty()) {
-				player.displayClientMessage(Component.literal(name), true);
-			}
-
-		} else {
-			if (!ArchitectManager.inPhase(ArchitectPhases.EditingThemes))
-				return;
-			EnvExecutor.runInEnv(EnvType.CLIENT, () -> this::resetVisualization);
-		}
+		ArchitectWandClient.handleUseOnDesignAnchor(player, world, anchor, blockState);
 	}
 
 	@Override
-	public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
+	//? if >=1.21.10 {
+	public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
+		if (worldIn.isClientSide()) {
+	//?} else if >=1.21.4 {
+	/*public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
 		if (worldIn.isClientSide) {
+	*///?} else {
+	/*public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
+		if (worldIn.isClientSide) {
+	*///?}
 			EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> handleRightClick(worldIn, playerIn, handIn));
 			playerIn.getCooldowns()
-				.addCooldown(this, 5);
+				//? if >=1.21.4 {
+				.addCooldown(playerIn.getItemInHand(handIn), 5);
+				//?} else {
+				/*.addCooldown(this, 5);
+				*///?}
 		}
-		return super.use(worldIn, playerIn, handIn);
+		//? if >=1.21.4 {
+		return InteractionResult.SUCCESS;
+		//?} else {
+		/*return super.use(worldIn, playerIn, handIn);
+		*///?}
 	}
 
-	@Environment(EnvType.CLIENT)
+	//? if >=1.21.10 {
+	//?} else {
+	/*@Environment(EnvType.CLIENT)
+	*///?}
 	protected void handleRightClick(Level worldIn, Player playerIn, InteractionHand handIn) {
-		if (!ArchitectManager.inPhase(ArchitectPhases.EditingThemes))
-			return;
-
-		if (playerIn.isShiftKeyDown()) {
-			openGui();
-
-		} else {
-			resetVisualization();
-		}
+		ArchitectWandClient.handleRightClick(playerIn);
 	}
 
-	@Environment(EnvType.CLIENT)
+	//? if >=1.21.10 {
+	//?} else {
+	/*@Environment(EnvType.CLIENT)
+	*///?}
 	private void openGui() {
-		if (!ArchitectManager.inPhase(ArchitectPhases.EditingThemes))
-			return;
-		ScreenHelper.open(new DesignExporterScreen());
+		ArchitectWandClient.openGui();
 	}
 }

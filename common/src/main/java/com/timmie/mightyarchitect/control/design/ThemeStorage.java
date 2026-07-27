@@ -5,6 +5,7 @@ import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 
 import java.io.IOException;
@@ -204,7 +205,7 @@ public class ThemeStorage {
 						try {
 							InputStream inputStream = Files.newInputStream(Paths.get(folderPath + "/" + themeFolder),
 								StandardOpenOption.READ);
-							themeFile = NbtIo.readCompressed(inputStream);
+							themeFile = NbtIo.readCompressed(inputStream, NbtAccounter.unlimitedHeap());
 							inputStream.close();
 						} catch (IOException e) {
 							e.printStackTrace();
@@ -213,10 +214,19 @@ public class ThemeStorage {
 						themeFile = FilesHelper.loadJsonAsNBT("themes/" + themeFolder);
 					}
 
-					themeCompound = themeFile.getCompound("Theme");
-					paletteCompound = themeFile.getCompound("Palette");
+					//? if >=1.21.6 {
+					themeCompound = themeFile.getCompound("Theme").orElse(new CompoundTag());
+					//?} else {
+					/*themeCompound = themeFile.getCompound("Theme");*///?}
+					//? if >=1.21.6 {
+					paletteCompound = themeFile.getCompound("Palette").orElse(new CompoundTag());
+					//?} else {
+					/*paletteCompound = themeFile.getCompound("Palette");*///?}
 					if (themeFile.contains("SecondaryPalette"))
-						secondaryPaletteCompound = themeFile.getCompound("SecondaryPalette");
+						//? if >=1.21.6 {
+						secondaryPaletteCompound = themeFile.getCompound("SecondaryPalette").orElse(new CompoundTag());
+						//?} else {
+						/*secondaryPaletteCompound = themeFile.getCompound("SecondaryPalette");*///?}
 
 				} else {
 					themeCompound = FilesHelper.loadJsonAsNBT(folderPath + "/" + themeFolder + "/theme.json");

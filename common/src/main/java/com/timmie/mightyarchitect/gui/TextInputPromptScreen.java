@@ -1,9 +1,17 @@
 package com.timmie.mightyarchitect.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+//? if >=26 {
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.network.chat.Component;
+//? if >=1.21.10 {
+import net.minecraft.client.input.KeyEvent;
+//?} else {
+/*
+*///?}
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -63,9 +71,17 @@ public class TextInputPromptScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public void renderWindow(PoseStack ms, int mouseX, int mouseY, float partialTicks) {
-		ScreenResources.TEXT_INPUT.draw(ms, this, topLeftX, topLeftY);
-		font.draw(ms, title, topLeftX + (sWidth / 2) - (font.width(title) / 2), topLeftY + 11,
+	//? if >=26 {
+	public void renderWindow(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
+	//?} else {
+	/*public void renderWindow(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+	*///?}
+		ScreenResources.TEXT_INPUT.draw(ms, topLeftX, topLeftY);
+		//? if >=26 {
+		ms.text(font, title, topLeftX + (sWidth / 2) - (font.width(title) / 2), topLeftY + 11,
+		//?} else {
+		/*ms.drawString(font, title, topLeftX + (sWidth / 2) - (font.width(title) / 2), topLeftY + 11,
+		*///?}
 			ScreenResources.FONT_COLOR);
 	}
 
@@ -89,16 +105,30 @@ public class TextInputPromptScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public boolean keyPressed(int keyCode, int p_keyPressed_2_, int p_keyPressed_3_) {
+	//? if >=1.21.10 {
+	public boolean keyPressed(KeyEvent event) {
+		if (event.key() == GLFW.GLFW_KEY_ENTER) {
+			confirm.onPress(null);
+	//?} else {
+	/*public boolean keyPressed(int keyCode, int p_keyPressed_2_, int p_keyPressed_3_) {
 		if (keyCode == GLFW.GLFW_KEY_ENTER) {
 			confirm.onPress();
+	*///?}
 			return true;
 		}
-		if (keyCode == 256 && this.shouldCloseOnEsc()) {
+		//? if >=1.21.10 {
+		if (event.key() == 256 && this.shouldCloseOnEsc()) {
+		//?} else {
+		/*if (keyCode == 256 && this.shouldCloseOnEsc()) {
+		*///?}
 			this.onClose();
 			return true;
 		}
-		return nameField.keyPressed(keyCode, p_keyPressed_2_, p_keyPressed_3_);
+		//? if >=1.21.10 {
+		return nameField.keyPressed(event);
+		//?} else {
+		/*return nameField.keyPressed(keyCode, p_keyPressed_2_, p_keyPressed_3_);
+		*///?}
 	}
 
 }

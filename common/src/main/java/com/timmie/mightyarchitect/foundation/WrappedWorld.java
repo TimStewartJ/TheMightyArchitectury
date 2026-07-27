@@ -7,35 +7,69 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.AbortableIterationConsumer;
+//? if >=26 {
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
+import net.minecraft.world.clock.ClockManager;
+//?} else {
+/*
+*///?}
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.flag.FeatureFlagSet;
-import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.alchemy.PotionBrewing;
+//? if >=26 {
+import net.minecraft.world.item.crafting.RecipeAccess;
+import net.minecraft.world.level.CardinalLighting;
+import net.minecraft.world.level.ColorResolver;
+//?} else if >=1.21.4 {
+/*import net.minecraft.world.item.crafting.RecipeAccess;
+*///?} else {
+/*import net.minecraft.world.item.crafting.RecipeManager;
+*///?}
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
+//? if >=1.21.4 {
+import net.minecraft.world.level.block.entity.FuelValues;
+//?} else {
+/*
+*///?}
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkSource;
+//? if >=1.21.6 {
+import org.jetbrains.annotations.Nullable;
+//?} else {
+/*
+*///?}
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.entity.LevelEntityGetter;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.minecraft.world.level.storage.WritableLevelData;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.ticks.LevelTickAccess;
+import net.minecraft.world.TickRateManager;
 
-import javax.annotation.Nullable;
+//? if >=1.21.6 {
+//?} else {
+/*import javax.annotation.Nullable;
+*///?}
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class WrappedWorld extends Level {
+//? if >=26 {
+public class WrappedWorld extends Level implements BlockAndTintGetter {
+//?} else {
+/*public class WrappedWorld extends Level {
+*///?}
 
 	protected Level world;
 
@@ -75,7 +109,13 @@ public class WrappedWorld extends Level {
 
 	public WrappedWorld(Level world) {
 		super((WritableLevelData) world.getLevelData(), world.dimension(), world.registryAccess(), world.dimensionTypeRegistration(),
-			() -> world.getProfiler(), world.isClientSide, false, 0, 0);
+			//? if >=1.21.10 {
+			world.isClientSide(), false, 0L, 0);
+			//?} else if >=1.21.4 {
+			/*world.isClientSide, false, 0L, 0);
+			*///?} else {
+			/*() -> world.getProfiler(), world.isClientSide, false, 0, 0);
+			*///?}
 		this.world = world;
 	}
 
@@ -84,19 +124,36 @@ public class WrappedWorld extends Level {
 		return world.getBlockState(pos);
 	}
 
-	@Override
+	// Level requires these playSeededSound overloads (Entity source as the first parameter).
+	//? if >=1.21.6 {
+	//?} else {
+	/*@Override
 	public void playSeededSound(@org.jetbrains.annotations.Nullable Player player, double d, double e, double f, Holder<SoundEvent> holder, SoundSource soundSource, float g, float h, long l) {
+	*///?}
 
+	//? if >=1.21.6 {
+	//?} else {
+	/*}
+
+	*///?}
+	@Override
+	//? if >=1.21.6 {
+	public void playSeededSound(@Nullable Entity source, @Nullable Entity entity, Holder<SoundEvent> holder, SoundSource soundSource, float f, float g, long l) {
+		// No-op for wrapped world
+	//?} else {
+	/*public void playSeededSound(@org.jetbrains.annotations.Nullable Player player, double d, double e, double f, SoundEvent soundEvent, SoundSource soundSource, float g, float h, long l) {
+
+	*///?}
 	}
 
 	@Override
-	public void playSeededSound(@org.jetbrains.annotations.Nullable Player player, double d, double e, double f, SoundEvent soundEvent, SoundSource soundSource, float g, float h, long l) {
+	//? if >=1.21.6 {
+	public void playSeededSound(@Nullable Entity source, double x, double y, double z, Holder<SoundEvent> holder, SoundSource soundSource, float volume, float pitch, long seed) {
+		// No-op for wrapped world
+	//?} else {
+	/*public void playSeededSound(@org.jetbrains.annotations.Nullable Player player, Entity entity, Holder<SoundEvent> holder, SoundSource soundSource, float f, float g, long l) {
 
-	}
-
-	@Override
-	public void playSeededSound(@org.jetbrains.annotations.Nullable Player player, Entity entity, Holder<SoundEvent> holder, SoundSource soundSource, float f, float g, long l) {
-
+	*///?}
 	}
 
 	@Override
@@ -135,14 +192,18 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
-	public void levelEvent(Player player, int type, BlockPos pos, int data) {}
+	//? if >=1.21.6 {
+	public void levelEvent(@Nullable Entity entity, int type, BlockPos pos, int data) {}
+	//?} else {
+	/*public void levelEvent(@Nullable Player player, int type, BlockPos pos, int data) {}
+	*///?}
 
 	@Override
-	public void gameEvent(GameEvent gameEvent, Vec3 vec3, GameEvent.Context context) {
+	public void gameEvent(Holder<GameEvent> gameEvent, Vec3 vec3, GameEvent.Context context) {
 
 	}
 
-	@Override
+
 	public void gameEvent(@Nullable Entity p_151549_, GameEvent p_151550_, BlockPos p_151551_) {
 
 	}
@@ -153,16 +214,32 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
-	public void playSound(Player player, double x, double y, double z, SoundEvent soundIn, SoundSource category,
+	//? if >=1.21.6 {
+	public void playSound(@Nullable Entity source, double x, double y, double z, Holder<SoundEvent> soundIn, SoundSource category,
+	//?} else {
+	/*public void playSound(@Nullable Player player, double x, double y, double z, Holder<SoundEvent> soundIn, SoundSource category,
+	*///?}
 		float volume, float pitch) {}
 
+	//? if >=1.21.6 {
 	@Override
-	public void playSound(Player p_217384_1_, Entity p_217384_2_, SoundEvent p_217384_3_,
-		SoundSource p_217384_4_, float p_217384_5_, float p_217384_6_) {}
+	public void playSound(@Nullable Entity source, Entity entity, SoundEvent sound,
+	//?} else {
+	/*public void playSound(@Nullable Player player, Entity entity, Holder<SoundEvent> sound,
+	*///?}
+		SoundSource category, float volume, float pitch) {}
 
+	//? if >=1.21.6 {
 	@Override
+	//?} else {
+	/*
+	*///?}
 	public String gatherChunkSourceStats() {
-		return null;
+		//? if >=1.21.6 {
+		return world.gatherChunkSourceStats();
+		//?} else {
+		/*return null;
+		*///?}
 	}
 
 	@Override
@@ -171,38 +248,92 @@ public class WrappedWorld extends Level {
 	}
 
 	@Override
-	public MapItemSavedData getMapData(String mapName) {
+	public MapItemSavedData getMapData(MapId mapId) {
 		return null;
 	}
 
 	@Override
 	public boolean addFreshEntity(Entity entityIn) {
-		entityIn.level = world;
 		return world.addFreshEntity(entityIn);
 	}
 
-	@Override
-	public void setMapData(String mapId, MapItemSavedData mapDataIn) {}
+	// setMapData and getFreeMapId live on ServerLevel, not Level
 
 	@Override
-	public int getFreeMapId() {
-		return 0;
-	}
-
-	@Override
+	//? if >=1.21.6 {
 	public void destroyBlockProgress(int breakerId, BlockPos pos, int progress) {}
+	//?} else {
+	/*public void setMapData(MapId mapId, MapItemSavedData mapDataIn) {}
+	*///?}
 
 	@Override
+	//? if >=1.21.6 {
 	public Scoreboard getScoreboard() {
 		return world.getScoreboard();
+	//?} else {
+	/*public MapId getFreeMapId() {
+		return new MapId(0);
+	*///?}
 	}
 
 	@Override
-	public RecipeManager getRecipeManager() {
+	//? if >=1.21.6 {
+	public RecipeAccess recipeAccess() {
+		return world.recipeAccess();
+	}
+	//?} else {
+	/*public void destroyBlockProgress(int breakerId, BlockPos pos, int progress) {}
+	*///?}
+
+	@Override
+	//? if >=1.21.6 {
+	public FuelValues fuelValues() {
+		return world.fuelValues();
+	//?} else {
+	/*public Scoreboard getScoreboard() {
+		return world.getScoreboard();
+	*///?}
+	}
+
+	@Override
+	//? if >=1.21.11 {
+	public java.util.Collection<net.minecraft.world.entity.boss.enderdragon.EnderDragonPart> dragonParts() {
+		return world.dragonParts();
+	//?} else if >=1.21.6 {
+	/*public java.util.Collection<net.minecraft.world.entity.boss.EnderDragonPart> dragonParts() {
+		return world.dragonParts();
+	*///?} else if >=1.21.4 {
+	/*public RecipeAccess recipeAccess() {
+		return world.recipeAccess();
+	*///?} else {
+	/*public RecipeManager getRecipeManager() {
 		return world.getRecipeManager();
+	*///?}
 	}
 
 	@Override
+	//? if >=1.21.11 {
+	public net.minecraft.world.attribute.EnvironmentAttributeSystem environmentAttributes() {
+		return world.environmentAttributes();
+	}
+
+	@Override
+	//?} else if >=1.21.6 {
+	/*
+	*///?} else if >=1.21.4 {
+	/*public FuelValues fuelValues() {
+		return world.fuelValues();
+	}
+
+	@Override
+	public java.util.Collection<net.minecraft.world.entity.boss.EnderDragonPart> dragonParts() {
+		return world.dragonParts();
+	}
+
+	@Override
+	*///?} else {
+	/*
+	*///?}
 	public Holder<Biome> getUncachedNoiseBiome(int p_225604_1_, int p_225604_2_, int p_225604_3_) {
 		return world.getUncachedNoiseBiome(p_225604_1_, p_225604_2_, p_225604_3_);
 	}
@@ -219,15 +350,137 @@ public class WrappedWorld extends Level {
 
 	@Override
 	public FeatureFlagSet enabledFeatures() {
+		return world.enabledFeatures();
+	}
+
+	@Override
+	public PotionBrewing potionBrewing() {
+		return world.potionBrewing();
+	}
+
+	@Override
+	public TickRateManager tickRateManager() {
+		return world.tickRateManager();
+	}
+
+	@Override
+	//? if >=26 {
+	public ClockManager clockManager() {
+		return world.clockManager();
+	}
+
+	@Override
+	public CardinalLighting cardinalLighting() {
+		if (world instanceof BlockAndTintGetter tintGetter)
+			return tintGetter.cardinalLighting();
+		return world.dimensionType().cardinalLightType().get();
+	}
+
+	@Override
+	public int getBlockTint(BlockPos pos, ColorResolver color) {
+		if (world instanceof BlockAndTintGetter tintGetter)
+			return tintGetter.getBlockTint(pos, color);
+		return color.getColor(world.getBiome(pos).value(), pos.getX(), pos.getZ());
+	}
+
+	@Override
+	public void explode(
+			net.minecraft.world.entity.Entity entity,
+			net.minecraft.world.damagesource.DamageSource damageSource,
+			net.minecraft.world.level.ExplosionDamageCalculator calculator,
+			double x, double y, double z,
+			float radius, boolean fire,
+			Level.ExplosionInteraction interaction,
+			net.minecraft.core.particles.ParticleOptions smallParticle,
+			net.minecraft.core.particles.ParticleOptions largeParticle,
+			net.minecraft.util.random.WeightedList<net.minecraft.core.particles.ExplosionParticleInfo> particleInfo,
+			net.minecraft.core.Holder<net.minecraft.sounds.SoundEvent> sound) {
+		world.explode(entity, damageSource, calculator, x, y, z, radius, fire, interaction, smallParticle, largeParticle, particleInfo, sound);
+	}
+
+	@Override
+	public int getSeaLevel() {
+		return world.getSeaLevel();
+	}
+
+	@Override
+	public net.minecraft.world.level.storage.LevelData.@org.jetbrains.annotations.Nullable RespawnData getRespawnData() {
 		return null;
 	}
 
 	@Override
+	public void setRespawnData(net.minecraft.world.level.storage.LevelData.RespawnData respawnData) {
+		// No-op for wrapped world
+	}
+
+	//?} else if >=1.21.10 {
+	/*public void explode(
+			net.minecraft.world.entity.Entity entity,
+			net.minecraft.world.damagesource.DamageSource damageSource,
+			net.minecraft.world.level.ExplosionDamageCalculator calculator,
+			double x, double y, double z,
+			float radius, boolean fire,
+			Level.ExplosionInteraction interaction,
+			net.minecraft.core.particles.ParticleOptions smallParticle,
+			net.minecraft.core.particles.ParticleOptions largeParticle,
+			net.minecraft.util.random.WeightedList<net.minecraft.core.particles.ExplosionParticleInfo> particleInfo,
+			net.minecraft.core.Holder<net.minecraft.sounds.SoundEvent> sound) {
+		world.explode(entity, damageSource, calculator, x, y, z, radius, fire, interaction, smallParticle, largeParticle, particleInfo, sound);
+	}
+
+	@Override
+	public int getSeaLevel() {
+		return world.getSeaLevel();
+	}
+
+	@Override
+	public net.minecraft.world.level.storage.LevelData.@org.jetbrains.annotations.Nullable RespawnData getRespawnData() {
+		return null;
+	}
+
+	@Override
+	public void setRespawnData(net.minecraft.world.level.storage.LevelData.RespawnData respawnData) {
+		// No-op for wrapped world
+	}
+
+	@Override
+	*///?} else if >=1.21.4 {
+	/*public void explode(
+			net.minecraft.world.entity.Entity entity,
+			net.minecraft.world.damagesource.DamageSource damageSource,
+			net.minecraft.world.level.ExplosionDamageCalculator calculator,
+			double x, double y, double z,
+			float radius, boolean fire,
+			Level.ExplosionInteraction interaction,
+			net.minecraft.core.particles.ParticleOptions smallParticle,
+			net.minecraft.core.particles.ParticleOptions largeParticle,
+			net.minecraft.core.Holder<net.minecraft.sounds.SoundEvent> sound) {
+		world.explode(entity, damageSource, calculator, x, y, z, radius, fire, interaction, smallParticle, largeParticle, sound);
+	}
+
+	@Override
+	public int getSeaLevel() {
+		return world.getSeaLevel();
+	}
+
+	@Override
+	*///?} else {
+	/*
+	*///?}
 	public float getShade(Direction p_230487_1_, boolean p_230487_2_) {
 		return 1;
 	}
 
 	@Override
+	//? if >=1.21.10 {
+	public net.minecraft.world.level.border.WorldBorder getWorldBorder() {
+		return world.getWorldBorder();
+	}
+
+	@Override
+	//?} else {
+	/*
+	*///?}
 	protected LevelEntityGetter<Entity> getEntities() {
 		return entityGetter;
 	}

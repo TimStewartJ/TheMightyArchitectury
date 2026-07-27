@@ -21,8 +21,12 @@
     ]
   },
   "depends": {
-    "fabric": "*",
-    "minecraft": ">=1.19.4",
-    "architectury": ">=8.1.79"
-  }
+    "fabricloader": ">=${meta_floader_range}",
+    "minecraft": ">=${meta_mc_range} <${meta_mc_max}",
+    "java": ">=${meta_java_range}",
+    "architectury": ">=${meta_architectury_range}"
+  },
+  "mixins": [
+    "mightyarchitect.mixins.json"
+  ]
 }

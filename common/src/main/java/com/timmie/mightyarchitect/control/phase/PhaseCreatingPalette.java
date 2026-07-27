@@ -8,7 +8,17 @@ import com.timmie.mightyarchitect.control.palette.Palette;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.texture.OverlayTexture;
+//? if >=26 {
+import net.minecraft.client.renderer.block.BlockQuadOutput;
+import net.minecraft.client.renderer.block.ModelBlockRenderer;
+import net.minecraft.client.renderer.block.MovingBlockRenderState;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+//?} else {
+/*import net.minecraft.client.renderer.texture.OverlayTexture;
+*///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.TrapDoorBlock;
@@ -100,12 +110,54 @@ public class PhaseCreatingPalette extends PhaseBase implements IDrawBlockHighlig
 			ms.translate(translate.getX(), translate.getY(), translate.getZ());
 			ms.translate(1 / 32f, 1 / 32f, 1 / 32f);
 			ms.scale(15 / 16f, 15 / 16f, 15 / 16f);
-			minecraft.getBlockRenderer()
+			//? if >=26 {
+			renderSingleBlock(state, ms, buffer);
+			//?} else {
+			/*minecraft.getBlockRenderer()
 				.renderSingleBlock(state, ms, buffer, 0xF000F0, OverlayTexture.NO_OVERLAY);
+			*///?}
 			ms.popPose();
 		}
 	}
 
+	//? if >=26 {
+	private void renderSingleBlock(BlockState state, PoseStack ms, MultiBufferSource buffer) {
+		MovingBlockRenderState renderState = new MovingBlockRenderState();
+		renderState.blockPos = BlockPos.ZERO;
+		renderState.randomSeedPos = BlockPos.ZERO;
+		renderState.blockState = state;
+		if (minecraft.level != null) {
+			renderState.biome = minecraft.level.getBiome(BlockPos.ZERO);
+			renderState.cardinalLighting = minecraft.level.cardinalLighting();
+			renderState.lightEngine = minecraft.level.getLightEngine();
+		}
+
+		ModelBlockRenderer blockRenderer =
+			new ModelBlockRenderer(minecraft.options.ambientOcclusion().get(), false, minecraft.getBlockColors());
+		BlockStateModel model = minecraft.getModelManager()
+			.getBlockStateModelSet()
+			.get(state);
+		BlockQuadOutput output = (x, y, z, quad, instance) -> {
+			ms.pushPose();
+			ms.translate(x, y, z);
+			buffer.getBuffer(layerToRenderType(quad.materialInfo().layer()))
+				.putBakedQuad(ms.last(), quad, instance);
+			ms.popPose();
+		};
+		blockRenderer.tesselateBlock(output, 0, 0, 0, renderState, BlockPos.ZERO, state, model, state.getSeed(BlockPos.ZERO));
+	}
+
+	private RenderType layerToRenderType(ChunkSectionLayer layer) {
+		return switch (layer) {
+			case SOLID -> RenderTypes.solidMovingBlock();
+			case CUTOUT -> RenderTypes.cutoutMovingBlock();
+			case TRANSLUCENT -> RenderTypes.translucentMovingBlock();
+		};
+	}
+
+	//?} else {
+	/*
+	*///?}
 	@Override
 	public void whenExited() {
 		getModel().stopPalettePreview();
@@ -114,7 +166,11 @@ public class PhaseCreatingPalette extends PhaseBase implements IDrawBlockHighlig
 
 	protected void notifyChange() {
 		getModel().updatePalettePreview();
-		minecraft.player.displayClientMessage(Component.literal("Updating Preview..."), true);
+		//? if >=26 {
+		minecraft.player.sendOverlayMessage(Component.literal("Updating Preview..."));
+		//?} else {
+		/*minecraft.player.displayClientMessage(Component.literal("Updating Preview..."), true);
+		*///?}
 		MightyClient.renderer.update();
 	}
 

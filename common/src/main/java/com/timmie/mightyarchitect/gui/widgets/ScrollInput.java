@@ -1,10 +1,27 @@
 package com.timmie.mightyarchitect.gui.widgets;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+//? if >=1.21.10 {
+import com.timmie.mightyarchitect.foundation.utility.Keyboard;
+//?} else {
+/*import com.mojang.blaze3d.vertex.PoseStack;
+*///?}
 import net.minecraft.ChatFormatting;
+//? if >=26 {
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.gui.screens.Screen;
+//? if >=1.21.10 {
+//?} else {
+/*import net.minecraft.client.gui.screens.Screen;
+*///?}
 import net.minecraft.network.chat.Component;
+//? if >=1.21.10 {
+import org.lwjgl.glfw.GLFW;
+//?} else {
+/*
+*///?}
 
 import java.util.function.Consumer;
 
@@ -73,13 +90,17 @@ public class ScrollInput extends AbstractSimiWidget {
 	}
 
 	@Override
-	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
 		if (!isHovered)
 			return false;
 
 		int priorState = state;
-		boolean shifted = Screen.hasShiftDown();
-		int step = (int) Math.signum(delta);
+		//? if >=1.21.10 {
+		boolean shifted = Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_SHIFT) || Keyboard.isKeyDown(GLFW.GLFW_KEY_RIGHT_SHIFT);
+		//?} else {
+		/*boolean shifted = Screen.hasShiftDown();
+		*///?}
+		int step = (int) Math.signum(verticalAmount);
 
 		state += step;
 		if (shifted)
@@ -121,7 +142,11 @@ public class ScrollInput extends AbstractSimiWidget {
 	}
 
 	@Override
-	public void renderWidget(PoseStack poseStack, int i, int j, float f) {
+	//? if >=26 {
+	public void extractWidgetRenderState(GuiGraphicsExtractor poseStack, int i, int j, float f) {
+	//?} else {
+	/*public void renderWidget(GuiGraphics poseStack, int i, int j, float f) {
+	*///?}
 
 	}
 

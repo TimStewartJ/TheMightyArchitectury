@@ -8,8 +8,11 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.sounds.SoundEvent;
+//? if >=1.21.6 {
+//?} else {
+/*import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
+*///?}
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -22,7 +25,10 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraft.world.level.redstone.NeighborUpdater;
+//? if >=1.21.6 {
+//?} else {
+/*import net.minecraft.world.level.redstone.NeighborUpdater;
+*///?}
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.ticks.BlackholeTickAccess;
 import net.minecraft.world.ticks.LevelTickAccess;
@@ -49,8 +55,16 @@ public class TemplateBlockAccess extends WrappedWorld {
 		this.localMode = local;
 	}
 
+	//*
+	 //* Updates block states to reflect their neighbors (e.g., fence connections, wall alignment).
+	 //* Uses direct updateShape() calls instead of updateNeighbourShapes() to avoid cascading
+	 //* neighbor update notifications that trigger "Too many chained neighbor updates" errors.
+	 //
 	private void updateBlockstates() {
-		Set<BlockPos> keySet = new HashSet<>(blocks.keySet());
+		//? if >=1.21.4 {
+		Direction[] directions = Direction.values();
+		//?} else {
+		/*Set<BlockPos> keySet = new HashSet<>(blocks.keySet());
 		keySet.forEach(pos -> {
 			BlockState blockState = blocks.get(pos);
 			if (blockState == null)
@@ -58,11 +72,78 @@ public class TemplateBlockAccess extends WrappedWorld {
 			blockState.updateNeighbourShapes(this, pos.offset(anchor), 16);
 		});
 	}
+		*///?}
 
-	@Override
+		//? if >=26 {
+		// Multiple passes - blocks may depend on neighbors that haven't been updated yet
+		for (int pass = 0; pass < 2; pass++) {
+			Map<BlockPos, BlockState> updates = new HashMap<>();
+
+			for (BlockPos pos : blocks.keySet()) {
+				BlockState state = blocks.get(pos);
+				if (state == null || state.isAir())
+					continue;
+
+				BlockPos worldPos = pos.offset(anchor);
+				BlockState newState = state;
+
+				// For each direction, compute what this block should look like based on its neighbor
+				for (Direction direction : directions) {
+					BlockPos neighborWorldPos = worldPos.relative(direction);
+					BlockState neighborState = getBlockState(neighborWorldPos);
+
+					// updateShape returns the potentially modified state based on the neighbor
+					// This does NOT trigger cascading notifications
+					// updateShape signature: (LevelReader, ScheduledTickAccess, BlockPos, Direction, BlockPos, BlockState, RandomSource)
+					newState = newState.updateShape(this, this, worldPos, direction, neighborWorldPos, neighborState, this.getRandom());
+				}
+
+				if (newState != state) {
+					updates.put(pos, newState);
+				}
+			}
+
+			// Apply all updates at once (batch)
+			blocks.putAll(updates);
+		}
+		//?} else if >=1.21.4 {
+		/*// Multiple passes - blocks may depend on neighbors that haven't been updated yet
+		for (int pass = 0; pass < 2; pass++) {
+			Map<BlockPos, BlockState> updates = new HashMap<>();
+
+			for (BlockPos pos : blocks.keySet()) {
+				BlockState state = blocks.get(pos);
+				if (state == null || state.isAir())
+					continue;
+
+				BlockPos worldPos = pos.offset(anchor);
+				BlockState newState = state;
+
+				// For each direction, compute what this block should look like based on its neighbor
+				for (Direction direction : directions) {
+					BlockPos neighborWorldPos = worldPos.relative(direction);
+					BlockState neighborState = getBlockState(neighborWorldPos);
+
+					// updateShape returns the potentially modified state based on the neighbor
+					// This does NOT trigger cascading notifications
+					// 1.21.4 signature: (LevelReader, ScheduledTickAccess, BlockPos, Direction, BlockPos, BlockState, RandomSource)
+					newState = newState.updateShape(this, this, worldPos, direction, neighborWorldPos, neighborState, this.getRandom());
+				}
+
+				if (newState != state) {
+					updates.put(pos, newState);
+				}
+			}
+
+			// Apply all updates at once (batch)
+			blocks.putAll(updates);
+		}
+		*///?} else {
+		/*@Override
 	// revert to original neighbor shape behavior
 	public void neighborShapeChanged(Direction direction, BlockState blockState, BlockPos blockPos, BlockPos blockPos2, int i, int j) {
 		NeighborUpdater.executeShapeUpdate(this, direction, blockState, blockPos, blockPos2, i, j - 1);
+		*///?}
 	}
 
 	public Set<BlockPos> getAllPositions() {
@@ -90,7 +171,11 @@ public class TemplateBlockAccess extends WrappedWorld {
 
 	@Override
 	public Holder<Biome> getBiome(BlockPos pos) {
-		return Holder.direct(registryAccess().registryOrThrow(Registries.BIOME).get(Biomes.THE_VOID));
+		//? if >=1.21.4 {
+		return Holder.direct(registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.THE_VOID).value());
+		//?} else {
+		/*return Holder.direct(registryAccess().registryOrThrow(Registries.BIOME).get(Biomes.THE_VOID));
+		*///?}
 	}
 
 	@Override
@@ -177,15 +262,22 @@ public class TemplateBlockAccess extends WrappedWorld {
 	public void sendBlockUpdated(BlockPos pos, BlockState oldState, BlockState newState, int flags) {}
 
 	@Override
-	public void playSound(Player player, BlockPos pos, SoundEvent soundIn, SoundSource category, float volume,
+	//? if >=1.21.6 {
+	//?} else {
+	/*public void playSound(Player player, BlockPos pos, SoundEvent soundIn, SoundSource category, float volume,
 		float pitch) {}
 
 	@Override
+	*///?}
 	public void addParticle(ParticleOptions particleData, double x, double y, double z, double xSpeed, double ySpeed,
 		double zSpeed) {}
 
 	@Override
-	public void levelEvent(Player player, int type, BlockPos pos, int data) {}
+	//? if >=1.21.6 {
+	public void levelEvent(Entity entity, int type, BlockPos pos, int data) {}
+	//?} else {
+	/*public void levelEvent(Player player, int type, BlockPos pos, int data) {}
+	*///?}
 
 	public Cuboid getBounds() {
 		return bounds;

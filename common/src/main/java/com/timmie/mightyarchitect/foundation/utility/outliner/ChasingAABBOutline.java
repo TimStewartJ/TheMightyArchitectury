@@ -30,7 +30,11 @@ public class ChasingAABBOutline extends AABBOutline {
 	@Override
 	public void render(PoseStack ms, MultiBufferSource buffer) {
 		renderBB(ms, buffer, interpolateBBs(prevBB, bb, Minecraft.getInstance()
-			.getFrameTime()));
+			//? if >=1.21.4 {
+			.getDeltaTracker().getGameTimeDeltaPartialTick(true)));
+			//?} else {
+			/*.getTimer().getGameTimeDeltaPartialTick(true)));
+			*///?}
 	}
 
 	private static AABB interpolateBBs(AABB current, AABB target, float pt) {

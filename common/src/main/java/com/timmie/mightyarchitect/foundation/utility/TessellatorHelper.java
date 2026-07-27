@@ -1,4 +1,6 @@
-package com.timmie.mightyarchitect.foundation.utility;//package com.timmie.mightyarchitect.foundation.utility;
+//? if >=26 {
+//?} else {
+/*package com.timmie.mightyarchitect.foundation.utility;//package com.timmie.mightyarchitect.foundation.utility;
 //
 //import org.lwjgl.opengl.GL11;
 //
@@ -213,4 +215,4 @@ package com.timmie.mightyarchitect.foundation.utility;//package com.timmie.might
 //        bufferBuilder.pos(shift.x + pos.getX(), shift.y + pos.getY(), shift.z + pos.getZ()).tex(u, v).endVertex();
 //    }
 //
-//}
+//}*///?}
