@@ -150,6 +150,7 @@ processResources {
     def metaProps = [
         "version"                 : project.version,
         "meta_mc_range"           : node.property('meta_mc_range'),
+        "meta_mc_max"             : node.property('meta_mc_max'),
         "meta_java_range"         : node.property('meta_java_range'),
         "meta_floader_range"      : node.property('fabric_loader_version'),
         "meta_architectury_range" : node.property('meta_architectury_range')

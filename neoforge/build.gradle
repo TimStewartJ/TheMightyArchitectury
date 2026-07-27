@@ -146,11 +146,16 @@ processResources {
     def metaProps = [
         "version"                 : project.version,
         "meta_mc_range"           : node.property('meta_mc_range'),
+        "meta_mc_max"             : node.property('meta_mc_max'),
+        "meta_pack_format"        : node.property('meta_pack_format'),
         "meta_neoforge_range"     : node.property('meta_neoforge_range'),
         "meta_architectury_range" : node.property('meta_architectury_range')
     ]
     inputs.properties(metaProps)
     filesMatching("META-INF/neoforge.mods.toml") {
+        expand(metaProps)
+    }
+    filesMatching("pack.mcmeta") {
         expand(metaProps)
     }
 }

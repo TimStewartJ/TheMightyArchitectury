@@ -23,7 +23,7 @@ side = "BOTH"
 [[dependencies.mightyarchitect]]
 modId = "minecraft"
 type = "required"
-versionRange = "[${meta_mc_range},)"
+versionRange = "[${meta_mc_range},${meta_mc_max})"
 ordering = "NONE"
 side = "BOTH"
 
