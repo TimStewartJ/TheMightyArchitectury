@@ -40,19 +40,35 @@ jobs:
             --stacktrace
 
       # Guards the exact bug packaged E2E caught: metadata must declare THIS version's
-      # dependency range, not the 26.1 base's hardcoded one.
+      # dependency range, not the 26.1 base's hardcoded one. Expected values are read from
+      # the version's own gradle.properties so the assertion cannot drift from the build.
       - name: Verify mod metadata version range
         run: |
           set -euo pipefail
+          props="versions/${{ matrix.mc }}/gradle.properties"
+          prop() { grep -E "^$1=" "$props" | head -n1 | cut -d= -f2- | tr -d '\r'; }
+          mc_min=$(prop meta_mc_range)
+          mc_max=$(prop meta_mc_max)
+          pack_format=$(prop meta_pack_format)
+          [ -n "$mc_min" ] && [ -n "$mc_max" ] && [ -n "$pack_format" ] \
+            || { echo "::error::$props is missing meta_mc_range, meta_mc_max or meta_pack_format"; exit 1; }
+
           nf_jar=$(ls neoforge/versions/${{ matrix.mc }}/build/libs/*neoforge.jar | grep -Ev 'sources|dev|raw' | head -n1)
           unzip -p "$nf_jar" META-INF/neoforge.mods.toml > /tmp/nf.toml
           echo "--- neoforge.mods.toml ---"; cat /tmp/nf.toml
-          grep -A2 'modId = "minecraft"' /tmp/nf.toml | grep -q "versionRange = \"\[${{ matrix.mc }}" \
-            || { echo "::error::neoforge minecraft versionRange is not [${{ matrix.mc }}"; exit 1; }
+          grep -A2 'modId = "minecraft"' /tmp/nf.toml | grep -qF "versionRange = \"[$mc_min,$mc_max)\"" \
+            || { echo "::error::neoforge minecraft versionRange is not [$mc_min,$mc_max)"; exit 1; }
+
+          unzip -p "$nf_jar" pack.mcmeta > /tmp/nf.mcmeta
+          echo "--- pack.mcmeta ---"; cat /tmp/nf.mcmeta
+          grep -qE "\"pack_format\"[[:space:]]*:[[:space:]]*$pack_format[[:space:]]*$" /tmp/nf.mcmeta \
+            || { echo "::error::neoforge pack_format is not $pack_format"; exit 1; }
+
           fb_jar=$(ls fabric/versions/${{ matrix.mc }}/build/libs/*fabric.jar | grep -Ev 'sources|dev|raw' | head -n1)
           unzip -p "$fb_jar" fabric.mod.json > /tmp/fb.json
-          grep -q "\"minecraft\": \">=${{ matrix.mc }}\"" /tmp/fb.json \
-            || { echo "::error::fabric minecraft depend is not >=${{ matrix.mc }}"; cat /tmp/fb.json; exit 1; }
+          echo "--- fabric.mod.json ---"; cat /tmp/fb.json
+          grep -qF "\"minecraft\": \">=$mc_min <$mc_max\"" /tmp/fb.json \
+            || { echo "::error::fabric minecraft depend is not >=$mc_min <$mc_max"; exit 1; }
 
       - name: Dedicated server smoke (both loaders)
         shell: pwsh
