@@ -215,13 +215,15 @@ foreach ($version in $Versions) {
                         $keptOpenSession = $clientSession
                     }
                 } catch {
-                    if ($attempt -lt 2) {
-                        Write-Host "RETRY $version / $loader after: $($_.Exception.Message)" -ForegroundColor Yellow
+                    $reason = $_.Exception.Message
+                    if ($attempt -lt 2 -and (Test-TestRetryableFailure -Message $reason)) {
+                        Write-Host "RETRY $version / $loader after infrastructure failure: $reason" -ForegroundColor Yellow
                         Start-Sleep -Seconds 2
                     } else {
-                        $message = "$version / $loader - $($_.Exception.Message)"
+                        $message = "$version / $loader - $reason"
                         $failures.Add($message)
                         Write-Host "FAIL $message" -ForegroundColor Red
+                        break
                     }
                 }
             }
