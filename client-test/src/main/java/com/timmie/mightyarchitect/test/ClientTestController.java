@@ -1,5 +1,6 @@
 package com.timmie.mightyarchitect.test;
 
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -230,7 +231,7 @@ public final class ClientTestController {
      * the same overlay clears.
      */
     private static boolean isFrameCovered(Minecraft minecraft) {
-        return minecraft.getOverlay() != null;
+        return McCompat.hasOverlay(minecraft);
     }
 
     private static void connect(Minecraft minecraft) {
@@ -245,7 +246,7 @@ public final class ClientTestController {
         ServerAddress address = ServerAddress.parseString(server);
         ServerData data = new ServerData("Mighty Architect Client Test", server, ServerData.Type.OTHER);
         TheMightyArchitect.logger.info("[CLIENT-TEST] Connecting to {}", server);
-        ConnectScreen.startConnecting(minecraft.screen, minecraft, address, data, false, null);
+        ConnectScreen.startConnecting(McCompat.currentScreen(minecraft), minecraft, address, data, false, null);
         advance(Stage.WAIT_FOR_WORLD);
     }
 
@@ -301,13 +302,13 @@ public final class ClientTestController {
 
     private static void openPalette(Minecraft minecraft) {
         if (stageTicks == 1) {
-            minecraft.setScreen(new PalettePickerScreen());
+            McCompat.setScreen(minecraft, new PalettePickerScreen());
             return;
         }
         if (stageTicks < 3)
             return;
 
-        check(minecraft.screen instanceof PalettePickerScreen, "palette picker opened");
+        check(McCompat.currentScreen(minecraft) instanceof PalettePickerScreen, "palette picker opened");
         advance(Stage.CAPTURE_PALETTE_PREVIEW);
     }
 
@@ -326,7 +327,7 @@ public final class ClientTestController {
             return;
 
         palettePickerScreenshot = captured;
-        minecraft.setScreen(null);
+        McCompat.setScreen(minecraft, null);
 
         Window window = minecraft.getWindow();
         double scale = window.getGuiScale();
@@ -383,7 +384,7 @@ public final class ClientTestController {
      */
     private static void captureHudVisible(Minecraft minecraft) {
         if (stageTicks == 1) {
-            minecraft.gui.getChat().clearMessages(true);
+            McCompat.clearChat(minecraft);
             ArchitectMenuScreen menu = ArchitectManagerAccessor.getMenu();
             menu.setFocused(false);
             menu.setVisible(true);
@@ -571,7 +572,7 @@ public final class ClientTestController {
     private static void requestScreenshot(Minecraft minecraft) {
         screenshotFilesBefore = screenshotFiles(minecraft.gameDirectory);
         screenshotPending = true;
-        Screenshot.grab(minecraft.gameDirectory, minecraft.getMainRenderTarget(), message -> {
+        Screenshot.grab(minecraft.gameDirectory, McCompat.mainRenderTarget(minecraft), message -> {
             try {
                 Set<Path> after = screenshotFiles(minecraft.gameDirectory);
                 after.removeAll(screenshotFilesBefore);

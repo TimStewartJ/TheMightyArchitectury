@@ -55,8 +55,23 @@ public final class McCompat {
 		//?}
 	}
 
-	/** 26.2 moved the main render target from Minecraft to GameRenderer. */
-	public static RenderTarget mainRenderTarget(Minecraft mc) {
+	public static boolean hasOverlay(Minecraft mc) {
+		//? if >=26.2 {
+		/*return mc.gui.overlay() != null;
+		*///?} else {
+		return mc.getOverlay() != null;
+		//?}
+	}
+
+	public static void clearChat(Minecraft mc) {
+		//? if >=26.2 {
+		/*mc.gui.hud.getChat().clearMessages(true);
+		*///?} else {
+		mc.gui.getChat().clearMessages(true);
+		//?}
+	}
+
+	/** 26.2 moved the main render target from Minecraft to GameRenderer. */	public static RenderTarget mainRenderTarget(Minecraft mc) {
 		//? if >=26.2 {
 		/*return mc.gameRenderer.mainRenderTarget();
 		*///?} else {
