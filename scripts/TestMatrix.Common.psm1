@@ -518,6 +518,44 @@ function Test-RuntimeArtifactStale {
     return $null
 }
 
+<#
+.SYNOPSIS
+Decides whether a matrix failure is worth retrying.
+
+.DESCRIPTION
+Retrying is only ever safe for failures caused by the environment, never for failures
+caused by the mod. A retried mod defect looks like a pass roughly half the time, which
+turns the matrix into a coin flip that reports green.
+
+Infrastructure failures seen so far: Mojang/Loom CDN timeouts while downloading a client,
+server or mapping file, and a HashMap treeify ClassCastException thrown from the loader's
+own bootstrap thread before any mod class loads.
+#>
+function Test-TestRetryableFailure {
+    param([string]$Message)
+
+    if (-not $Message) {
+        return $false
+    }
+
+    $infrastructurePatterns = @(
+        'DownloadException',
+        'Failed to download',
+        'Read timed out',
+        'Connection reset',
+        'Connection timed out',
+        'HashMap\$Node cannot be cast to class java\.util\.HashMap\$TreeNode'
+    )
+
+    foreach ($pattern in $infrastructurePatterns) {
+        if ($Message -match $pattern) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 Export-ModuleMember -Function @(
     'Assert-TestMatrixPowerShell',
     'Get-TestMatrixRepoRoot',
@@ -539,5 +577,6 @@ Export-ModuleMember -Function @(
     'Get-RuntimeArtifactManifestPath',
     'Read-RuntimeArtifactManifest',
     'Get-RuntimeArtifactTarget',
-    'Test-RuntimeArtifactStale'
+    'Test-RuntimeArtifactStale',
+    'Test-TestRetryableFailure'
 )
