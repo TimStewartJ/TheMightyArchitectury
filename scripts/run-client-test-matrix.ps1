@@ -129,18 +129,50 @@ function Invoke-ClientTest {
                 throw "Client test exceeded ${ClientTimeoutSeconds}s timeout"
             }
         } else {
-            if (-not $gradleProcess.WaitForExit($ClientTimeoutSeconds * 1000)) {
-                throw "Client test exceeded ${ClientTimeoutSeconds}s timeout"
+            # The client writes its verdict to result.json and then asks Minecraft to stop. On 26.2
+            # that teardown is unreliable: the Fabric client misses vanilla's 15-second post-main
+            # deadline and gets System.exit(-8) from ClientShutdownWatchdog, and the NeoForge client
+            # can hang in shutdown indefinitely. Neither shows a mod frame in the dump, and the mod
+            # starts no threads of its own. What this matrix verifies is the verdict, so wait for the
+            # verdict first and treat process teardown as a bounded courtesy afterwards.
+            $deadline = (Get-Date).AddSeconds($ClientTimeoutSeconds)
+            while ((Get-Date) -lt $deadline -and -not $gradleProcess.HasExited -and -not (Test-Path $resultPath)) {
+                Start-Sleep -Seconds 2
             }
-            $gradleExit = $gradleProcess.ExitCode
-            if ($gradleExit -ne 0) {
-                if (Test-Path $gradleStdout) {
-                    Get-Content $gradleStdout -Tail 30 | ForEach-Object { Write-Host $_ }
+
+            $stoppedAfterVerdict = $false
+            if (-not $gradleProcess.HasExited) {
+                if (-not (Test-Path $resultPath)) {
+                    throw "Client test exceeded ${ClientTimeoutSeconds}s timeout"
                 }
-                if (Test-Path $gradleStderr) {
-                    Get-Content $gradleStderr -Tail 30 | ForEach-Object { Write-Host $_ -ForegroundColor Red }
+                # Verdict is in. Give the client a short window to exit on its own, then stop waiting.
+                if (-not $gradleProcess.WaitForExit(60 * 1000)) {
+                    Write-Host "WARN $Version / $Loader - client wrote its result but did not exit; stopping it" -ForegroundColor Yellow
+                    Stop-TestProcessTree -Process $gradleProcess
+                    $stoppedAfterVerdict = $true
                 }
-                throw "Gradle client test exited $gradleExit"
+            }
+
+            $gradleExit = if ($gradleProcess.HasExited) { $gradleProcess.ExitCode } else { 0 }
+            if ($gradleExit -ne 0 -and -not $stoppedAfterVerdict) {
+                $stdoutText = if (Test-Path $gradleStdout) { Get-Content $gradleStdout -Raw } else { '' }
+                $shutdownWatchdog = $stdoutText -match 'Client shutdown from post-main'
+                $resultPassed = $false
+                if (Test-Path $resultPath) {
+                    $resultPassed = ((Get-Content $resultPath -Raw | ConvertFrom-Json).status -eq 'passed')
+                }
+
+                if ($shutdownWatchdog -and $resultPassed) {
+                    Write-Host "WARN $Version / $Loader - checks passed; client missed the 15s shutdown deadline and vanilla force-exited it ($gradleExit)" -ForegroundColor Yellow
+                } else {
+                    if (Test-Path $gradleStdout) {
+                        Get-Content $gradleStdout -Tail 30 | ForEach-Object { Write-Host $_ }
+                    }
+                    if (Test-Path $gradleStderr) {
+                        Get-Content $gradleStderr -Tail 30 | ForEach-Object { Write-Host $_ -ForegroundColor Red }
+                    }
+                    throw "Gradle client test exited $gradleExit"
+                }
             }
         }
 
