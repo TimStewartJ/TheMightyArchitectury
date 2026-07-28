@@ -1,5 +1,5 @@
 param(
-    [string[]]$Versions = @('1.21.1', '1.21.4', '1.21.6', '1.21.8', '1.21.10', '1.21.11', '26.1'),
+    [string[]]$Versions = @('1.21.1', '1.21.4', '1.21.6', '1.21.8', '1.21.10', '1.21.11', '26.1', '26.2'),
     [string[]]$Loaders = @('fabric', 'neoforge'),
     [int]$Port = 25565,
     [int]$ClientTimeoutSeconds = 600,
@@ -140,7 +140,7 @@ function Write-PrismInstance {
     New-Item -ItemType Directory -Force -Path (Join-Path $minecraftDirectory 'mods') | Out-Null
 
     $minecraftVersion = $Properties.minecraft_version
-    $lwjglVersion = if ($Version -eq '26.1') { '3.4.1' } else { '3.3.3' }
+    $lwjglVersion = if ($Version -like '26.*') { '3.4.1' } else { '3.3.3' }
     $components = [System.Collections.Generic.List[object]]::new()
     $components.Add([ordered]@{
         cachedName = 'LWJGL 3'
