@@ -165,10 +165,6 @@ public abstract class Outline {
 			.setUv(u, v)
 			.setOverlay(OverlayTexture.NO_OVERLAY)
 			.setLight(params.lightMap)
-			//? if >=26 {
-			//.uv2(LightCoordsUtil.FULL_BRIGHT)
-			//?} else {
-			/*//.uv2(LightTexture.FULL_BRIGHT)*///?}
 			.setNormal(peek, xOffset, yOffset, zOffset);
 
 		transformNormals = null;

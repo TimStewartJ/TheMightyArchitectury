@@ -1,9 +1,8 @@
 accessWidener   v2  named
 
-#? if >=1.21.4 {
-## GameRenderer.loadEffect method removed in 1.21.4 - post-processing shader system completely changed
-## accessible    method    net/minecraft/client/renderer/GameRenderer      loadEffect      (Lnet/minecraft/resources/ResourceLocation;)V
-#?} else {
+# GameRenderer.loadEffect was removed in 1.21.4 when the post-processing shader system
+# changed, so only the older versions need it widened.
+#? if <1.21.4 {
 #accessible    method    net/minecraft/client/renderer/GameRenderer      loadEffect      (Lnet/minecraft/resources/ResourceLocation;)V
 #?}
 
@@ -15,9 +14,8 @@ accessWidener   v2  named
 
 # Widgets use public getX()/getY()/setX() APIs on both loaders.
 
-#? if >=1.21.6 {
-## GuiGraphics constructor changed in 1.21.6 - now uses Matrix3x2fStack internally instead of PoseStack
-## accessible    method    net/minecraft/client/gui/GuiGraphics            <init>          (Lnet/minecraft/client/Minecraft;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;)V
-#?} else {
+# The GuiGraphics constructor started taking a Matrix3x2fStack instead of a PoseStack in
+# 1.21.6, so only the older versions need it widened.
+#? if <1.21.6 {
 #accessible    method    net/minecraft/client/gui/GuiGraphics            <init>          (Lnet/minecraft/client/Minecraft;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;)V
 #?}
