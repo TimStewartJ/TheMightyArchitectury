@@ -287,6 +287,13 @@ public class ToolSelectionScreen extends Screen {
 		//? if >=1.21.6 {
 		//?} else {
 		/*
+		// The per-tool loop above ends with setShaderColor(1, 1, 1, alpha), where alpha is 0.2
+		// while the bar is unfocused, and the loop's last tool is never the selected one. That
+		// is global GL state rather than part of the pose stack, so popPose does not restore
+		// it and the composer's tool-mode text, drawn next, inherits the alpha. Only 1.21.1
+		// reaches here dirty: 1.21.4 resets unconditionally further up and then stops using
+		// shader colour, and 1.21.6+ dropped the API from this path entirely.
+		RenderSystem.setShaderColor(1, 1, 1, 1);
 		ms.pose().popPose();
 		*///?}
 	}
