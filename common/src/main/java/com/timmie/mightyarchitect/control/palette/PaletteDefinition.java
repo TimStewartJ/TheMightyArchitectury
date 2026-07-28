@@ -34,7 +34,11 @@ public class PaletteDefinition {
 			defaultPalette = new PaletteDefinition("Standard Palette");
 			defaultPalette.put(Palette.HEAVY_PRIMARY, Blocks.POLISHED_ANDESITE)
 					.put(Palette.HEAVY_SECONDARY, Blocks.COBBLESTONE)
+					//? if >=26.2 {
+					/*.put(Palette.HEAVY_WINDOW, Blocks.STAINED_GLASS_PANE.black())
+					*///?} else {
 					.put(Palette.HEAVY_WINDOW, Blocks.BLACK_STAINED_GLASS_PANE)
+					//?}
 					.put(Palette.HEAVY_POST, Blocks.MOSSY_COBBLESTONE_WALL)
 					.put(Palette.INNER_DETAIL, Blocks.SPRUCE_WOOD).put(Palette.INNER_PRIMARY, Blocks.SPRUCE_PLANKS)
 					.put(Palette.INNER_SECONDARY, Blocks.DARK_OAK_PLANKS)

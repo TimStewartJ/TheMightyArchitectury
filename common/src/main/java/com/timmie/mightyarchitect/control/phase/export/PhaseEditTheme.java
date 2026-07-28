@@ -12,7 +12,7 @@ import com.timmie.mightyarchitect.foundation.utility.BuildingHelper;
 import com.timmie.mightyarchitect.foundation.utility.outliner.AABBOutline;
 import com.timmie.mightyarchitect.foundation.utility.outliner.BlockClusterOutline;
 import com.timmie.mightyarchitect.foundation.utility.outliner.Outline;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
@@ -196,6 +196,6 @@ public class PhaseEditTheme extends PhaseBase {
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {}
+	public void render(PoseStack ms, MightyBuffers buffer) {}
 
 }

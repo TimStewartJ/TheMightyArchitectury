@@ -117,7 +117,7 @@ public class SuperByteBufferCache {
 		ModelBlockRenderer blockRenderer = dispatcher.getModelRenderer();
 	*///?}
 		ByteBufferBuilder byteBuffer = new ByteBufferBuilder(2097152);
-		BufferBuilder builder = new BufferBuilder(byteBuffer, VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+		BufferBuilder builder = com.timmie.mightyarchitect.foundation.compat.McCompat.quadBuffer(byteBuffer, DefaultVertexFormat.BLOCK);
 		//? if >=26 {
 		BlockPos pos = BlockPos.ZERO;
 		BlockAndTintGetter blockAccess = singleBlockAccess(minecraft, referenceState, pos);

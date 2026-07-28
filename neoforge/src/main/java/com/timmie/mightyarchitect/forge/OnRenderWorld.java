@@ -9,7 +9,10 @@ import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-//? if >=26 {
+//? if >=26.2 {
+/*import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent.AfterLevel;
+*///?} else if >=26 {
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent.AfterTranslucentParticles;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent.AfterLevel;
 //?} else if >=1.21.6 {
@@ -26,7 +29,12 @@ public class OnRenderWorld {
     // (so MightyClient.onRenderWorld only applies the world-space offset). Rendering at AfterLevel
     // instead drops all translucent geometry (e.g. the measurement labels) from the frame.
     @SubscribeEvent
-    //? if >=26 {
+    //? if >=26.2 {
+    /*// 26.2 collects custom geometry through its own event; the render-stage events no longer
+    // expose anything to draw into.
+    public static void onRenderWorld(SubmitCustomGeometryEvent event) {
+        MightyClient.onRenderWorld(event.getSubmitNodeCollector());
+    *///?} else if >=26 {
     public static void onRenderWorld(AfterTranslucentParticles event) {
         MightyClient.onRenderWorld();
     //?} else if >=1.21.10 {

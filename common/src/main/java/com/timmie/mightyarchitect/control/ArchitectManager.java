@@ -1,5 +1,6 @@
 package com.timmie.mightyarchitect.control;
 
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.MightyClient;
@@ -37,7 +38,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 //?} else {
 /*import net.minecraft.client.gui.GuiGraphics;*///?}
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -297,7 +298,7 @@ public class ArchitectManager {
 	}
 
 	public static EventResult onMouseScrolled(Minecraft minecraft, double horizontalAmount, double verticalAmount) {
-		if (Minecraft.getInstance().screen != null)
+		if (McCompat.currentScreen(Minecraft.getInstance()) != null)
 			return EventResult.pass();
 		if (phase.getPhaseHandler()
 			.onScroll((int) Math.signum(verticalAmount)))
@@ -305,7 +306,7 @@ public class ArchitectManager {
 		return EventResult.pass();
 	}
 
-	public static void render(PoseStack ms, MultiBufferSource buffer) {
+	public static void render(PoseStack ms, MightyBuffers buffer) {
 		if (Minecraft.getInstance().level != null)
 			phase.getPhaseHandler()
 				.render(ms, buffer);
@@ -315,7 +316,7 @@ public class ArchitectManager {
 	public static EventResult onClick(Minecraft minecraft, MouseButtonInfo buttonInfo, int action) {
 	//?} else {
 	/*public static EventResult onClick(Minecraft minecraft, int button, int action, int modifiers) {*///?}
-		if (Minecraft.getInstance().screen != null)
+		if (McCompat.currentScreen(Minecraft.getInstance()) != null)
 			return EventResult.pass();
 		if (action != Keyboard.PRESS)
 			return EventResult.pass();
@@ -339,7 +340,7 @@ public class ArchitectManager {
 			}
 			return EventResult.pass();
 		}
-		if (Minecraft.getInstance().screen != null)
+		if (McCompat.currentScreen(Minecraft.getInstance()) != null)
 			return EventResult.pass();
 		if (MightyClient.COMPOSE.consumeClick()) {
 			if (!menu.isFocused())
@@ -384,7 +385,10 @@ public class ArchitectManager {
 		com.timmie.mightyarchitect.foundation.utility.HudTextBuffer.render(poseStack);
 	}
 
-	//? if >=1.21.4 {
+	//? if >=26.2 {
+	/*// Architectury 21 went back to EventResult for RIGHT_CLICK_BLOCK.
+	public static EventResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return EventResult.pass(); }
+	*///?} else if >=1.21.4 {
 	public static InteractionResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return InteractionResult.PASS; }
 	//?} else {
 	/*public static EventResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return EventResult.pass(); }*///?}

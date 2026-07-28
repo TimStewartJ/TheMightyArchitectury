@@ -6,7 +6,7 @@ import com.timmie.mightyarchitect.MightyClient;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
@@ -43,7 +43,7 @@ public class PhasePaused extends PhaseBase {
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {
+	public void render(PoseStack ms, MightyBuffers buffer) {
 
 	}
 

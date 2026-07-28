@@ -3,7 +3,7 @@ package com.timmie.mightyarchitect.control.phase.export;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.control.phase.PhaseBase;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 
 import java.util.List;
 
@@ -19,7 +19,7 @@ public class PhaseListThemesForEditing extends PhaseBase {
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {
+	public void render(PoseStack ms, MightyBuffers buffer) {
 		
 	}
 

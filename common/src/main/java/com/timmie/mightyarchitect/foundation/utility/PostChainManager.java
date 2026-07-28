@@ -106,7 +106,7 @@ public class PostChainManager {
         }
 
         Minecraft mc = Minecraft.getInstance();
-        RenderTarget mainTarget = mc.getMainRenderTarget();
+        RenderTarget mainTarget = com.timmie.mightyarchitect.foundation.compat.McCompat.mainRenderTarget(mc);
 
         // Apply the post-processing effect using the provided resource allocator (like vanilla does)
         activePostChain.process(mainTarget, resourceAllocator);
@@ -249,7 +249,7 @@ public class PostChainManager {
         }
 
         Minecraft mc = Minecraft.getInstance();
-        RenderTarget mainTarget = mc.getMainRenderTarget();
+        RenderTarget mainTarget = com.timmie.mightyarchitect.foundation.compat.McCompat.mainRenderTarget(mc);
 
         // Apply the post-processing effect using the provided resource allocator (like vanilla does)
         activePostChain.process(mainTarget, resourceAllocator);
@@ -394,7 +394,7 @@ public class PostChainManager {
         }
 
         Minecraft mc = Minecraft.getInstance();
-        RenderTarget mainTarget = mc.getMainRenderTarget();
+        RenderTarget mainTarget = com.timmie.mightyarchitect.foundation.compat.McCompat.mainRenderTarget(mc);
 
         // Apply the post-processing effect using the provided resource allocator (like vanilla does)
         activePostChain.process(mainTarget, resourceAllocator);
@@ -539,7 +539,7 @@ public class PostChainManager {
         }
 
         Minecraft mc = Minecraft.getInstance();
-        RenderTarget mainTarget = mc.getMainRenderTarget();
+        RenderTarget mainTarget = com.timmie.mightyarchitect.foundation.compat.McCompat.mainRenderTarget(mc);
 
         // Apply the post-processing effect using the provided resource allocator (like vanilla does)
         activePostChain.process(mainTarget, resourceAllocator);

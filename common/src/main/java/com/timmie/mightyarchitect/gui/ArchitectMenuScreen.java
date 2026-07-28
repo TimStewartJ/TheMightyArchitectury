@@ -1,5 +1,6 @@
 package com.timmie.mightyarchitect.gui;
 
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.mojang.blaze3d.platform.Window;
 //? if >=1.21.10 {
 //?} else {
@@ -152,7 +153,7 @@ public class ArchitectMenuScreen extends Screen {
 		*///?}
 			if (hideOnClose)
 				setVisible(false);
-			minecraft.setScreen(null);
+			McCompat.setScreen(minecraft, null);
 			return true;
 		}
 
@@ -163,7 +164,7 @@ public class ArchitectMenuScreen extends Screen {
 		*///?}
 			if (hideOnClose)
 				setVisible(false);
-			minecraft.setScreen(null);
+			McCompat.setScreen(minecraft, null);
 			return true;
 		}
 		return false;
@@ -185,7 +186,7 @@ public class ArchitectMenuScreen extends Screen {
 		*///?}
 			if (ArchitectManager.inPhase(ArchitectPhases.Paused))
 				setVisible(false);
-			minecraft.setScreen(null);
+			McCompat.setScreen(minecraft, null);
 			return true;
 		}
 		//? if >=1.21.10 {
@@ -195,7 +196,7 @@ public class ArchitectMenuScreen extends Screen {
 		*///?}
 			if (hideOnClose)
 				setVisible(false);
-			minecraft.setScreen(null);
+			McCompat.setScreen(minecraft, null);
 			return true;
 		}
 
