@@ -114,7 +114,7 @@ public class PhaseCreatingPalette extends PhaseBase implements IDrawBlockHighlig
 			renderSingleBlock(state, ms, buffer);
 			//?} else {
 			/*minecraft.getBlockRenderer()
-				.renderSingleBlock(state, ms, buffer, 0xF000F0, OverlayTexture.NO_OVERLAY);
+				.renderSingleBlock(state, ms, (net.minecraft.client.renderer.MultiBufferSource) buffer, 0xF000F0, OverlayTexture.NO_OVERLAY);
 			*///?}
 			ms.popPose();
 		}

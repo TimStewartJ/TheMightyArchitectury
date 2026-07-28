@@ -1,7 +1,7 @@
 package com.timmie.mightyarchitect.gui;
 
-//? if >=26 {
 import com.timmie.mightyarchitect.foundation.compat.McCompat;
+//? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 //?} else {
 /*import net.minecraft.client.gui.GuiGraphics;
