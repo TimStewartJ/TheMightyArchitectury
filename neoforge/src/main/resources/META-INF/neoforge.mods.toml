@@ -1,5 +1,5 @@
 modLoader = "javafml"
-loaderVersion = "[3,)"
+loaderVersion = "[${meta_fml_range},)"
 issueTrackerURL = "https://github.com/TimStewartJ/TheMightyArchitectury/issues"
 license = "MIT"
 
@@ -9,9 +9,12 @@ version = "${version}"
 displayName = "The Mighty Architect"
 authors = "simibubi, timmie"
 description = '''
-Architectury port of The Mighty Architect. Design elaborate buildings within a minute!
+Design elaborate buildings within a minute!
 '''
 #logoFile = ""
+
+[[mixins]]
+config = "mightyarchitect.mixins.json"
 
 [[dependencies.mightyarchitect]]
 modId = "neoforge"
@@ -25,11 +28,4 @@ modId = "minecraft"
 type = "required"
 versionRange = "[${meta_mc_range},${meta_mc_max})"
 ordering = "NONE"
-side = "BOTH"
-
-[[dependencies.mightyarchitect]]
-modId = "architectury"
-type = "required"
-versionRange = "[${meta_architectury_range},)"
-ordering = "AFTER"
 side = "BOTH"

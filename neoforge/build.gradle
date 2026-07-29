@@ -1,10 +1,7 @@
 def node = rootProject.project(":${stonecutter.current.version}")
-def unobf = node.findProperty('unobfuscated') == 'true'
 def javaVer = (node.findProperty('java_version') ?: '21') as int
 def mcVersion = node.property('minecraft_version')
-def archVersion = node.property('architectury_version')
 def neoforgeVersion = node.property('neoforge_version')
-def commonProject = ":common:${stonecutter.current.version}"
 def enableClientTestMod = project.findProperty("enableClientTestMod") == "true"
 def clientTestSessionId = System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SESSION_ID")
     ?.replaceAll("[^A-Za-z0-9._-]", "-")
@@ -13,29 +10,24 @@ def clientTestResultFile = clientTestSessionId
     ? layout.buildDirectory.file("client-test-${clientTestSessionId}/result.json")
     : layout.buildDirectory.file("client-test/result.json")
 
-// Force the matching common node to evaluate first, then read its architectury transform output +
-// compiled classes directly off the project object (see fabric/build.gradle for the full rationale).
-def commonNode = evaluationDependsOn(commonProject)
+// Source inclusion: this node compiles the matching common node's Stonecutter output alongside its
+// own (see fabric/build.gradle for the full rationale).
+def commonNode = evaluationDependsOn(":common:${stonecutter.current.version}")
+def commonGenerate = commonNode.tasks.named("stonecutterGenerate")
 
-apply plugin: unobf ? "mightyarchitect.loom-noremap" : "mightyarchitect.loom-remap"
-apply plugin: "mightyarchitect.shadow"
 apply plugin: "java"
+apply plugin: "mightyarchitect.moddev"
 apply plugin: "maven-publish"
 
 base { archivesName = rootProject.archives_base_name }
 version = "${rootProject.mod_version}+mc${mcVersion}"
 group = rootProject.maven_group
 
-repositories {
-    maven { url "https://maven.neoforged.net/releases/" }
-}
-
-architectury {
-    platformSetupLoomIde()
-    neoForge()
-}
-
 sourceSets {
+    main {
+        java.srcDirs commonNode.sourceSets.main.java.srcDirs
+        resources.srcDirs commonNode.sourceSets.main.resources.srcDirs
+    }
     clientTest {
         java.srcDirs = [
             rootProject.file("client-test/src/main/java"),
@@ -49,107 +41,102 @@ sourceSets {
         compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
         runtimeClasspath += output + compileClasspath + sourceSets.main.runtimeClasspath
     }
+    serverTest {
+        java.srcDirs = [
+            rootProject.file("server-test/src/main/java"),
+            rootProject.file("neoforge/src/serverTest/java")
+        ]
+        resources.srcDirs = [
+            rootProject.file("neoforge/src/serverTest/resources")
+        ]
+        output.resourcesDir = layout.buildDirectory.dir("classes/java/serverTest").get().asFile
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath + sourceSets.main.runtimeClasspath
+    }
 }
 
-def clientTestJarTask = tasks.register("clientTestJar", Jar) {
-    dependsOn tasks.named("clientTestClasses")
-    from sourceSets.clientTest.output
-    archiveClassifier.set(unobf ? "neoforge-client-test" : "neoforge-client-test-dev")
-}
+// The generated common sources are task output, so the dependency has to be declared explicitly -
+// adding the directories to a source set does not carry one.
+tasks.named("compileJava") { dependsOn commonGenerate }
+tasks.named("processResources") { dependsOn commonGenerate }
 
-loom {
-    silentMojangMappingsLicense()
+neoForge {
+    version = neoforgeVersion
+
+    addModdingDependenciesTo sourceSets.clientTest
+    addModdingDependenciesTo sourceSets.serverTest
+
+    mods {
+        mightyarchitect {
+            sourceSet sourceSets.main
+        }
+        mightyarchitect_test {
+            sourceSet sourceSets.clientTest
+        }
+        mightyarchitect_server_test {
+            sourceSet sourceSets.serverTest
+        }
+    }
 
     runs {
         automatedClientTest {
-            inherit client
-            name "Mighty Architect Automated Client Test"
-            runDir clientTestRunDir
-            property "mightyarchitect.clientTest.enabled", "true"
-            property "mightyarchitect.clientTest.server",
+            client()
+            ideName = "Mighty Architect Automated Client Test"
+            gameDirectory = project.file(clientTestRunDir)
+            sourceSet = sourceSets.clientTest
+            loadedMods = enableClientTestMod
+                ? [mods.mightyarchitect, mods.mightyarchitect_test]
+                : [mods.mightyarchitect]
+            systemProperty "mightyarchitect.clientTest.enabled", "true"
+            systemProperty "mightyarchitect.clientTest.server",
                 (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SERVER")
                     ?: project.findProperty("clientTestServer")
                     ?: "127.0.0.1:25565").toString()
-            property "mightyarchitect.clientTest.result",
+            systemProperty "mightyarchitect.clientTest.result",
                 clientTestResultFile.get().asFile.absolutePath
-            property "mightyarchitect.clientTest.keepOpen",
+            systemProperty "mightyarchitect.clientTest.keepOpen",
                 (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_KEEP_OPEN") ?: "false").toString()
         }
         automatedServerTest {
-            inherit server
-            name "Mighty Architect Automated Server Test"
-            runDir "run-server-test"
+            server()
+            ideName = "Mighty Architect Automated Server Test"
+            gameDirectory = project.file("run-server-test")
+            sourceSet = sourceSets.serverTest
+            loadedMods = [mods.mightyarchitect, mods.mightyarchitect_server_test]
+            systemProperty "mightyarchitect.serverTest.enabled", "true"
         }
     }
 }
 
 configurations {
-    shadowBundle {
-        canBeResolved = true
-        canBeConsumed = false
-    }
-    // Dependency bucket for common's named (dev) classes+resources. Extending compileClasspath +
-    // runtimeClasspath + developmentNeoForge from it mirrors the canonical architectury loader wiring:
-    // developmentNeoForge is what architectury-loom hands to FML as the mod-in-dev, so common classes
-    // are resolvable at dev runtime (runClient). Plain runtimeOnly does NOT reach that layer.
-    common {
-        canBeResolved = false
-        canBeConsumed = false
-    }
-    compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentNeoForge.extendsFrom common
-}
-
-configurations {
-    clientTestImplementation.extendsFrom implementation, common
+    clientTestImplementation.extendsFrom implementation
     clientTestRuntimeOnly.extendsFrom runtimeOnly
+    serverTestImplementation.extendsFrom implementation
+    serverTestRuntimeOnly.extendsFrom runtimeOnly
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:${mcVersion}"
-    neoForge "net.neoforged:neoforge:${neoforgeVersion}"
-    if (unobf) {
-        implementation "dev.architectury:architectury-neoforge:${archVersion}"
-    } else {
-        mappings loom.officialMojangMappings()
-        // modImplementation (not plain implementation): Loom must process architectury-neoforge as a
-        // mod so its mixin refmap is registered for the dev run. With plain implementation the refmap
-        // is not loaded, so architectury's neoforge.MixinChunkMap @ModifyArg can't resolve its lambda
-        // target when the integrated server loads ChunkMap -> singleplayer world-load crash.
-        modImplementation "dev.architectury:architectury-neoforge:${archVersion}"
-    }
-
-    // common's named (dev) classes+resources as a JAR — feeds the loader's compile classpath (to
-    // compile the neoforge/ source, which imports common) AND the dev-run classpath via
-    // developmentNeoForge. Must be a jar (not raw output dirs): architectury's dev-time transformer
-    // opens developmentNeoForge entries as jar filesystems. architectury-neoforge provides the
-    // fabric-dialect EnvType/@Environment shims at runtime; the packaged jar uses the transformed copy.
-    common files(commonNode.tasks.named('jar').flatMap { it.archiveFile })
-    // The architectury-transformed (fabric-dialect -> neoforge) common jar, bundled via shadow.
-    shadowBundle commonNode.configurations.getByName("transformProductionNeoForge").artifacts.files
     clientTestImplementation sourceSets.main.output
-    if (enableClientTestMod) {
-        localRuntime files(clientTestJarTask.flatMap { it.archiveFile })
-    }
-}
-
-tasks.named("compileJava") {
-    dependsOn commonNode.tasks.named("classes")
+    serverTestImplementation sourceSets.main.output
 }
 
 tasks.named("runAutomatedClientTest") {
-    dependsOn clientTestJarTask
+    dependsOn tasks.named("clientTestClasses")
+}
+
+tasks.named("runAutomatedServerTest") {
+    dependsOn tasks.named("serverTestClasses")
 }
 
 processResources {
     def metaProps = [
-        "version"                 : project.version,
-        "meta_mc_range"           : node.property('meta_mc_range'),
-        "meta_mc_max"             : node.property('meta_mc_max'),
-        "meta_pack_format"        : node.property('meta_pack_format'),
-        "meta_neoforge_range"     : node.property('meta_neoforge_range'),
-        "meta_architectury_range" : node.property('meta_architectury_range')
+        "version"             : project.version,
+        "meta_mc_range"       : node.property('meta_mc_range'),
+        "meta_mc_max"         : node.property('meta_mc_max'),
+        "meta_pack_format"    : node.property('meta_pack_format'),
+        "meta_neoforge_range" : node.property('meta_neoforge_range'),
+        "meta_java_range"     : node.property('meta_java_range'),
+        "meta_fml_range"      : (node.findProperty('meta_fml_range') ?: '3')
     ]
     inputs.properties(metaProps)
     filesMatching("META-INF/neoforge.mods.toml") {
@@ -158,6 +145,12 @@ processResources {
     filesMatching("pack.mcmeta") {
         expand(metaProps)
     }
+    filesMatching("mightyarchitect.mixins.json") {
+        expand(metaProps)
+    }
+    // Fabric-only mixin config: harmless in the NeoForge jar, but leaving an unexpanded
+    // ${...} placeholder in a shipped file is not, so drop it here.
+    exclude "mightyarchitect.fabric.mixins.json"
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -171,53 +164,21 @@ java {
     }
 }
 
-def packagedClientTestJar
-if (unobf) {
-    packagedClientTestJar = clientTestJarTask
-} else {
-    packagedClientTestJar = tasks.register("remapClientTestJar", tasks.named("remapJar").get().class) {
-        inputFile.set(clientTestJarTask.flatMap { it.archiveFile })
-        dependsOn clientTestJarTask
-        archiveClassifier.set("neoforge-client-test")
-    }
+def clientTestJarTask = tasks.register("clientTestJar", Jar) {
+    dependsOn tasks.named("clientTestClasses")
+    from sourceSets.clientTest.output
+    archiveClassifier.set("neoforge-client-test")
 }
 
 tasks.register("buildClientTestMod") {
     group = "verification"
     description = "Builds the distributable NeoForge client-test companion mod."
-    dependsOn packagedClientTestJar
+    dependsOn clientTestJarTask
 }
 
-if (unobf) {
-    // Unobfuscated 26.1: no remap step. The plain jar is unpacked into the shadowJar, which bundles
-    // the transformed common classes and becomes the published neoforge artifact.
-    jar {
-        archiveClassifier.set("raw")
-    }
-    shadowJar {
-        dependsOn(jar)
-        mainSpec.sourcePaths.clear()
-        from(zipTree(jar.archiveFile))
-        exclude "fabric.mod.json"
-        exclude "architectury.common.json"
-        configurations = [project.configurations.shadowBundle]
-        archiveClassifier.set("neoforge")
-    }
-} else {
-    shadowJar {
-        exclude "fabric.mod.json"
-        exclude "architectury.common.json"
-        configurations = [project.configurations.shadowBundle]
-        archiveClassifier.set("dev-shadow")
-    }
-    remapJar {
-        inputFile.set shadowJar.archiveFile
-        dependsOn shadowJar
-        archiveClassifier.set("neoforge")
-    }
-    jar {
-        archiveClassifier.set("dev")
-    }
+// NeoForge runs on official names, so there is no remap step: the plain jar is the artifact.
+jar {
+    archiveClassifier.set("neoforge")
 }
 
 publishing {

@@ -1,10 +1,11 @@
 package com.timmie.mightyarchitect;
 
-import dev.architectury.event.events.client.ClientLifecycleEvent;
-import dev.architectury.registry.registries.DeferredRegister;
-import dev.architectury.utils.EnvExecutor;
-import net.fabricmc.api.EnvType;
-import net.minecraft.core.registries.Registries;
+import com.timmie.mightyarchitect.platform.ModRegistrar;
+//? if >=1.21.11 {
+import net.minecraft.resources.Identifier;
+//?} else {
+/*import net.minecraft.resources.ResourceLocation;
+*///?}
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import org.apache.logging.log4j.LogManager;
@@ -15,24 +16,26 @@ public class TheMightyArchitect {
 	public static final String ID = "mightyarchitect";
 	public static final String NAME = "The Mighty Architect";
 
-	public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ID, Registries.ITEM);
-	public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ID, Registries.BLOCK);
-
 	public static TheMightyArchitect instance;
 	public static Logger logger = LogManager.getLogger();
 
-	public static void Init()
+	//? if >=1.21.11 {
+	public static Identifier id(String path) {
+		return Identifier.fromNamespaceAndPath(ID, path);
+	}
+
+	//?} else {
+	/*public static ResourceLocation id(String path) {
+		return ResourceLocation.fromNamespaceAndPath(ID, path);
+	}
+
+	*///?}
+	// Registers the mod's content through whatever registration mechanism the loader handed in.
+	// Blocks go first: the block item factories read the block instances the block factories build.
+	public static void Init(ModRegistrar<Block> blocks, ModRegistrar<Item> items)
 	{
-		// TODO: figure out how to not hardcode blocks and items to register again
-		AllItems.registerItems(ITEMS);
-		AllBlocks.registerBlocks(BLOCKS);
-		AllBlocks.registerItemBlocks(ITEMS);
-
-		BLOCKS.register();
-		ITEMS.register();
-
-		// Force packet registration via static initialization
-		AllPackets.init();
-		EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> ClientLifecycleEvent.CLIENT_SETUP.register((c) -> MightyClient.init()));
+		AllBlocks.registerBlocks(blocks);
+		AllItems.registerItems(items);
+		AllBlocks.registerItemBlocks(items);
 	}
 }

@@ -1,5 +1,4 @@
-// Convention plugin for UNOBFUSCATED nodes (26.1+): no remap step.
+// Fabric toolchain for UNOBFUSCATED nodes (26.1+): official Fabric Loom, no-remap variant.
 plugins {
-    id "dev.architectury.loom-no-remap"
-    id "architectury-plugin"
+    id "net.fabricmc.fabric-loom"
 }

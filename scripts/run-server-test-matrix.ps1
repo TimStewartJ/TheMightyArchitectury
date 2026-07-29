@@ -94,12 +94,20 @@ function Invoke-ServerTest {
             $logPaths = @($serverLog, $gradleStdout, $gradleStderr) | Where-Object { Test-Path $_ }
             if ($logPaths.Count -gt 0) {
                 $text = ($logPaths | ForEach-Object { Get-Content $_ -Raw -ErrorAction SilentlyContinue }) -join "`n"
+                # The print-to-world test reports its own verdict; check it before the generic
+                # crash markers so a failed assertion is reported as such rather than as a crash.
+                $testFailure = Select-String -Path $logPaths -Pattern '\[SERVER-TEST\] RESULT FAIL' -ErrorAction SilentlyContinue
+                if ($testFailure) {
+                    throw "Print-to-world test failed: $($testFailure[0].Line)"
+                }
                 $bad = Select-String -Path $logPaths -Pattern 'MixinApplyError|InvalidInjectionException|NoClassDefFoundError|ClassNotFoundException|Cannot load class|Could not execute entrypoint|Failed to start the minecraft server|Failed to remap|Exception in thread "main"|Exception in server tick loop|Preparing crash report|\[.*FATAL\]' -ErrorAction SilentlyContinue
                 if ($bad) {
                     throw "Server crash marker: $($bad[0].Line)"
                 }
-                if ($text -match 'Done \(') {
-                    Write-Host "PASS server $Version / $Loader"
+                # Booting is necessary but not sufficient: wait for the print-to-world verdict so
+                # a server that comes up without ever running the test counts as a failure.
+                if ($text -match '\[SERVER-TEST\] RESULT PASS \((\d+) checks\)') {
+                    Write-Host "PASS server $Version / $Loader ($($Matches[1]) print checks)"
                     return
                 }
             }
