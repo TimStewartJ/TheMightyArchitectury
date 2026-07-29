@@ -1,5 +1,4 @@
-// Convention plugin for OBFUSCATED nodes (<=1.21.x): real remap via Architectury Loom.
+// Fabric toolchain for OBFUSCATED nodes (<=1.21.x): official Fabric Loom, remapping variant.
 plugins {
-    id "dev.architectury.loom"
-    id "architectury-plugin"
+    id "net.fabricmc.fabric-loom-remap"
 }

@@ -2,7 +2,7 @@ package com.timmie.mightyarchitect;
 
 import com.timmie.mightyarchitect.block.DesignAnchorBlock;
 import com.timmie.mightyarchitect.block.SliceMarkerBlock;
-import dev.architectury.registry.registries.DeferredRegister;
+import com.timmie.mightyarchitect.platform.ModRegistrar;
 //? if >=1.21.11 {
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -69,7 +69,7 @@ public class AllBlocks {
 	*///?} else {
 	/*
 	*///?}
-	public static void registerBlocks(DeferredRegister<Block> registry) {
+	public static void registerBlocks(ModRegistrar<Block> registry) {
 		//? if >=1.21.4 {
 		registry.register("slice_marker", () -> { SLICE_MARKER = new AllBlocks(new SliceMarkerBlock(blockProps("slice_marker"))); return SLICE_MARKER.get(); });
 		registry.register("design_anchor", () -> { DESIGN_ANCHOR = new AllBlocks(new DesignAnchorBlock(blockProps("design_anchor"))); return DESIGN_ANCHOR.get(); });
@@ -79,7 +79,7 @@ public class AllBlocks {
 		*///?}
 	}
 
-	public static void registerItemBlocks(DeferredRegister<Item> registry) {
+	public static void registerItemBlocks(ModRegistrar<Item> registry) {
 		//? if >=1.21.4 {
 		registry.register("slice_marker", () -> new BlockItem(SLICE_MARKER.get(), blockItemProps("slice_marker")));
 		registry.register("design_anchor", () -> new BlockItem(DESIGN_ANCHOR.get(), blockItemProps("design_anchor")));

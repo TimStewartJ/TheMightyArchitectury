@@ -11,11 +11,7 @@ import com.timmie.mightyarchitect.foundation.utility.PostChainManager;
 //?} else {
 /*
 *///?}
-import com.timmie.mightyarchitect.foundation.utility.ShaderManager;
 import com.timmie.mightyarchitect.foundation.utility.outliner.Outliner;
-import com.timmie.mightyarchitect.gui.ScreenHelper;
-import dev.architectury.event.events.client.ClientTickEvent;
-import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import net.minecraft.client.Camera;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -48,6 +44,7 @@ public class MightyClient {
 
 	public static boolean iris_presence;
 
+	// Called by the loader on client setup, before it registers the key mappings created here.
 	public static void init() {
 		AllItems.initColorHandlers();
 		//? if >=1.21.10 {
@@ -58,15 +55,6 @@ public class MightyClient {
 		COMPOSE = new KeyMapping("key.mightyclient.compose", Keyboard.G, modName);
 		TOOL_MENU = new KeyMapping("key.mightyclient.toolmenu", Keyboard.LALT, modName);
 		*///?}
-		KeyMappingRegistry.register(COMPOSE);
-		KeyMappingRegistry.register(TOOL_MENU);
-
-		ClientTickEvent.CLIENT_POST.register(MightyClient::onTick);
-
-		ClientTickEvent.CLIENT_POST.register(ScreenHelper::onClientTick);
-		ClientTickEvent.CLIENT_PRE.register(ShaderManager::onClientTick);
-
-		ArchitectManager.registerAllEvents();
 	}
 
 	public static void onTick(Minecraft event) {

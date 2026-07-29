@@ -73,11 +73,7 @@ public class ArchitectKits {
 	}
 
 	private static void setHotbarItem(int slot, ItemStack stack) {
-		//? if >=1.21.10 {
 		AllPackets.sendToServer(new SetHotbarItemPacket(slot, stack));
-		//?} else {
-		/*new SetHotbarItemPacket(slot, stack).sendToServer();
-		*///?}
 	}
 
 	private static void setHotbarBlock(int slot, Block block) {

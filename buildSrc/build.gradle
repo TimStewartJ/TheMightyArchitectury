@@ -4,16 +4,21 @@ plugins {
 
 repositories {
     maven { url "https://maven.fabricmc.net/" }
-    maven { url "https://maven.architectury.dev/" }
     maven { url "https://maven.neoforged.net/releases/" }
     gradlePluginPortal()
     mavenCentral()
 }
 
+// Single source of truth for the toolchain versions is the root gradle.properties. buildSrc is a
+// separate build and does not inherit those properties, so read the file rather than duplicating
+// (and drifting from) the numbers.
+def rootProps = new Properties()
+file("../gradle.properties").withInputStream { rootProps.load(it) }
+
 // These plugins become available to the convention scripts below, loaded on ONE shared buildSrc
-// classloader — so every Stonecutter node reuses a single Loom class (no ClassCastException).
+// classloader - so every Stonecutter node reuses a single Loom / ModDevGradle class and sibling
+// nodes cannot ClassCastException against each other.
 dependencies {
-    implementation "dev.architectury:architectury-loom:1.17.491"
-    implementation "architectury-plugin:architectury-plugin.gradle.plugin:3.5.169"
-    implementation "com.gradleup.shadow:com.gradleup.shadow.gradle.plugin:9.6.1"
+    implementation "net.fabricmc:fabric-loom:${rootProps.loom_version}"
+    implementation "net.neoforged.moddev:net.neoforged.moddev.gradle.plugin:${rootProps.moddev_version}"
 }

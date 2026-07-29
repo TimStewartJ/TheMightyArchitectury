@@ -1,17 +1,8 @@
 package com.timmie.mightyarchitect.foundation.utility;
 
 import com.mojang.blaze3d.platform.InputConstants;
-//? if >=1.21.10 {
-//?} else {
-/*import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-*///?}
 import net.minecraft.client.Minecraft;
 
-//? if >=1.21.10 {
-//?} else {
-/*@Environment(EnvType.CLIENT)
-*///?}
 public class Keyboard {
 
 	public static final int PRESS = 1;

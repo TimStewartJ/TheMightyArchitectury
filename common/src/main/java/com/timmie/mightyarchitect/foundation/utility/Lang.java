@@ -1,7 +1,6 @@
 package com.timmie.mightyarchitect.foundation.utility;
 
 import com.timmie.mightyarchitect.TheMightyArchitect;
-import dev.architectury.fluid.FluidStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
@@ -51,11 +50,6 @@ public class Lang {
 
 	public static LangBuilder itemName(ItemStack stack) {
 		return builder().add(stack.getHoverName()
-			.copy());
-	}
-
-	public static LangBuilder fluidName(FluidStack stack) {
-		return builder().add(stack.getName()
 			.copy());
 	}
 

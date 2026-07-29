@@ -4,7 +4,7 @@
     ],
     "passes": [
         {
-            "name": "mightyarchitect:blueprint",
+            "name": "mightyarchitect_blueprint",
             "intarget": "minecraft:main",
             "outtarget": "swap"
         },

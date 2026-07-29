@@ -2,10 +2,8 @@ def node = rootProject.project(":${stonecutter.current.version}")
 def unobf = node.findProperty('unobfuscated') == 'true'
 def javaVer = (node.findProperty('java_version') ?: '21') as int
 def mcVersion = node.property('minecraft_version')
-def archVersion = node.property('architectury_version')
 def floaderVersion = node.property('fabric_loader_version')
 def fapiVersion = node.property('fabric_api_version')
-def commonProject = ":common:${stonecutter.current.version}"
 def clientTestSessionId = System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SESSION_ID")
     ?.replaceAll("[^A-Za-z0-9._-]", "-")
 def clientTestRunDir = clientTestSessionId ? "run-client-test-${clientTestSessionId}" : "run-client-test"
@@ -13,15 +11,13 @@ def clientTestResultFile = clientTestSessionId
     ? layout.buildDirectory.file("client-test-${clientTestSessionId}/result.json")
     : layout.buildDirectory.file("client-test/result.json")
 
-// Force the matching common node to evaluate first, then read its architectury transform output +
-// compiled classes DIRECTLY off the project object. This keeps architectury's bytecode transform
-// (which converts common's fabric-dialect @Environment/EnvType for each loader and compiles common
-// only once) while avoiding project(path, configuration:) cross-project resolution, which yields
-// "no variant exists" between sibling Stonecutter nodes.
-def commonNode = evaluationDependsOn(commonProject)
+// Source inclusion: this node compiles the matching common node's Stonecutter output alongside its
+// own. There is no shared artifact and no bytecode transformer - each loader compiles the shared
+// sources against its own mappings, which is what makes dropping Architectury possible.
+def commonNode = evaluationDependsOn(":common:${stonecutter.current.version}")
+def commonGenerate = commonNode.tasks.named("stonecutterGenerate")
 
 apply plugin: unobf ? "mightyarchitect.loom-noremap" : "mightyarchitect.loom-remap"
-apply plugin: "mightyarchitect.shadow"
 apply plugin: "java"
 apply plugin: "maven-publish"
 
@@ -30,15 +26,14 @@ version = "${rootProject.mod_version}+mc${mcVersion}"
 group = rootProject.maven_group
 
 repositories {
-    maven { url "https://maven.neoforged.net/releases/" }
-}
-
-architectury {
-    platformSetupLoomIde()
-    fabric()
+    maven { url "https://maven.fabricmc.net/" }
 }
 
 sourceSets {
+    main {
+        java.srcDirs commonNode.sourceSets.main.java.srcDirs
+        resources.srcDirs commonNode.sourceSets.main.resources.srcDirs
+    }
     clientTest {
         java.srcDirs = [
             rootProject.file("client-test/src/main/java"),
@@ -54,9 +49,12 @@ sourceSets {
     }
 }
 
-loom {
-    silentMojangMappingsLicense()
+// The generated common sources are task output, so the dependency has to be declared explicitly -
+// adding the directories to a source set does not carry one.
+tasks.named("compileJava") { dependsOn commonGenerate }
+tasks.named("processResources") { dependsOn commonGenerate }
 
+loom {
     runs {
         automatedClientTest {
             inherit client
@@ -82,25 +80,7 @@ loom {
 }
 
 configurations {
-    shadowBundle {
-        canBeResolved = true
-        canBeConsumed = false
-    }
-    // Dependency bucket for common's named (dev) classes+resources. Extending compileClasspath +
-    // runtimeClasspath + developmentFabric from it mirrors the canonical architectury loader wiring:
-    // developmentFabric is what architectury-loom hands to the dev run as the mod-in-dev, so common
-    // classes are resolvable at dev runtime (runClient). Plain runtimeOnly does NOT reach that layer.
-    common {
-        canBeResolved = false
-        canBeConsumed = false
-    }
-    compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentFabric.extendsFrom common
-}
-
-configurations {
-    clientTestImplementation.extendsFrom implementation, common
+    clientTestImplementation.extendsFrom implementation
     clientTestRuntimeOnly.extendsFrom runtimeOnly
 }
 
@@ -113,29 +93,16 @@ configurations.all {
 dependencies {
     minecraft "com.mojang:minecraft:${mcVersion}"
     if (unobf) {
+        // Unobfuscated 26.1: no remap, so dependencies are consumed as-is and there are no mappings.
         implementation "net.fabricmc:fabric-loader:${floaderVersion}"
         implementation "net.fabricmc.fabric-api:fabric-api:${fapiVersion}"
-        implementation "dev.architectury:architectury-fabric:${archVersion}"
     } else {
         mappings loom.officialMojangMappings()
         modImplementation "net.fabricmc:fabric-loader:${floaderVersion}"
-        modApi "net.fabricmc.fabric-api:fabric-api:${fapiVersion}"
-        modApi "dev.architectury:architectury-fabric:${archVersion}"
+        modImplementation "net.fabricmc.fabric-api:fabric-api:${fapiVersion}"
     }
-
-    // common's named (dev) classes+resources as a JAR — feeds the loader's compile classpath (to
-    // compile the fabric/ source, which imports common) AND the dev-run classpath via
-    // developmentFabric. Must be a jar (not raw output dirs): architectury's dev-time transformer
-    // opens developmentFabric entries as jar filesystems. The packaged jar uses the transformed copy.
-    common files(commonNode.tasks.named('jar').flatMap { it.archiveFile })
-    // The architectury-transformed common jar, bundled into the final jar via shadow.
-    shadowBundle commonNode.configurations.getByName("transformProductionFabric").artifacts.files
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
     clientTestImplementation sourceSets.main.output
-}
-
-// Ensure common is compiled/transformed before this loader compiles or bundles.
-tasks.named("compileJava") {
-    dependsOn commonNode.tasks.named("classes")
 }
 
 tasks.named("runAutomatedClientTest") {
@@ -143,25 +110,23 @@ tasks.named("runAutomatedClientTest") {
 }
 
 processResources {
+    // The blueprint post-process shader is driven from a mixin on Fabric; 1.21.1 predates the
+    // post_effect API that mixin targets, so that node ships no client mixins of its own.
     def includeGameRendererMixin = stonecutter.current.version != "1.21.1"
-    def mixinProps = [
-        "client_mixins": includeGameRendererMixin ? '["GameRendererMixin"]' : '[]'
-    ]
     def metaProps = [
-        "version"                 : project.version,
-        "meta_mc_range"           : node.property('meta_mc_range'),
-        "meta_mc_max"             : node.property('meta_mc_max'),
-        "meta_java_range"         : node.property('meta_java_range'),
-        "meta_floader_range"      : node.property('fabric_loader_version'),
-        "meta_architectury_range" : node.property('meta_architectury_range')
+        "version"            : project.version,
+        "meta_mc_range"      : node.property('meta_mc_range'),
+        "meta_mc_max"        : node.property('meta_mc_max'),
+        "meta_java_range"    : node.property('meta_java_range'),
+        "meta_floader_range" : node.property('fabric_loader_version')
     ]
     inputs.properties(metaProps)
     inputs.property("include_game_renderer_mixin", includeGameRendererMixin)
     filesMatching("fabric.mod.json") {
         expand(metaProps)
     }
-    filesMatching("mightyarchitect.mixins.json") {
-        expand(mixinProps)
+    filesMatching(["mightyarchitect.mixins.json", "mightyarchitect.fabric.mixins.json"]) {
+        expand(metaProps + ["client_mixins": includeGameRendererMixin ? '["GameRendererMixin"]' : '[]'])
     }
 }
 
@@ -200,29 +165,12 @@ tasks.register("buildClientTestMod") {
 }
 
 if (unobf) {
-    // Unobfuscated 26.1: no remap step. The plain jar is unpacked into the shadowJar, which bundles
-    // the transformed common classes and becomes the published fabric artifact.
+    // Unobfuscated 26.1: Loom performs no remap, so the plain jar is the published artifact.
     jar {
-        archiveClassifier.set("raw")
-    }
-    shadowJar {
-        dependsOn(jar)
-        mainSpec.sourcePaths.clear()
-        from(zipTree(jar.archiveFile))
-        exclude "architectury.common.json"
-        configurations = [project.configurations.shadowBundle]
         archiveClassifier.set("fabric")
     }
 } else {
-    // Obfuscated: shadow the transformed common with the loader classes, then remap named -> intermediary.
-    shadowJar {
-        exclude "architectury.common.json"
-        configurations = [project.configurations.shadowBundle]
-        archiveClassifier.set("dev-shadow")
-    }
     remapJar {
-        inputFile.set shadowJar.archiveFile
-        dependsOn shadowJar
         archiveClassifier.set("fabric")
     }
     jar {

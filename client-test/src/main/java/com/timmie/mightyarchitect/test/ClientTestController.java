@@ -21,7 +21,6 @@ import com.timmie.mightyarchitect.gui.ArchitectMenuScreen;
 import com.timmie.mightyarchitect.gui.PalettePickerScreen;
 import com.timmie.mightyarchitect.test.mixin.ArchitectManagerAccessor;
 import com.mojang.blaze3d.platform.Window;
-import dev.architectury.event.events.client.ClientTickEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.ConnectScreen;
@@ -145,7 +144,6 @@ public final class ClientTestController {
         started = true;
         deleteResult();
         TheMightyArchitect.logger.info("[CLIENT-TEST] Starting automated client test");
-        ClientTickEvent.CLIENT_POST.register(ClientTestController::tick);
     }
 
     public static void recordWorldRender() {
@@ -160,7 +158,11 @@ public final class ClientTestController {
         composerOverlayFrames++;
     }
 
-    private static void tick(Minecraft minecraft) {
+    // Driven by MightyClientProbeMixin: the harness rides the mod's own client tick rather than
+    // registering with a loader event, so it stays loader-agnostic.
+    public static void tick(Minecraft minecraft) {
+        if (!started)
+            return;
         if (stage == Stage.FINISHED)
             return;
 

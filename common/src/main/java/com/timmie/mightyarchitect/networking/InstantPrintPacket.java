@@ -1,31 +1,18 @@
 package com.timmie.mightyarchitect.networking;
 
 import com.timmie.mightyarchitect.AllPackets;
-import dev.architectury.networking.NetworkManager;
-//? if >=1.21.10 {
-//?} else {
-/*import dev.architectury.networking.simple.BaseC2SMessage;
-import dev.architectury.networking.simple.MessageType;
-*///?}
+import com.timmie.mightyarchitect.platform.PacketContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-//? if >=1.21.10 {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-//?} else {
-/*
-*///?}
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.*;
 
-//? if >=1.21.10 {
 public class InstantPrintPacket implements CustomPacketPayload {
-//?} else {
-/*public class InstantPrintPacket extends BaseC2SMessage {
-*///?}
 
 	private BunchOfBlocks blocks;
 
@@ -48,60 +35,31 @@ public class InstantPrintPacket implements CustomPacketPayload {
 	}
 
 	@Override
-	//? if >=1.21.10 {
 	public Type<? extends CustomPacketPayload> type() {
 		return AllPackets.INSTANT_PRINT_TYPE;
-	//?} else {
-	/*public MessageType getType() {
-		return AllPackets.INSTANT_PRINT;
-	*///?}
 	}
 
-	//? if >=1.21.10 {
 	public static void write(RegistryFriendlyByteBuf buf, InstantPrintPacket packet) {
 		buf.writeInt(packet.blocks.size);
 		packet.blocks.blocks.forEach((pos, state) -> {
-	//?} else {
-	/*@Override
-	public void write(RegistryFriendlyByteBuf buf) {
-		buf.writeInt(blocks.size);
-		blocks.blocks.forEach((pos, state) -> {
-	*///?}
 			buf.writeNbt(NbtUtils.writeBlockState(state));
 			buf.writeBlockPos(pos);
 		});
 	}
 
-	//? if >=1.21.10 {
-	public static void handle(InstantPrintPacket packet, NetworkManager.PacketContext context) {
-	//?} else {
-	/*@Override
-	public void handle(NetworkManager.PacketContext context) {
-	*///?}
-		context.queue(() -> {
-			var holderGetter = context.getPlayer().level().holderLookup(Registries.BLOCK);
-			//? if >=1.21.10 {
+	public static void handle(InstantPrintPacket packet, PacketContext context) {
+		context.enqueue(() -> {
+			var holderGetter = context.player().level().holderLookup(Registries.BLOCK);
 			if (packet.blocks.rawData != null) {
-			//?} else {
-			/*if (blocks.rawData != null) {
-			*///?}
 				// Decode from raw data on server side
-				//? if >=1.21.10 {
 				for (BlockData data : packet.blocks.rawData) {
-				//?} else {
-				/*for (BlockData data : blocks.rawData) {
-				*///?}
 					BlockState state = NbtUtils.readBlockState(holderGetter, data.tag);
-					context.getPlayer().level().setBlock(data.pos, state, 3);
+					context.player().level().setBlock(data.pos, state, 3);
 				}
 			} else {
 				// Already decoded (shouldn't happen for C2S)
-				//? if >=1.21.10 {
 				packet.blocks.blocks.forEach((pos, state) -> {
-				//?} else {
-				/*blocks.blocks.forEach((pos, state) -> {
-				*///?}
-					context.getPlayer().level().setBlock(pos, state, 3);
+					context.player().level().setBlock(pos, state, 3);
 				});
 			}
 		});

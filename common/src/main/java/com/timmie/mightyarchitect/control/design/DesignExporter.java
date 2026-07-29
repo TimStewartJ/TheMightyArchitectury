@@ -216,13 +216,8 @@ public class DesignExporter {
 			}
 		}
 
-		//? if >=1.21.10 {
 		AllPackets.sendToServer(new PlaceSignPacket(layer.getDisplayName()
 			.substring(0, 1) + ". " + type.getDisplayName(), filename, signPos));
-		//?} else {
-		/*new PlaceSignPacket(layer.getDisplayName()
-			.substring(0, 1) + ". " + type.getDisplayName(), filename, signPos).sendToServer();
-		*///?}
 		FilesHelper.saveTagCompoundAsJson(compound, designPath);
 		return designPath;
 		//

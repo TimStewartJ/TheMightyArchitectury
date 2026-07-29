@@ -1,5 +1,0 @@
-// Loom-only (no architectury-plugin) for UNOBFUSCATED (26.1+) loader nodes that bundle common via
-// source inclusion. Avoids architectury's transform machinery.
-plugins {
-    id "dev.architectury.loom-no-remap"
-}

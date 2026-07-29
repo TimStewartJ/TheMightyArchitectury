@@ -70,7 +70,6 @@ foreach ($version in $Versions) {
         $testJar = Get-ClientTestJar -Version $version -Loader $loader
 
         $dependencyJars = [System.Collections.Generic.List[string]]::new()
-        $dependencyJars.Add((Find-TestGradleArtifact -Group 'dev.architectury' -Module "architectury-$loader" -Version $properties.architectury_version))
         if ($loader -eq 'fabric') {
             $dependencyJars.Add((Find-TestGradleArtifact -Group 'net.fabricmc.fabric-api' -Module 'fabric-api' -Version $properties.fabric_api_version))
         }

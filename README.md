@@ -4,7 +4,10 @@
 
 # The Mighty Architectury
 
-A WIP port of [simibubi's](https://github.com/simibubi) [The Mighty Architect](https://github.com/simibubi/TheMightyArchitect) to an [Architectury](https://github.com/architectury/architectury-api) project for Forge + Fabric compatibility. Requires [Architectury API](https://www.curseforge.com/minecraft/mc-mods/architectury-api).
+A WIP port of [simibubi's](https://github.com/simibubi) [The Mighty Architect](https://github.com/simibubi/TheMightyArchitect)
+to Fabric and NeoForge. No third-party multiloader framework: each loader is built with its own
+official toolkit, so the mod has no runtime dependencies beyond the loader itself (plus Fabric API
+on Fabric).
 
 This is experimental. Some things may still be broken!
 
@@ -14,6 +17,29 @@ Everything lives on `main`. One source tree builds 7 Minecraft versions x 2 load
 (14 targets) through [Stonecutter](https://stonecutter.kikugie.dev/); there are no
 per-version branches. The versions are listed in `settings.gradle`, and each has its
 own dependency and metadata values in `versions/<mc>/gradle.properties`.
+
+### Layout
+
+| directory | what it is |
+| --- | --- |
+| `common/` | the shared source. No toolchain of its own - Stonecutter processes it per Minecraft version and both loader modules compile the result directly (source inclusion). |
+| `fabric/` | Fabric entrypoints and metadata, built with [Fabric Loom](https://github.com/FabricMC/fabric-loom). |
+| `neoforge/` | NeoForge entrypoints and metadata, built with [ModDevGradle](https://github.com/neoforged/ModDevGradle). |
+| `client-test/` | the automated in-game test companion mod. |
+
+This is Stonecutter's recommended
+[split-buildscript setup](https://stonecutter.kikugie.dev/wiki/tips/multiloader#split-buildscript):
+one buildscript per loader, each using that loader's own moddev plugin.
+
+Client tick, HUD and raw input hooks live in `common/.../mixin` as Mixins on vanilla classes, which
+both loaders support - so there is one implementation rather than one per loader per version.
+Everything else that genuinely differs between loaders (registration, networking, key mappings,
+world render events) is behind the small interfaces in `common/.../platform` and implemented in each
+loader module.
+
+Note that the shared source is compiled against the *NeoForge-patched* Minecraft in the NeoForge
+module, so a handful of vanilla signatures NeoForge widens (for example `Level#dragonParts`) have to
+be written so they compile both ways.
 
 Write code once. Where an API genuinely differs between versions, guard just the
 differing lines rather than forking the file:
