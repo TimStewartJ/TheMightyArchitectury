@@ -8,6 +8,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.*;
@@ -48,21 +49,25 @@ public class InstantPrintPacket implements CustomPacketPayload {
 	}
 
 	public static void handle(InstantPrintPacket packet, PacketContext context) {
-		context.enqueue(() -> {
-			var holderGetter = context.player().level().holderLookup(Registries.BLOCK);
-			if (packet.blocks.rawData != null) {
-				// Decode from raw data on server side
-				for (BlockData data : packet.blocks.rawData) {
-					BlockState state = NbtUtils.readBlockState(holderGetter, data.tag);
-					context.player().level().setBlock(data.pos, state, 3);
-				}
-			} else {
-				// Already decoded (shouldn't happen for C2S)
-				packet.blocks.blocks.forEach((pos, state) -> {
-					context.player().level().setBlock(pos, state, 3);
-				});
+		context.enqueue(() -> apply(context.player().level(), packet));
+	}
+
+	// Separated from handle so the automated server test can drive the same placement logic
+	// against a real ServerLevel without needing a connected player.
+	public static void apply(Level level, InstantPrintPacket packet) {
+		var holderGetter = level.holderLookup(Registries.BLOCK);
+		if (packet.blocks.rawData != null) {
+			// Decode from raw data on server side
+			for (BlockData data : packet.blocks.rawData) {
+				BlockState state = NbtUtils.readBlockState(holderGetter, data.tag);
+				level.setBlock(data.pos, state, 3);
 			}
-		});
+		} else {
+			// Already decoded (shouldn't happen for C2S)
+			packet.blocks.blocks.forEach((pos, state) -> {
+				level.setBlock(pos, state, 3);
+			});
+		}
 	}
 
 	public static List<InstantPrintPacket> sendSchematic(Map<BlockPos, BlockState> blockMap, BlockPos anchor) {

@@ -47,6 +47,18 @@ sourceSets {
         compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
         runtimeClasspath += output + compileClasspath + sourceSets.main.runtimeClasspath
     }
+    serverTest {
+        java.srcDirs = [
+            rootProject.file("server-test/src/main/java"),
+            rootProject.file("fabric/src/serverTest/java")
+        ]
+        resources.srcDirs = [
+            rootProject.file("fabric/src/serverTest/resources")
+        ]
+        output.resourcesDir = layout.buildDirectory.dir("classes/java/serverTest").get().asFile
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath + sourceSets.main.runtimeClasspath
+    }
 }
 
 // The generated common sources are task output, so the dependency has to be declared explicitly -
@@ -73,8 +85,10 @@ loom {
         }
         automatedServerTest {
             inherit server
+            source sourceSets.serverTest
             name "Mighty Architect Automated Server Test"
             runDir "run-server-test"
+            property "mightyarchitect.serverTest.enabled", "true"
         }
     }
 }
@@ -82,6 +96,8 @@ loom {
 configurations {
     clientTestImplementation.extendsFrom implementation
     clientTestRuntimeOnly.extendsFrom runtimeOnly
+    serverTestImplementation.extendsFrom implementation
+    serverTestRuntimeOnly.extendsFrom runtimeOnly
 }
 
 configurations.all {
@@ -103,10 +119,15 @@ dependencies {
     }
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     clientTestImplementation sourceSets.main.output
+    serverTestImplementation sourceSets.main.output
 }
 
 tasks.named("runAutomatedClientTest") {
     dependsOn tasks.named("clientTestClasses")
+}
+
+tasks.named("runAutomatedServerTest") {
+    dependsOn tasks.named("serverTestClasses")
 }
 
 processResources {

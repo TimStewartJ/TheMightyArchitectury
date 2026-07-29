@@ -25,7 +25,8 @@ own dependency and metadata values in `versions/<mc>/gradle.properties`.
 | `common/` | the shared source. No toolchain of its own - Stonecutter processes it per Minecraft version and both loader modules compile the result directly (source inclusion). |
 | `fabric/` | Fabric entrypoints and metadata, built with [Fabric Loom](https://github.com/FabricMC/fabric-loom). |
 | `neoforge/` | NeoForge entrypoints and metadata, built with [ModDevGradle](https://github.com/neoforged/ModDevGradle). |
-| `client-test/` | the automated in-game test companion mod. |
+| `client-test/` | the automated in-game client test companion mod. |
+| `server-test/` | the automated dedicated-server test companion mod (print-to-world). |
 
 This is Stonecutter's recommended
 [split-buildscript setup](https://stonecutter.kikugie.dev/wiki/tips/multiloader#split-buildscript):
@@ -87,6 +88,11 @@ pwsh -File scripts/run-client-test-matrix.ps1
 # Exact production jars in disposable Prism instances (Windows)
 pwsh -File scripts/run-packaged-client-test-matrix.ps1
 ```
+
+The server matrix boots a real dedicated server per target and runs the print-to-world test in
+`server-test/`: a schematic is turned into `InstantPrintPacket`s, round-tripped through the
+registered stream codec, applied to a real `ServerLevel`, and the resulting blocks are compared
+against the schematic. Booting alone is not a pass — the runner waits for the test's verdict.
 
 The packaged runner is artifact-first: Gradle only ever runs in
 `scripts/prepare-runtime-artifacts.ps1`, which builds every requested target once

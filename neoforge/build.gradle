@@ -41,6 +41,18 @@ sourceSets {
         compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
         runtimeClasspath += output + compileClasspath + sourceSets.main.runtimeClasspath
     }
+    serverTest {
+        java.srcDirs = [
+            rootProject.file("server-test/src/main/java"),
+            rootProject.file("neoforge/src/serverTest/java")
+        ]
+        resources.srcDirs = [
+            rootProject.file("neoforge/src/serverTest/resources")
+        ]
+        output.resourcesDir = layout.buildDirectory.dir("classes/java/serverTest").get().asFile
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath + sourceSets.main.runtimeClasspath
+    }
 }
 
 // The generated common sources are task output, so the dependency has to be declared explicitly -
@@ -52,6 +64,7 @@ neoForge {
     version = neoforgeVersion
 
     addModdingDependenciesTo sourceSets.clientTest
+    addModdingDependenciesTo sourceSets.serverTest
 
     mods {
         mightyarchitect {
@@ -59,6 +72,9 @@ neoForge {
         }
         mightyarchitect_test {
             sourceSet sourceSets.clientTest
+        }
+        mightyarchitect_server_test {
+            sourceSet sourceSets.serverTest
         }
     }
 
@@ -85,7 +101,9 @@ neoForge {
             server()
             ideName = "Mighty Architect Automated Server Test"
             gameDirectory = project.file("run-server-test")
-            loadedMods = [mods.mightyarchitect]
+            sourceSet = sourceSets.serverTest
+            loadedMods = [mods.mightyarchitect, mods.mightyarchitect_server_test]
+            systemProperty "mightyarchitect.serverTest.enabled", "true"
         }
     }
 }
@@ -93,14 +111,21 @@ neoForge {
 configurations {
     clientTestImplementation.extendsFrom implementation
     clientTestRuntimeOnly.extendsFrom runtimeOnly
+    serverTestImplementation.extendsFrom implementation
+    serverTestRuntimeOnly.extendsFrom runtimeOnly
 }
 
 dependencies {
     clientTestImplementation sourceSets.main.output
+    serverTestImplementation sourceSets.main.output
 }
 
 tasks.named("runAutomatedClientTest") {
     dependsOn tasks.named("clientTestClasses")
+}
+
+tasks.named("runAutomatedServerTest") {
+    dependsOn tasks.named("serverTestClasses")
 }
 
 processResources {

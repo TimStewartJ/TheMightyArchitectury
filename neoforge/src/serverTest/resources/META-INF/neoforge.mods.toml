@@ -1,0 +1,16 @@
+modLoader = "javafml"
+loaderVersion = "[3,)"
+license = "MIT"
+
+[[mods]]
+modId = "mightyarchitect_server_test"
+version = "1.0.0"
+displayName = "The Mighty Architect Server Test"
+description = "Automated server integration-test companion."
+
+[[dependencies.mightyarchitect_server_test]]
+modId = "mightyarchitect"
+type = "required"
+versionRange = "[0,)"
+ordering = "AFTER"
+side = "BOTH"
