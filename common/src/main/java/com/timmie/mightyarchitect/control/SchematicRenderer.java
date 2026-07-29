@@ -162,7 +162,11 @@ public class SchematicRenderer {
 
 		ms.pushPose();
 		ms.translate(anchor.getX(), anchor.getY(), anchor.getZ());
-		//? if >=26 {
+		//? if >=26.2 {
+		/*// No ordering hint here: 26.2 sorts submitted geometry itself, and seeding an empty buffer
+		// would only create a recording that never gets submitted.
+		for (ChunkSectionLayer layer : CHUNK_SECTION_LAYERS) {
+		*///?} else if >=26 {
 		buffer.getBuffer(RenderTypes.solidMovingBlock());
 		for (ChunkSectionLayer layer : CHUNK_SECTION_LAYERS) {
 		//?} else if >=1.21.11 {

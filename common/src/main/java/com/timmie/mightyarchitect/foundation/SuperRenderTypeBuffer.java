@@ -31,11 +31,20 @@ public class SuperRenderTypeBuffer implements MightyBuffers {
 
 	public static void beginFrame(SubmitNodeCollector frameCollector) {
 		collector = frameCollector;
+		// Safe to recycle here but not at submit time: by the time the next collect hook runs,
+		// vanilla has already replayed last frame's callbacks and dropped its references.
+		getInstance().recycle();
 	}
 
 	private final Phase earlyBuffer = new Phase();
 	private final Phase defaultBuffer = new Phase();
 	private final Phase lateBuffer = new Phase();
+
+	private void recycle() {
+		earlyBuffer.recycle();
+		defaultBuffer.recycle();
+		lateBuffer.recycle();
+	}
 
 	public VertexConsumer getEarlyBuffer(RenderType type) {
 		return earlyBuffer.buffer(type);
@@ -64,27 +73,33 @@ public class SuperRenderTypeBuffer implements MightyBuffers {
 
 	private static class Phase {
 
+		// Kept across frames: the recordings are the per-frame scratch buffers, and reallocating
+		// them every frame is what made this path allocation-bound on large schematics.
 		private final SequencedMap<RenderType, RecordedGeometry> recordings = new Object2ObjectLinkedOpenHashMap<>();
 
 		VertexConsumer buffer(RenderType type) {
 			return recordings.computeIfAbsent(type, ignored -> new RecordedGeometry());
 		}
 
+		void recycle() {
+			recordings.values().forEach(RecordedGeometry::reset);
+		}
+
 		void submitAll(int order) {
 			recordings.forEach((type, geometry) -> submit(order, type, geometry));
-			// The callbacks run after this returns, so drop the references rather than reusing them.
-			recordings.clear();
 		}
 
 		void submitOne(int order, RenderType type) {
-			RecordedGeometry geometry = recordings.remove(type);
+			RecordedGeometry geometry = recordings.get(type);
 			if (geometry != null)
 				submit(order, type, geometry);
 		}
 
 		private void submit(int order, RenderType type, RecordedGeometry geometry) {
-			if (collector == null || geometry.isEmpty())
+			if (collector == null || geometry.isEmpty() || geometry.submitted)
 				return;
+			// Never reset the recording here: the callback replays it after this returns.
+			geometry.submitted = true;
 			collector.order(order)
 				.submitCustomGeometry(IDENTITY, type, (pose, consumer) -> geometry.replay(consumer));
 		}
@@ -105,9 +120,16 @@ public class SuperRenderTypeBuffer implements MightyBuffers {
 
 		// Ops and their arguments interleaved; floats are stored as raw bits.
 		private final IntArrayList calls = new IntArrayList();
+		private boolean submitted;
 
 		boolean isEmpty() {
 			return calls.isEmpty();
+		}
+
+		void reset() {
+			// clear() keeps the backing array, so a steady-state frame allocates nothing here.
+			calls.clear();
+			submitted = false;
 		}
 
 		void replay(VertexConsumer consumer) {
@@ -157,16 +179,43 @@ public class SuperRenderTypeBuffer implements MightyBuffers {
 			return Float.intBitsToFloat(calls.getInt(index));
 		}
 
-		private void push(int op, float... args) {
+		// Written out per arity rather than with varargs: a varargs helper allocates an array on
+		// every call, which at five calls per vertex dominated this path's allocation profile.
+		private void push(int op, float a) {
 			calls.add(op);
-			for (float arg : args)
-				calls.add(Float.floatToRawIntBits(arg));
+			calls.add(Float.floatToRawIntBits(a));
 		}
 
-		private void pushInts(int op, int... args) {
+		private void push(int op, float a, float b) {
 			calls.add(op);
-			for (int arg : args)
-				calls.add(arg);
+			calls.add(Float.floatToRawIntBits(a));
+			calls.add(Float.floatToRawIntBits(b));
+		}
+
+		private void push(int op, float a, float b, float c) {
+			calls.add(op);
+			calls.add(Float.floatToRawIntBits(a));
+			calls.add(Float.floatToRawIntBits(b));
+			calls.add(Float.floatToRawIntBits(c));
+		}
+
+		private void pushInts(int op, int a) {
+			calls.add(op);
+			calls.add(a);
+		}
+
+		private void pushInts(int op, int a, int b) {
+			calls.add(op);
+			calls.add(a);
+			calls.add(b);
+		}
+
+		private void pushInts(int op, int a, int b, int c, int d) {
+			calls.add(op);
+			calls.add(a);
+			calls.add(b);
+			calls.add(c);
+			calls.add(d);
 		}
 
 		@Override
