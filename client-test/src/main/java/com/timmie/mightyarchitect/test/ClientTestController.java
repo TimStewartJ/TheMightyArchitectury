@@ -101,8 +101,16 @@ public final class ClientTestController {
     private static final String PROBE_SLOT = "mightyarchitect-client-test-alignment-probe";
     private static final String LABEL_SLOT = "mightyarchitect-client-test-label-probe";
     private static final String PROBE_LABEL_TEXT = "8888m";
+    /** The colour {@code RoomTool} gives its dimension labels. */
+    private static final int PROBE_LABEL_COLOR = 0;
     /** Minimum fraction of the probe region a world-space label must paint. */
     private static final double MIN_LABEL_CHANGED_FRACTION = 0.0004;
+    /**
+     * Minimum luminance range across the pixels a label paints. Glyphs and backdrop sit at
+     * opposite ends of it whichever way round they are coloured, so a legible label clears this
+     * comfortably and one drawn in its own backdrop colour cannot.
+     */
+    private static final double MIN_LABEL_LUMINANCE_SPREAD = 0.5;
 
     /** Palette picker window size and the included-palettes grid inside it, in GUI units. */
     private static final int PALETTE_SCREEN_WIDTH = 256;
@@ -516,6 +524,10 @@ public final class ClientTestController {
      * displays immediate-mode glyphs both leave the label fully invisible while everything else
      * still draws. Placing a label in front of the camera and diffing against the same frame
      * without it proves the glyphs actually reach the screen.
+     * <p>
+     * Painting pixels is not enough on its own: a label whose glyphs match its own backdrop still
+     * changes the frame while being unreadable, which is how the room dimensions ended up as black
+     * text on a dark plate. The luminance spread across the painted pixels covers that.
      */
     private static void captureLabelText(Minecraft minecraft) {
         showProbeLabel(minecraft);
@@ -531,13 +543,18 @@ public final class ClientTestController {
         check(diff.changedFraction() >= MIN_LABEL_CHANGED_FRACTION,
             "world-space measurement label painted pixels (" + diff.changedPixels() + " px, "
                 + round(diff.changedFraction() * 100.0) + "% of probe region)");
+        check(diff.luminanceSpread() >= MIN_LABEL_LUMINANCE_SPREAD,
+            "world-space measurement label legible against its backdrop (luminance spread "
+                + round(diff.luminanceSpread()) + ")");
         advance(Stage.VERIFY_RENDER);
     }
 
+    /** Uses the room dimension colour, the one pairing that has actually gone unreadable. */
     private static void showProbeLabel(Minecraft minecraft) {
         Vec3 eye = minecraft.player.getEyePosition();
         Vec3 target = eye.add(minecraft.player.getLookAngle().scale(PROBE_DISTANCE));
-        MightyClient.outliner.chaseText(LABEL_SLOT, target, PROBE_LABEL_TEXT);
+        MightyClient.outliner.chaseText(LABEL_SLOT, target, PROBE_LABEL_TEXT)
+            .colored(PROBE_LABEL_COLOR);
     }
 
     private static void showProbeOutline(Minecraft minecraft) {
@@ -657,9 +674,10 @@ public final class ClientTestController {
     }
 
     /**
-     * Compares two frames within the given fractional window and reports how much changed
-     * and where the change is centred. Both the window bounds and the returned centroid are
-     * fractions of the full frame, so results are independent of window size.
+     * Compares two frames within the given fractional window and reports how much changed,
+     * where the change is centred, and how far the changed pixels spread in luminance. Both the
+     * window bounds and the returned centroid are fractions of the full frame, so results are
+     * independent of window size.
      */
     private static ImageDiff diffImages(Path first, Path second, double minX, double maxX,
                                         double minY, double maxY) {
@@ -679,6 +697,8 @@ public final class ClientTestController {
             long samples = 0;
             double sumX = 0;
             double sumY = 0;
+            double minLuminance = Double.MAX_VALUE;
+            double maxLuminance = -Double.MAX_VALUE;
             for (int y = startY; y < endY; y += 2) {
                 for (int x = startX; x < endX; x += 2) {
                     samples++;
@@ -693,17 +713,25 @@ public final class ClientTestController {
                     changed++;
                     sumX += x / (double) width;
                     sumY += y / (double) height;
+                    double luminance = luminance(b);
+                    minLuminance = Math.min(minLuminance, luminance);
+                    maxLuminance = Math.max(maxLuminance, luminance);
                 }
             }
             if (samples == 0)
                 throw new IllegalStateException("Screenshots contained no comparable pixels");
             if (changed == 0)
-                return new ImageDiff(0, 0.0, Double.NaN, Double.NaN);
-            return new ImageDiff((int) changed, changed / (double) samples, sumX / changed, sumY / changed);
+                return new ImageDiff(0, 0.0, Double.NaN, Double.NaN, 0.0);
+            return new ImageDiff((int) changed, changed / (double) samples, sumX / changed, sumY / changed,
+                maxLuminance - minLuminance);
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to compare screenshots " + first + " and " + second,
                 exception);
         }
+    }
+
+    private static double luminance(int rgb) {
+        return (0.299 * (rgb >>> 16 & 0xff) + 0.587 * (rgb >>> 8 & 0xff) + 0.114 * (rgb & 0xff)) / 255.0;
     }
 
     /**
@@ -844,6 +872,6 @@ public final class ClientTestController {
     }
 
     private record ImageDiff(int changedPixels, double changedFraction, double centroidX,
-                             double centroidY) {
+                             double centroidY, double luminanceSpread) {
     }
 }

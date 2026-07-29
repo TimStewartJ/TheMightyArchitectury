@@ -84,7 +84,7 @@ public class HudTextBuffer {
 			int x = Math.round(screenX - width / 2.0f);
 			int y = Math.round(screenY - font.lineHeight / 2.0f);
 
-			gfx.fill(x - 2, y - 2, x + width + 2, y + font.lineHeight, 0xC0101018);
+			gfx.fill(x - 2, y - 2, x + width + 2, y + font.lineHeight, ColorHelper.labelBackdrop(entry.color()));
 			gfx.text(font, entry.text(), x, y, entry.color(), false);
 		}
 	}
@@ -174,7 +174,7 @@ public class HudTextBuffer {
 			int x = Math.round(screenX - width / 2.0f);
 			int y = Math.round(screenY - font.lineHeight / 2.0f);
 
-			gfx.fill(x - 2, y - 2, x + width + 2, y + font.lineHeight, 0xC0101018);
+			gfx.fill(x - 2, y - 2, x + width + 2, y + font.lineHeight, ColorHelper.labelBackdrop(entry.color()));
 			gfx.drawString(font, entry.text(), x, y, entry.color(), false);
 		}
 	}
