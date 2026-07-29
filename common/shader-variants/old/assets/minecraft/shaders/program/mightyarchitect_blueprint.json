@@ -5,7 +5,7 @@
         "dstrgb": "zero"
     },
     "vertex": "sobel",
-    "fragment": "mightyarchitect:blueprint",
+    "fragment": "mightyarchitect_blueprint",
     "attributes": [ "Position" ],
     "samplers": [
         { "name": "DiffuseSampler" }

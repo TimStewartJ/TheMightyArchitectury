@@ -1,0 +1,4 @@
+// NeoForge toolchain: ModDevGradle, the toolkit NeoForge itself ships and supports.
+plugins {
+    id "net.neoforged.moddev"
+}

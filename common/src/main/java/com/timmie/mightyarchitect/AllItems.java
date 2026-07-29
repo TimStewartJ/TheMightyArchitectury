@@ -1,23 +1,17 @@
 package com.timmie.mightyarchitect;
 
 import com.timmie.mightyarchitect.item.ArchitectWandItem;
-import dev.architectury.registry.registries.DeferredRegister;
-//? if >=26 {
+import com.timmie.mightyarchitect.platform.ModRegistrar;
+//? if >=1.21.11 {
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
-//?} else if >=1.21.11 {
-/*import dev.architectury.registry.registries.RegistrySupplier;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.Identifier;
-*///?} else if >=1.21.4 {
-/*import dev.architectury.registry.registries.RegistrySupplier;
-import net.minecraft.core.registries.Registries;
+//?} else if >=1.21.4 {
+/*import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 *///?} else {
-/*import dev.architectury.registry.registries.RegistrySupplier;
+/*
 *///?}
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Item.Properties;
@@ -58,7 +52,7 @@ public class AllItems {
 	*///?} else {
 	/*
 	*///?}
-	public static void registerItems(DeferredRegister<Item> itemRegistry) {
+	public static void registerItems(ModRegistrar<Item> itemRegistry) {
 		//? if >=1.21.4 {
 		itemRegistry.register("architect_wand", () -> { ARCHITECT_WAND = new AllItems(new ArchitectWandItem(itemProps("architect_wand"))); return ARCHITECT_WAND.get(); });
 		//?} else {

@@ -18,19 +18,6 @@ import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import com.timmie.mightyarchitect.gui.*;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
-import dev.architectury.event.EventResult;
-import dev.architectury.event.events.client.ClientGuiEvent;
-import dev.architectury.event.events.client.ClientRawInputEvent;
-import dev.architectury.event.events.client.ClientTickEvent;
-import dev.architectury.event.events.common.InteractionEvent;
-//? if >=1.21.10 {
-import net.minecraft.client.input.KeyEvent;
-//?} else {
-/**///?}
-//? if >=1.21.10 {
-import net.minecraft.client.input.MouseButtonInfo;
-//?} else {
-/**///?}
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -40,16 +27,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 /*import net.minecraft.client.gui.GuiGraphics;*///?}
 import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.InteractionHand;
-//? if >=1.21.4 {
-import net.minecraft.world.InteractionResult;
-//?} else {
-/**///?}
-import net.minecraft.world.entity.player.Player;
 import org.apache.commons.io.IOUtils;
 import org.lwjgl.glfw.GLFW;
 
@@ -148,10 +128,7 @@ public class ArchitectManager {
 
 		if (mc.hasSingleplayerServer()) {
 			for (InstantPrintPacket packet : getModel().getPackets())
-				//? if >=1.21.10 {
 				AllPackets.sendToServer(packet);
-				//?} else {
-				/*packet.sendToServer();*///?}
 			MightyClient.renderer.setActive(false);
 			status("Printed result into world.");
 			unload();
@@ -273,17 +250,8 @@ public class ArchitectManager {
 	}
 
 	// Events
-	public static void registerAllEvents()
-	{
-		ClientTickEvent.CLIENT_POST.register(ArchitectManager::onClientTick);
-		ClientGuiEvent.RENDER_HUD.register(ArchitectManager::onDrawGameOverlay);
-
-		ClientRawInputEvent.MOUSE_SCROLLED.register(ArchitectManager::onMouseScrolled);
-		ClientRawInputEvent.MOUSE_CLICKED_PRE.register(ArchitectManager::onClick);
-		ClientRawInputEvent.KEY_PRESSED.register(ArchitectManager::onKeyTyped);
-		InteractionEvent.RIGHT_CLICK_BLOCK.register(ArchitectManager::onItemRightClick);
-	}
-
+	// Registration lives on the loader side (shared Mixins on vanilla client classes); this class
+	// only exposes the handlers they call.
 	public static void onClientTick(Minecraft minecraft) {
 		if (Minecraft.getInstance().level == null) {
 			if (!inPhase(ArchitectPhases.Paused) && !model.isEmpty())
@@ -297,13 +265,14 @@ public class ArchitectManager {
 
 	}
 
-	public static EventResult onMouseScrolled(Minecraft minecraft, double horizontalAmount, double verticalAmount) {
+	// Returns true when the scroll was consumed and vanilla must not also act on it.
+	public static boolean onMouseScrolled(double horizontalAmount, double verticalAmount) {
 		if (McCompat.currentScreen(Minecraft.getInstance()) != null)
-			return EventResult.pass();
+			return false;
 		if (phase.getPhaseHandler()
 			.onScroll((int) Math.signum(verticalAmount)))
-			return EventResult.interruptTrue();
-		return EventResult.pass();
+			return true;
+		return false;
 	}
 
 	public static void render(PoseStack ms, MightyBuffers buffer) {
@@ -312,46 +281,34 @@ public class ArchitectManager {
 				.render(ms, buffer);
 	}
 
-	//? if >=1.21.10 {
-	public static EventResult onClick(Minecraft minecraft, MouseButtonInfo buttonInfo, int action) {
-	//?} else {
-	/*public static EventResult onClick(Minecraft minecraft, int button, int action, int modifiers) {*///?}
+	public static void onClick(int button, int action) {
 		if (McCompat.currentScreen(Minecraft.getInstance()) != null)
-			return EventResult.pass();
+			return;
 		if (action != Keyboard.PRESS)
-			return EventResult.pass();
+			return;
 		phase.getPhaseHandler()
-		//? if >=1.21.10 {
-			.onClick(buttonInfo.button());
-		//?} else {
-		/*.onClick(button);*///?}
-		return EventResult.pass();
+			.onClick(button);
 	}
 
-	//? if >=1.21.10 {
-	public static EventResult onKeyTyped(Minecraft minecraft, int action, KeyEvent event) {
-		int keyCode = event.key();
-	//?} else {
-	/*public static EventResult onKeyTyped(Minecraft minecraft, int keyCode, int scanCode, int action, int modifiers) {*///?}
+	public static void onKeyTyped(int keyCode, int action) {
 		if (keyCode == GLFW.GLFW_KEY_ESCAPE && action == Keyboard.PRESS) {
 			if (inPhase(ArchitectPhases.Composing) || inPhase(ArchitectPhases.Previewing)) {
 				enterPhase(ArchitectPhases.Paused);
 				menu.setVisible(false);
 			}
-			return EventResult.pass();
+			return;
 		}
 		if (McCompat.currentScreen(Minecraft.getInstance()) != null)
-			return EventResult.pass();
+			return;
 		if (MightyClient.COMPOSE.consumeClick()) {
 			if (!menu.isFocused())
 				openMenu();
-			return EventResult.pass();
+			return;
 		}
 
 		boolean released = action == Keyboard.RELEASE;
 		phase.getPhaseHandler()
 			.onKey(keyCode, released);
-		return EventResult.pass();
 	}
 
 	public static void openMenu() {
@@ -384,14 +341,6 @@ public class ArchitectManager {
 		// Draw world-space measurement labels submitted during the world render pass as HUD text.
 		com.timmie.mightyarchitect.foundation.utility.HudTextBuffer.render(poseStack);
 	}
-
-	//? if >=26.2 {
-	/*// Architectury 21 went back to EventResult for RIGHT_CLICK_BLOCK.
-	public static EventResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return EventResult.pass(); }
-	*///?} else if >=1.21.4 {
-	public static InteractionResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return InteractionResult.PASS; }
-	//?} else {
-	/*public static EventResult onItemRightClick(Player player, InteractionHand interactionHand, BlockPos blockPos, Direction direction) { return EventResult.pass(); }*///?}
 
 	public static void resetSchematic() {
 		model = new Schematic();

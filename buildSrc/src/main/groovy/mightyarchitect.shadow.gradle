@@ -1,4 +1,0 @@
-// Convention plugin for the loader modules (fabric/neoforge) that shade the common classes.
-plugins {
-    id "com.gradleup.shadow"
-}

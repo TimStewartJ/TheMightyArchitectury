@@ -296,13 +296,14 @@ public class WrappedWorld extends Level implements BlockAndTintGetter {
 	}
 
 	@Override
-	//? if >=1.21.11 {
-	public java.util.Collection<net.minecraft.world.entity.boss.enderdragon.EnderDragonPart> dragonParts() {
+	// NeoForge holds its own PartEntity type in Level's dragonParts. The shared source is compiled
+	// against the patched Level in the NeoForge module and against vanilla in the Fabric one, and a
+	// raw Collection is return-type-substitutable for either signature.
+	@SuppressWarnings("rawtypes")
+	//? if >=1.21.6 {
+	public java.util.Collection dragonParts() {
 		return world.dragonParts();
-	//?} else if >=1.21.6 {
-	/*public java.util.Collection<net.minecraft.world.entity.boss.EnderDragonPart> dragonParts() {
-		return world.dragonParts();
-	*///?} else if >=1.21.4 {
+	//?} else if >=1.21.4 {
 	/*public RecipeAccess recipeAccess() {
 		return world.recipeAccess();
 	*///?} else {
@@ -310,6 +311,25 @@ public class WrappedWorld extends Level implements BlockAndTintGetter {
 		return world.getRecipeManager();
 	*///?}
 	}
+
+	//? if <26 {
+	/*// NeoForge's day-time-per-tick extension: abstract on Level up to 1.21.11, absent from
+	// vanilla. Negative means "not overridden", which is what a fake world wants.
+	public void setDayTimeFraction(float fraction) {
+	}
+
+	public float getDayTimeFraction() {
+		return -1.0F;
+	}
+
+	public void setDayTimePerTick(float dayTimePerTick) {
+	}
+
+	public float getDayTimePerTick() {
+		return -1.0F;
+	}
+
+	*///?}
 
 	@Override
 	//? if >=1.21.11 {
@@ -326,7 +346,8 @@ public class WrappedWorld extends Level implements BlockAndTintGetter {
 	}
 
 	@Override
-	public java.util.Collection<net.minecraft.world.entity.boss.EnderDragonPart> dragonParts() {
+	@SuppressWarnings("rawtypes")
+	public java.util.Collection dragonParts() {
 		return world.dragonParts();
 	}
 

@@ -1,11 +1,6 @@
 package com.timmie.mightyarchitect.item;
 
-import dev.architectury.utils.EnvExecutor;
-import net.fabricmc.api.EnvType;
-//? if >=1.21.10 {
-//?} else {
-/*import net.fabricmc.api.Environment;
-*///?}
+import com.timmie.mightyarchitect.platform.Env;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -44,15 +39,14 @@ public class ArchitectWandItem extends Item {
 			return InteractionResult.SUCCESS;
 
 		if (player.isShiftKeyDown()) {
-			EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> openGui());
+			Env.runOnClient(() -> () -> openGui());
 			return InteractionResult.SUCCESS;
 		}
 
 		BlockPos anchor = context.getClickedPos();
 		BlockState blockState = world.getBlockState(anchor);
 
-		EnvExecutor.runInEnv(EnvType.CLIENT,
-				() -> () -> handleUseOnDesignAnchor(player, world, anchor, blockState));
+		Env.runOnClient(() -> () -> handleUseOnDesignAnchor(player, world, anchor, blockState));
 
 		player.getCooldowns()
 			//? if >=1.21.4 {
@@ -63,18 +57,10 @@ public class ArchitectWandItem extends Item {
 		return InteractionResult.SUCCESS;
 	}
 
-	//? if >=1.21.10 {
-	//?} else {
-	/*@Environment(EnvType.CLIENT)
-	*///?}
 	protected void resetVisualization() {
 		ArchitectWandClient.resetVisualization();
 	}
 
-	//? if >=1.21.10 {
-	//?} else {
-	/*@Environment(EnvType.CLIENT)
-	*///?}
 	protected void handleUseOnDesignAnchor(Player player, Level world, BlockPos anchor, BlockState blockState) {
 		ArchitectWandClient.handleUseOnDesignAnchor(player, world, anchor, blockState);
 	}
@@ -90,7 +76,7 @@ public class ArchitectWandItem extends Item {
 	/*public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
 		if (worldIn.isClientSide) {
 	*///?}
-			EnvExecutor.runInEnv(EnvType.CLIENT, () -> () -> handleRightClick(worldIn, playerIn, handIn));
+			Env.runOnClient(() -> () -> handleRightClick(worldIn, playerIn, handIn));
 			playerIn.getCooldowns()
 				//? if >=1.21.4 {
 				.addCooldown(playerIn.getItemInHand(handIn), 5);
@@ -105,18 +91,10 @@ public class ArchitectWandItem extends Item {
 		*///?}
 	}
 
-	//? if >=1.21.10 {
-	//?} else {
-	/*@Environment(EnvType.CLIENT)
-	*///?}
 	protected void handleRightClick(Level worldIn, Player playerIn, InteractionHand handIn) {
 		ArchitectWandClient.handleRightClick(playerIn);
 	}
 
-	//? if >=1.21.10 {
-	//?} else {
-	/*@Environment(EnvType.CLIENT)
-	*///?}
 	private void openGui() {
 		ArchitectWandClient.openGui();
 	}

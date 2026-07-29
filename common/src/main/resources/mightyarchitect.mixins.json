@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.timmie.mightyarchitect.mixin",
+  "compatibilityLevel": "JAVA_${meta_java_range}",
+  "client": [
+    "GuiMixin",
+    "KeyboardHandlerMixin",
+    "MinecraftMixin",
+    "MouseHandlerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

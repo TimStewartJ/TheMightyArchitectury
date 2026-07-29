@@ -1,3 +1,4 @@
 // Stonecutter controller: settings.gradle + stonecutter.gradle.
-// Toolchain plugins are provided by buildSrc convention plugins (mightyarchitect.loom-*, .shadow)
-// and applied in the branch scripts: common/fabric/neoforge build.gradle.
+// Toolchain plugins come from the buildSrc convention plugins (mightyarchitect.loom-remap,
+// .loom-noremap, .moddev) and are applied in the branch scripts: common/fabric/neoforge
+// build.gradle. There is one buildscript per loader and no shared multiloader framework.
