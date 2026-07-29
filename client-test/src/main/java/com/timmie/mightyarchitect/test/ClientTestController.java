@@ -15,6 +15,7 @@ import com.timmie.mightyarchitect.control.palette.Palette;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import com.timmie.mightyarchitect.control.palette.PaletteStorage;
 import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
+import com.timmie.mightyarchitect.foundation.WrappedWorld;
 import com.timmie.mightyarchitect.foundation.utility.ShaderManager;
 import com.timmie.mightyarchitect.foundation.utility.Shaders;
 import com.timmie.mightyarchitect.gui.ArchitectMenuScreen;
@@ -26,6 +27,7 @@ import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
@@ -274,6 +276,16 @@ public final class ClientTestController {
         check("Client Test Palette".equals(roundTrip.getName()), "palette NBT name round-tripped");
         check(palette.get(Palette.ROOF_PRIMARY).equals(roundTrip.get(Palette.ROOF_PRIMARY)),
             "palette NBT block state round-tripped");
+
+        // WrappedWorld overrides methods NeoForge adds to Level that vanilla does not have. Those
+        // resolve when the class is verified, so a wrong override is an AbstractMethodError the
+        // moment the class first loads — which the build matrix cannot catch. It is client-only
+        // (on 26.1 it implements the client BlockAndTintGetter), so this is the right place.
+        BlockPos probe = minecraft.player.blockPosition();
+        WrappedWorld wrapped = new WrappedWorld(minecraft.level);
+        check(wrapped.getBlockState(probe).equals(minecraft.level.getBlockState(probe)),
+            "WrappedWorld loads and delegates to the wrapped level");
+
         advance(Stage.CAPTURE_BASELINE);
     }
 

@@ -2,7 +2,6 @@ package com.timmie.mightyarchitect.test.server;
 
 import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.TheMightyArchitect;
-import com.timmie.mightyarchitect.foundation.WrappedWorld;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
 import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
@@ -31,6 +30,8 @@ import java.util.Map;
  * Deliberately out of scope, because a dedicated server has no client to send from: the loader's
  * own payload registration and its client-to-server send. The automated client tests cover the
  * registration side indirectly - a client whose payloads failed to register does not reach a world.
+ * They also cover {@code WrappedWorld}, which is client-only from 26.1 onwards and so cannot be
+ * loaded here at all.
  * <p>
  * Results are written to the server log as {@code [SERVER-TEST]} lines;
  * {@code scripts/run-server-test-matrix.ps1} waits for the {@code RESULT} line.
@@ -79,7 +80,6 @@ public final class ServerPrintTest {
             pass("applied all " + packets.size() + " packets to the level");
 
             verifyPlaced(level, schematic);
-            verifyWrappedWorld(level);
 
             TheMightyArchitect.logger.info("{} RESULT PASS ({} checks)", TAG, passed);
         } catch (Throwable failure) {
@@ -165,19 +165,10 @@ public final class ServerPrintTest {
     }
 
     /**
-     * {@code WrappedWorld} overrides methods NeoForge adds to {@code Level} that vanilla does not
-     * have. Those are resolved when the class is verified, so a wrong override surfaces as an
-     * {@code AbstractMethodError} at runtime rather than as a compile error - which means the
-     * build matrix alone cannot catch it.
+     * {@code WrappedWorld} is deliberately not touched here: on 26.1 it implements the client-only
+     * {@code BlockAndTintGetter}, so loading it on a dedicated server fails. The client test
+     * covers it instead.
      */
-    private static void verifyWrappedWorld(ServerLevel level) {
-        WrappedWorld wrapped = new WrappedWorld(level);
-        BlockPos probe = AXIS_PROBE.offset(ORIGIN);
-        require(wrapped.getBlockState(probe).equals(level.getBlockState(probe)),
-            "WrappedWorld did not delegate getBlockState to the wrapped level");
-        pass("WrappedWorld loads and delegates against a real ServerLevel");
-    }
-
     private static void require(boolean condition, String failure) {
         if (!condition)
             throw new AssertionError(failure);
