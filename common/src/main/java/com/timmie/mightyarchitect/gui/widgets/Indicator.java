@@ -31,6 +31,8 @@ public class Indicator extends AbstractSimiWidget {
 
 	public Indicator(int x, int y, Component tooltip) {
 		super(x, y, ScreenResources.INDICATOR.width, ScreenResources.INDICATOR.height);
+		// A status light, not a control: inactive so it never consumes a click or a scroll.
+		active = false;
 		this.toolTip = ImmutableList.of(tooltip);
 		this.state = State.OFF;
 	}

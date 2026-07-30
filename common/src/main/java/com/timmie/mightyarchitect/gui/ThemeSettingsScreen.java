@@ -197,15 +197,18 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 				labelRoomHeight.setText(position + "m");
 				labelRoomHeight.setX(position > 9 ? topLeftX + 102 : topLeftX + 106);
 			});
-		widgets.add(areaRoomHeight);
-		widgets.add(labelRoomHeight);
+		addWidget(areaRoomHeight);
+		addWidget(labelRoomHeight);
 
 		confirm = new IconButton(topLeftX + 172, topLeftY + 157, ScreenResources.ICON_CONFIRM);
 		toggleButtons.add(confirm);
 
-		widgets.addAll(indicators);
-		widgets.addAll(inputs);
-		widgets.addAll(toggleButtons);
+		for (Indicator indicator : indicators)
+			addWidget(indicator);
+		for (EditBox input : inputs)
+			addWidget(input);
+		for (IconButton toggleButton : toggleButtons)
+			addWidget(toggleButton);
 	}
 
 	@Override

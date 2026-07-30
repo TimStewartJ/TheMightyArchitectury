@@ -57,7 +57,7 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 	}
 
 	private void initScrollAreas(DesignTheme theme, DesignLayer layer, DesignType type) {
-		widgets.clear();
+		clearWidgets();
 
 		List<DesignLayer> layers = theme.getLayers();
 		labelTheme.setText(theme.getDisplayName());
@@ -87,11 +87,11 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 			.setState(layers.indexOf(layer))
 			.calling(position -> initTypeScrollArea(theme, layers.get(position), DesignExporter.type));
 
-		widgets.add(labelTheme);
-		widgets.add(labelLayer);
-		widgets.add(labelType);
-		widgets.add(labelAdditionalData);
-		widgets.add(scrollAreaLayer);
+		addWidget(labelTheme);
+		addWidget(labelLayer);
+		addWidget(labelType);
+		addWidget(labelAdditionalData);
+		addWidget(scrollAreaLayer);
 
 		initTypeScrollArea(theme, layer, type);
 	}
@@ -123,8 +123,8 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 		List<String> typeOptions = new ArrayList<>();
 		types.forEach(t -> typeOptions.add(t.getDisplayName()));
 
-		if (widgets.contains(scrollAreaType))
-			widgets.remove(scrollAreaType);
+		if (scrollAreaType != null)
+			removeWidget(scrollAreaType);
 
 //		scrollAreaType = new ScrollArea(typeOptions, new IScrollAction() {
 //			@Override
@@ -148,13 +148,13 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 				initAdditionalDataScrollArea(types.get(position));
 			});
 
-		widgets.add(scrollAreaType);
+		addWidget(scrollAreaType);
 		initAdditionalDataScrollArea(type);
 	}
 
 	private void initAdditionalDataScrollArea(DesignType type) {
-		if (widgets.contains(scrollAreaAdditionalData))
-			widgets.remove(scrollAreaAdditionalData);
+		if (scrollAreaAdditionalData != null)
+			removeWidget(scrollAreaAdditionalData);
 
 		if (type.hasAdditionalData()) {
 
@@ -216,7 +216,7 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 			}
 
 			scrollAreaAdditionalData.titled(additionalDataKey);
-			widgets.add(scrollAreaAdditionalData);
+			addWidget(scrollAreaAdditionalData);
 
 		} else {
 

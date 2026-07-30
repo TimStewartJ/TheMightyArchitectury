@@ -33,6 +33,7 @@ import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 //? if >=1.21.10 {
 import net.minecraft.client.input.MouseButtonEvent;
@@ -43,6 +44,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 
 import java.nio.file.Paths;
+import java.util.ArrayList;
 
 public class PalettePickerScreen extends AbstractSimiScreen {
 
@@ -71,7 +73,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 	public void init() {
 		super.init();
 		setWindowSize(256, 236);
-		widgets.clear();
+		clearWidgets();
 
 		// selected
 		updateSelected();
@@ -81,7 +83,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 		int x = topLeftX + 10;
 		int y = topLeftY + 68;
 		for (String paletteName : PaletteStorage.getResourcePaletteNames()) {
-			widgets.add(new PaletteButton(PaletteStorage.getPalette(paletteName), this, id, x + ((id - 2) % 5) * 23,
+			addWidget(new PaletteButton(PaletteStorage.getPalette(paletteName), this, id, x + ((id - 2) % 5) * 23,
 				y + ((id - 2) / 5) * 23));
 			id++;
 		}
@@ -91,7 +93,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 		x = topLeftX + 135;
 		y = topLeftY + 68;
 		for (String paletteName : PaletteStorage.getPaletteNames()) {
-			widgets.add(new PaletteButton(PaletteStorage.getPalette(paletteName), this, id + i, x + (i % 5) * 23,
+			addWidget(new PaletteButton(PaletteStorage.getPalette(paletteName), this, id + i, x + (i % 5) * 23,
 				y + (i / 5) * 23));
 			i++;
 		}
@@ -105,17 +107,17 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 			buttonAddPalette.getToolTip()
 				.add(Component.literal("Palette as the template.").withStyle(ChatFormatting.GRAY));
 			i++;
-			widgets.add(buttonAddPalette);
+			addWidget(buttonAddPalette);
 		}
 
 		buttonOpenFolder = new IconButton(x + (i % 5) * 23, y + (i / 5) * 23, ScreenResources.ICON_FOLDER);
 		buttonOpenFolder.setToolTip(Component.literal("Open Palette Folder"));
-		widgets.add(buttonOpenFolder);
+		addWidget(buttonOpenFolder);
 		i++;
 
 		buttonRefresh = new IconButton(x + (i % 5) * 23, y + (i / 5) * 23, ScreenResources.ICON_REFRESH);
 		buttonRefresh.setToolTip(Component.literal("Refresh Imported Palettes"));
-		widgets.add(buttonRefresh);
+		addWidget(buttonRefresh);
 	}
 
 	@Override
@@ -145,8 +147,10 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 	}
 
 	private void updateSelected() {
-		widgets.remove(primary);
-		widgets.remove(secondary);
+		if (primary != null)
+			removeWidget(primary);
+		if (secondary != null)
+			removeWidget(secondary);
 
 		if (scanPicker) {
 			primary = new PaletteButton(DesignExporter.scanningPalette, this, 0, topLeftX + 135, topLeftY + 8);
@@ -154,8 +158,8 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 			secondary = new PaletteButton(DesignExporter.theme.getDefaultSecondaryPalette(), this, 1, topLeftX + 192,
 				topLeftY + 8);
 			secondary.active = false;
-			widgets.add(primary);
-			widgets.add(secondary);
+			addWidget(primary);
+			addWidget(secondary);
 			return;
 		}
 
@@ -165,8 +169,8 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 		secondary = new PaletteButton(ArchitectManager.getModel()
 			.getSecondary(), this, 1, topLeftX + 192, topLeftY + 8);
 		secondary.active = false;
-		widgets.add(primary);
-		widgets.add(secondary);
+		addWidget(primary);
+		addWidget(secondary);
 	}
 
 	@Override
@@ -219,8 +223,10 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 	//?} else {
 	/*public boolean mouseClicked(double mouseX, double mouseY, int mouseButton) {
 	*///?}
-		for (int i = 0; i < this.widgets.size(); ++i) {
-			AbstractWidget guibutton = this.widgets.get(i);
+		// A copy: buttonClicked can rebuild the screen, which clears the live child list.
+		for (GuiEventListener child : new ArrayList<>(children())) {
+			if (!(child instanceof AbstractWidget guibutton))
+				continue;
 
 			if (guibutton.isMouseOver(mouseX, mouseY)) {
 				guibutton.playDownSound(this.minecraft.getSoundManager());

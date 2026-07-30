@@ -10,8 +10,17 @@ import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+//? if >=26 {
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else if >=1.20 {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Matrix4f;
 
 /**
  * Shims for client API that moved between versions, chiefly in 26.2. Kept in one place so call
@@ -82,6 +91,38 @@ public final class McCompat {
 		return mc.getMainRenderTarget();
 		//?}
 	}
+
+	/**
+	 * The camera's view rotation, ready to be multiplied onto a projection matrix.
+	 * <p>
+	 * 26 exposes this directly. 1.21 has {@code Camera.rotation()}, which maps camera space into
+	 * world space, so the view rotation is its inverse. Before 1.21 that quaternion does not carry
+	 * the 180 degree flip that turns Minecraft's world-space heading into the -Z-forward eye space,
+	 * so the rotation is rebuilt the way {@code GameRenderer.renderLevel} does it: pitch about X,
+	 * then yaw + 180 about Y.
+	 */
+	public static Matrix4f viewRotation(Camera camera) {
+		//? if >=26 {
+		return camera.getViewRotationMatrix(new Matrix4f());
+		//?} else if >=1.21 {
+		/*return new Matrix4f().rotation(camera.rotation())
+			.invert();
+		*///?} else {
+		/*return new Matrix4f().rotateX(camera.getXRot() * ((float) Math.PI / 180f))
+			.rotateY((camera.getYRot() + 180.0f) * ((float) Math.PI / 180f));
+		*///?}
+	}
+
+	/** Draws unshadowed GUI text. 26 renamed {@code drawString} to {@code text}. */
+	//? if >=26 {
+	public static void drawText(GuiGraphicsExtractor gfx, Font font, String text, int x, int y, int color) {
+		gfx.text(font, text, x, y, color, false);
+	}
+	//?} else {
+	/*public static void drawText(GuiGraphics gfx, Font font, String text, int x, int y, int color) {
+		gfx.drawString(font, text, x, y, color, false);
+	}
+	*///?}
 
 	// 26.2 replaced VertexFormat.Mode with com.mojang.blaze3d.PrimitiveTopology, and
 	// ByteBufferBuilder does not exist at all before 1.21 - those nodes build their BufferBuilder

@@ -4,6 +4,7 @@
   "package": "com.timmie.mightyarchitect.mixin",
   "compatibilityLevel": "JAVA_${meta_java_range}",
   "client": [
+    "GameRendererAccessor",
     "GuiMixin",
     "KeyboardHandlerMixin",
     "MinecraftMixin",

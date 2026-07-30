@@ -1,183 +1,112 @@
 package com.timmie.mightyarchitect.foundation.utility;
 
 import com.timmie.mightyarchitect.TheMightyArchitect;
+//? if >=1.21.4 {
+//?} else {
+/*import com.timmie.mightyarchitect.mixin.GameRendererAccessor;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.PostChain;
+*///?}
 //? if >=1.21.11 {
 import net.minecraft.resources.Identifier;
-//?} else if >=1.21.4 {
+//?} else {
 /*import net.minecraft.resources.ResourceLocation;
-*///?} else {
-/*import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.PostChain;
-import net.minecraft.resources.ResourceLocation;
 *///?}
 
-//*
- //* Post-processing shader effects for the mod.
- //* Uses the PostChainManager to handle the 1.21.4+ post-processing API.
- //
+/**
+ * The mod's post-processing effects.
+ * <p>
+ * Two eras. 1.21.4 introduced the declarative {@code post_effect} API, which the mod drives through
+ * {@link PostChainManager}. Older versions load a {@code PostChain} through
+ * {@code GameRenderer.loadEffect}, which is not public on any of them; the way in is
+ * {@code GameRendererAccessor}, so the binding is checked when the mixin is applied instead of
+ * being probed at runtime.
+ * <p>
+ * Every guarded arm below is a whole method. The arms deliberately do not share closing braces,
+ * so a change to one cannot silently unbalance another.
+ */
 public enum Shaders {
 
 	//? if >=1.21.4 {
 	Blueprint("blueprint"),
 	None("");
 	//?} else {
-	/*Blueprint("blueprint.json"), None("");
+	/*Blueprint("blueprint.json"),
+	None("");
 	*///?}
 
 	//? if >=1.21.11 {
 	private final Identifier location;
-	//?} else if >=1.21.4 {
+	//?} else {
 	/*private final ResourceLocation location;
-	*///?} else {
-	/*private ResourceLocation location;
 	*///?}
 
-	//? if >=26 {
-	private Shaders(String name) {
-		if (name.isEmpty()) {
-			location = Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, "");
-		} else {
-			// Post chains are loaded from post_effect/<name>.json.
-			// ResourceLocation should just be namespace:name without path prefix or extension
-			location = Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, name);
-		}
-	//?} else if >=1.21.11 {
-	/*private Shaders(String name) {
-		if (name.isEmpty()) {
-			location = Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, "");
-		} else {
-			// In 1.21.4+, post chains are loaded from post_effect/<name>.json
-			// ResourceLocation should just be namespace:name without path prefix or extension
-			location = Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, name);
-		}
-	*///?} else if >=1.21.4 {
-	/*private Shaders(String name) {
-		if (name.isEmpty()) {
-			location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "");
-		} else {
-			// In 1.21.4+, post chains are loaded from post_effect/<name>.json
-			// ResourceLocation should just be namespace:name without path prefix or extension
-			location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, name);
-		}
-	*///?} else if >=1.21 {
-	/*private Shaders(String filename) {
-		location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "shaders/post/" + filename);
-	*///?} else {
-	/*private Shaders(String filename) {
-		location = new ResourceLocation(TheMightyArchitect.ID, "shaders/post/" + filename);
-	*///?}
+	// From 1.21.4 a post chain is addressed as namespace:name and resolved to
+	// post_effect/<name>.json. Before that the location is the literal resource path.
+	//? if >=1.21.11 {
+	Shaders(String name) {
+		location = Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, name);
 	}
+	//?} else if >=1.21.4 {
+	/*Shaders(String name) {
+		location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, name);
+	}
+	*///?} else if >=1.21 {
+	/*Shaders(String filename) {
+		location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "shaders/post/" + filename);
+	}
+	*///?} else {
+	/*Shaders(String filename) {
+		location = new ResourceLocation(TheMightyArchitect.ID, "shaders/post/" + filename);
+	}
+	*///?}
 
-	//*
-	 //* Checks if this shader is currently active.
-	 //*
-	 //* @return true if this shader is the currently active post-processing shader
-	 //
+	/** Whether this effect is the one currently applied; {@link #None} means "nothing applied". */
+	//? if >=1.21.4 {
 	public boolean isActive() {
-		//? if >=1.21.4 {
-		//?} else {
-		/*Minecraft mc = Minecraft.getInstance();
-		PostChain shaderGroup = mc.gameRenderer.currentEffect();
-		return shaderGroup != null && shaderGroup.getName()
+		if (this == None)
+			return !PostChainManager.isShaderActive();
+		return PostChainManager.isShaderActive(location);
+	}
+	//?} else {
+	/*public boolean isActive() {
+		PostChain applied = Minecraft.getInstance().gameRenderer.currentEffect();
+		if (this == None)
+			return applied == null;
+		return applied != null && applied.getName()
 			.equals(location.toString());
 	}
+	*///?}
 
+	/** Applies or clears this effect. */
+	//? if >=1.21.4 {
 	public void setActive(boolean active) {
+		if (!active) {
+			if (isActive())
+				PostChainManager.shutdownShader();
+			return;
+		}
+		if (this == None)
+			PostChainManager.shutdownShader();
+		else
+			PostChainManager.loadShader(location);
+	}
+	//?} else {
+	/*public void setActive(boolean active) {
 		Minecraft mc = Minecraft.getInstance();
-
-		*///?}
 		if (this == None) {
-			//? if >=1.21.4 {
-			return !PostChainManager.isShaderActive();
-			//?} else {
-			/*mc.gameRenderer.shutdownEffect();
-			return;
-			*///?}
-		}
-		//? if >=1.21.4 {
-		return PostChainManager.isShaderActive(location);
-		//?} else {
-		/*
-		if (active && !isActive()) {
-			loadEffect(mc, location);
-			return;
-		}
-
-		if (!active && isActive()) {
 			mc.gameRenderer.shutdownEffect();
 			return;
 		}
-		*///?}
+		if (active == isActive())
+			return;
+		if (!active) {
+			mc.gameRenderer.shutdownEffect();
+			return;
+		}
+		((GameRendererAccessor) mc.gameRenderer).invokeLoadEffect(location);
+		if (!isActive())
+			TheMightyArchitect.logger.error("Unable to load shader {}", location);
 	}
-
-	//? if >=1.21.4 {
-	//*
-	 //* Activates or deactivates this shader.
-	 //*
-	 //* @param active true to activate, false to deactivate
-	 //
-	public void setActive(boolean active) {
-		if (active) {
-			if (this == None) {
-				PostChainManager.shutdownShader();
-			} else {
-				PostChainManager.loadShader(location);
-	//?} else {
-	/*private static void loadEffect(Minecraft mc, ResourceLocation location) {
-		for (java.lang.reflect.Method candidate : findLoadEffectCandidates(mc)) {
-			try {
-				candidate.setAccessible(true);
-				candidate.invoke(mc.gameRenderer, location);
-			} catch (ReflectiveOperationException e) {
-				continue;
 	*///?}
-			}
-		//? if >=1.21.4 {
-		} else {
-			// Only shutdown if this shader is currently active
-			if (isActive()) {
-				PostChainManager.shutdownShader();
-			}
-		//?} else {
-		/*PostChain applied = mc.gameRenderer.currentEffect();
-			if (applied != null && applied.getName()
-				.equals(location.toString()))
-				return;
-		*///?}
-		}
-		//? if >=1.21.4 {
-		//?} else {
-		/*TheMightyArchitect.logger.error("Unable to load shader {}", location);
-		*///?}
-	}
-
-	//*
-	 //* Gets the resource location of this shader.
-	 //*
-	 //* @return The shader's resource location
-	 //
-	//? if >=1.21.11 {
-	public Identifier getLocation() {
-		return location;
-	//?} else if >=1.21.4 {
-	/*public ResourceLocation getLocation() {
-		return location;
-	*///?} else {
-	/*private static java.util.List<java.lang.reflect.Method> findLoadEffectCandidates(Minecraft mc) {
-		java.util.List<java.lang.reflect.Method> candidates = new java.util.ArrayList<>();
-		try {
-			candidates.add(mc.gameRenderer.getClass()
-				.getDeclaredMethod("loadEffect", ResourceLocation.class));
-		} catch (NoSuchMethodException ignored) {
-			// Remapped runtime; fall through to scanning below.
-		}
-		for (java.lang.reflect.Method method : mc.gameRenderer.getClass()
-			.getDeclaredMethods()) {
-			if (method.getParameterCount() == 1 && method.getParameterTypes()[0] == ResourceLocation.class
-				&& method.getReturnType() == Void.TYPE && !candidates.contains(method))
-				candidates.add(method);
-		}
-		return candidates;
-	*///?}
-	}
 }
