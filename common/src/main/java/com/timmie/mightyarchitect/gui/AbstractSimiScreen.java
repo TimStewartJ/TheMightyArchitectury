@@ -166,7 +166,10 @@ public abstract class AbstractSimiScreen extends Screen {
 		for (GuiEventListener child : children()) {
 			if (!(child instanceof AbstractSimiWidget widget))
 				continue;
-			if (!widget.isHoveredOrFocused() || widget.getToolTip()
+			// Hover, not isHoveredOrFocused: widgets are focusable now that they are registered
+			// with vanilla, and Screen.setInitialFocus focuses one of them on open from 1.20.6.
+			// Keying tooltips off focus would leave one permanently on screen.
+			if (!widget.isHovered() || widget.getToolTip()
 				.isEmpty())
 				continue;
 			//? if >=1.21.6 {

@@ -1,6 +1,7 @@
 package com.timmie.mightyarchitect.test;
 
 import com.timmie.mightyarchitect.foundation.compat.McCompat;
+import com.timmie.mightyarchitect.foundation.compat.ScreenInput;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -10,6 +11,7 @@ import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.design.DesignTheme;
+import com.timmie.mightyarchitect.control.design.DesignExporter;
 import com.timmie.mightyarchitect.control.design.Sketch;
 import com.timmie.mightyarchitect.control.design.ThemeStorage;
 import com.timmie.mightyarchitect.control.palette.Palette;
@@ -20,12 +22,20 @@ import com.timmie.mightyarchitect.foundation.WrappedWorld;
 import com.timmie.mightyarchitect.foundation.utility.ShaderManager;
 import com.timmie.mightyarchitect.foundation.utility.Shaders;
 import com.timmie.mightyarchitect.gui.ArchitectMenuScreen;
+import com.timmie.mightyarchitect.gui.DesignExporterScreen;
 import com.timmie.mightyarchitect.gui.PalettePickerScreen;
+import com.timmie.mightyarchitect.gui.TextInputPromptScreen;
+import com.timmie.mightyarchitect.gui.widgets.Indicator;
+import com.timmie.mightyarchitect.gui.widgets.Label;
+import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
 import com.timmie.mightyarchitect.test.mixin.ArchitectManagerAccessor;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.core.BlockPos;
@@ -60,6 +70,9 @@ public final class ClientTestController {
         START_COMPOSER,
         OPEN_PALETTE,
         CAPTURE_PALETTE_PREVIEW,
+        VERIFY_SCREEN_INPUT,
+        VERIFY_TEXT_INPUT,
+        VERIFY_SCROLL_ROUTING,
         CAPTURE_BLUEPRINT,
         CAPTURE_HUD_VISIBLE,
         CAPTURE_HUD_HIDDEN,
@@ -123,6 +136,8 @@ public final class ClientTestController {
     private static final int PALETTE_GRID_ROWS = 4;
     /** Distinct colours expected in the grid once the block previews actually draw. */
     private static final int MIN_PALETTE_GRID_COLOURS = 40;
+    /** Characters typed at the text prompt; read back from its abort callback on close. */
+    private static final String TYPED_PROBE = "clienttest";
 
     private static final List<String> checks = new ArrayList<>();
     private static Stage stage = Stage.CONNECT;
@@ -141,6 +156,7 @@ public final class ClientTestController {
     private static Path labelBaselineScreenshot;
     private static Path labelTextScreenshot;
     private static Path palettePickerScreenshot;
+    private static String typedText;
     private static int worldRenderFrames;
     private static int hudRenderFrames;
     private static int composerOverlayFrames;
@@ -195,6 +211,9 @@ public final class ClientTestController {
                 case START_COMPOSER -> startComposer(minecraft);
                 case OPEN_PALETTE -> openPalette(minecraft);
                 case CAPTURE_PALETTE_PREVIEW -> capturePalettePreview(minecraft);
+                case VERIFY_SCREEN_INPUT -> verifyScreenInput(minecraft);
+                case VERIFY_TEXT_INPUT -> verifyTextInput(minecraft);
+                case VERIFY_SCROLL_ROUTING -> verifyScrollRouting(minecraft);
                 case CAPTURE_BLUEPRINT -> captureBlueprint(minecraft);
                 case CAPTURE_HUD_VISIBLE -> captureHudVisible(minecraft);
                 case CAPTURE_HUD_HIDDEN -> captureHudHidden(minecraft);
@@ -395,7 +414,6 @@ public final class ClientTestController {
             return;
 
         palettePickerScreenshot = captured;
-        McCompat.setScreen(minecraft, null);
 
         Window window = minecraft.getWindow();
         double scale = window.getGuiScale();
@@ -409,7 +427,160 @@ public final class ClientTestController {
 
         check(colours >= MIN_PALETTE_GRID_COLOURS,
             "palette block previews rendered (" + colours + " distinct colours in grid)");
+        advance(Stage.VERIFY_SCREEN_INPUT);
+    }
+
+    /**
+     * Drives real input at the mod's screens.
+     * <p>
+     * The screens register their widgets with vanilla and let {@code Screen} /
+     * {@code ContainerEventHandler} dispatch clicks, characters and scroll. That is far less code
+     * than re-implementing the dispatch, but it is also invisible to a screenshot: a screen whose
+     * widgets are never registered still draws correctly and simply ignores the mouse. Nothing else
+     * in any matrix clicks, types or scrolls, so these checks are the only thing standing between a
+     * refactor of that layer and shipping dead controls.
+     */
+    private static void verifyScreenInput(Minecraft minecraft) {
+        if (stageTicks < 3)
+            return;
+
+        verifyPaletteClicks(minecraft);
+        advance(Stage.VERIFY_TEXT_INPUT);
+    }
+
+    /**
+     * Clicks two different palette buttons by position and requires the selection to follow. This
+     * covers the whole chain at once: the widgets are in {@code children()}, vanilla dispatches to
+     * them, and hit-testing picks the widget actually under the cursor rather than merely the first
+     * one registered.
+     */
+    private static void verifyPaletteClicks(Minecraft minecraft) {
+        Screen screen = McCompat.currentScreen(minecraft);
+        check(screen instanceof PalettePickerScreen, "palette picker still open for input");
+
+        List<AbstractWidget> widgets = registeredWidgets(screen);
+        check(!widgets.isEmpty(),
+            "screen widgets are registered with vanilla (" + widgets.size() + " in children())");
+
+        Window window = minecraft.getWindow();
+        int gridX = (window.getGuiScaledWidth() - PALETTE_SCREEN_WIDTH) / 2 + PALETTE_GRID_X;
+        int gridY = (window.getGuiScaledHeight() - PALETTE_SCREEN_HEIGHT) / 2 + PALETTE_GRID_Y;
+        List<AbstractWidget> paletteButtons = new ArrayList<>();
+        for (AbstractWidget widget : widgets) {
+            if (!widget.active || !widget.visible)
+                continue;
+            if (widget.getX() < gridX || widget.getX() >= gridX + PALETTE_GRID_COLUMNS * PALETTE_GRID_SPACING)
+                continue;
+            if (widget.getY() < gridY || widget.getY() >= gridY + PALETTE_GRID_ROWS * PALETTE_GRID_SPACING)
+                continue;
+            paletteButtons.add(widget);
+        }
+        check(paletteButtons.size() >= 2,
+            "at least two included-palette buttons to click (" + paletteButtons.size() + ")");
+
+        PaletteDefinition afterFirst = clickCentre(screen, paletteButtons.get(0));
+        PaletteDefinition afterSecond = clickCentre(screen, paletteButtons.get(1));
+        check(afterFirst != afterSecond,
+            "clicking two palette buttons selected two different palettes");
+    }
+
+    private static PaletteDefinition clickCentre(Screen screen, AbstractWidget widget) {
+        double x = widget.getX() + widget.getWidth() / 2.0;
+        double y = widget.getY() + widget.getHeight() / 2.0;
+        check(ScreenInput.click(screen, x, y, 0), "click consumed at " + (int) x + "," + (int) y);
+        return ArchitectManager.getModel().getPrimary();
+    }
+
+    /**
+     * Typing has to reach the text field the screen focused on open. This is the check that would
+     * have caught a wrong answer to "does vanilla's own {@code setInitialFocus} pass steal focus
+     * from the field?", which is otherwise only answerable by disassembly.
+     */
+    private static void verifyTextInput(Minecraft minecraft) {
+        if (stageTicks == 1) {
+            typedText = null;
+            TextInputPromptScreen prompt = new TextInputPromptScreen(value -> {
+            }, value -> typedText = value);
+            prompt.setTitle("Client Test");
+            McCompat.setScreen(minecraft, prompt);
+            return;
+        }
+        if (stageTicks < 4)
+            return;
+
+        if (typedText == null) {
+            Screen prompt = McCompat.currentScreen(minecraft);
+            check(prompt instanceof TextInputPromptScreen, "text prompt opened");
+            check(!registeredWidgets(prompt).isEmpty(), "text prompt registered its widgets");
+            for (char character : TYPED_PROBE.toCharArray())
+                ScreenInput.type(prompt, character);
+            // Closing the prompt without confirming reports the field contents to the abort callback.
+            McCompat.setScreen(minecraft, null);
+            return;
+        }
+
+        check(TYPED_PROBE.equals(typedText),
+            "typed characters reached the focused text field (got \"" + typedText + "\")");
+        advance(Stage.VERIFY_SCROLL_ROUTING);
+    }
+
+    /**
+     * A scroll has to be routed to the scroll input that a label is drawn on top of. The exporter
+     * screen registers its labels <em>before</em> those inputs, and vanilla's {@code getChildAt}
+     * returns the <em>first</em> child under the cursor, so the input is only reachable because the
+     * labels are inactive. Nothing about that is visible in a screenshot.
+     * <p>
+     * This asserts the routing decision rather than delivering a scroll, because {@code ScrollInput}
+     * gates on the hover flag that {@code AbstractWidget.render} computes from the real cursor -
+     * a synthesised scroll at coordinates the cursor is not actually at would be refused by the
+     * widget itself, for reasons that have nothing to do with dispatch.
+     */
+    private static void verifyScrollRouting(Minecraft minecraft) {
+        if (stageTicks == 1) {
+            DesignExporter.setTheme(ThemeStorage.getIncluded().get(0));
+            McCompat.setScreen(minecraft, new DesignExporterScreen());
+            return;
+        }
+        if (stageTicks < 4)
+            return;
+
+        Screen exporter = McCompat.currentScreen(minecraft);
+        check(exporter instanceof DesignExporterScreen, "design exporter opened");
+
+        List<AbstractWidget> decorations = new ArrayList<>();
+        ScrollInput scrollInput = null;
+        for (AbstractWidget widget : registeredWidgets(exporter)) {
+            if (widget instanceof Label || widget instanceof Indicator)
+                decorations.add(widget);
+            else if (scrollInput == null && widget instanceof ScrollInput candidate && candidate.active)
+                scrollInput = candidate;
+        }
+
+        boolean allInert = !decorations.isEmpty();
+        for (AbstractWidget decoration : decorations)
+            allInert &= !decoration.active;
+        check(allInert, "decorative widgets are present and inactive, so they cannot intercept input ("
+            + decorations.size() + " checked)");
+
+        check(scrollInput != null, "exporter screen has a scroll input");
+        double x = scrollInput.getX() + scrollInput.getWidth() / 2.0;
+        double y = scrollInput.getY() + scrollInput.getHeight() / 2.0;
+        check(exporter.getChildAt(x, y).orElse(null) == scrollInput,
+            "hit-testing over the scroll input resolves to it and not to the label drawn on it");
+
+        McCompat.setScreen(minecraft, null);
         advance(Stage.CAPTURE_BLUEPRINT);
+    }
+
+    /** The screen's own widget list, which is vanilla's since the screens stopped keeping one. */
+    private static List<AbstractWidget> registeredWidgets(Screen screen) {
+        List<AbstractWidget> widgets = new ArrayList<>();
+        if (screen == null)
+            return widgets;
+        for (GuiEventListener child : screen.children())
+            if (child instanceof AbstractWidget widget)
+                widgets.add(widget);
+        return widgets;
     }
 
     /**
