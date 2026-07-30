@@ -48,6 +48,19 @@ public class ColorHelper {
 		return new Vec3(r, g, b).scale(1 / 256d);
 	}
 
+	/**
+	 * Picks a backdrop for HUD text that its glyphs stay readable against. Callers pick a text
+	 * colour without knowing what will sit behind it, so dark text gets a light plate and light
+	 * text the darker default.
+	 */
+	public static int labelBackdrop(int color) {
+		int r = (color >> 16) & 0xFF;
+		int g = (color >> 8) & 0xFF;
+		int b = color & 0xFF;
+		int luma = (r * 299 + g * 587 + b * 114) / 1000;
+		return luma < 128 ? 0xC0F0F0F0 : 0xC0101018;
+	}
+
 	public static int colorFromUUID(UUID uuid) {
 		if (uuid == null)
 			return 0x333333;
