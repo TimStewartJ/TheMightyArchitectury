@@ -112,6 +112,11 @@ The server matrix boots a real dedicated server per target and runs the print-to
 registered stream codec, applied to a real `ServerLevel`, and the resulting blocks are compared
 against the schematic. Booting alone is not a pass — the runner waits for the test's verdict.
 
+The same run covers the serverbound authorization gate in `ServerBuildGuard`: the decode-time
+bounds on both packets, the per-player placement budget and the reach test, and then the gate end
+to end — a real packet handed to the real handler with a real `ServerPlayer`, asserting that an
+authorised sender's build lands and that an out-of-reach or unauthorised one does not.
+
 The packaged runner is artifact-first: Gradle only ever runs in
 `scripts/prepare-runtime-artifacts.ps1`, which builds every requested target once
 and records the resulting jars in `build/runtime-artifacts/manifest.json`. Client
