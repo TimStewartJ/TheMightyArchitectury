@@ -32,7 +32,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 //? if >=1.21.10 {
@@ -306,8 +305,10 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 			this.palette = palette;
 			visible = true;
 			active = true;
-			var tooltipText = Component.literal(palette.getName());
-			this.setTooltip(Tooltip.create(tooltipText));
+			// The mod's own tooltip, not vanilla's: vanilla shows a Tooltip when the widget is
+			// hovered *or* focused-by-keyboard, and these buttons became focusable when the screen
+			// started registering its widgets with vanilla. renderWindowForeground gates on hover.
+			setToolTip(Component.literal(palette.getName()));
 		}
 
 		//? if >=26 {
