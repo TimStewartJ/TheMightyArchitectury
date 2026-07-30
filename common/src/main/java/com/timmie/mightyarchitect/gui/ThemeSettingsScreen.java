@@ -222,7 +222,10 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 		//?} else {
 		/*if (button == 0) {*///?}
 			for (IconButton button2 : toggleButtons) {
-				if (button2.isHoveredOrFocused()) {
+				// Hover, not isHoveredOrFocused. These buttons are in children() now, so they can
+				// hold keyboard focus, and a focused button would otherwise fire on a click
+				// anywhere on the screen - including confirm, which closes and saves the theme.
+				if (button2.isHovered()) {
 					buttonClicked(button2);
 					return true;
 				}
