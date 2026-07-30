@@ -1,12 +1,10 @@
 package com.timmie.mightyarchitect.test.server;
 
-import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
-import io.netty.buffer.Unpooled;
+import com.timmie.mightyarchitect.networking.PacketWire;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
@@ -89,26 +87,20 @@ public final class ServerPrintTest {
     }
 
     /**
-     * Encodes and decodes through the registered stream codec, which is what the loader does on
-     * the wire. A codec that writes and reads asymmetrically corrupts every later field, so the
-     * fully-drained buffer is the assertion that matters most here.
+     * Encodes and decodes the way the loader does on the wire. The encoding itself is version
+     * -variable (stream codecs from 1.20.5, a plain buffer write before that) so it lives behind
+     * {@link PacketWire} in the shared module; the assertions stay here.
      */
     private static InstantPrintPacket roundTrip(MinecraftServer server, InstantPrintPacket packet) {
-        RegistryFriendlyByteBuf buffer =
-            new RegistryFriendlyByteBuf(Unpooled.buffer(), server.registryAccess());
+        PacketWire.RoundTrip result = PacketWire.roundTrip(server.registryAccess(), packet);
 
-        AllPackets.INSTANT_PRINT_CODEC.encode(buffer, packet);
-        int encoded = buffer.readableBytes();
-        require(encoded > 0, "packet encoded to an empty buffer");
-
-        InstantPrintPacket decoded = AllPackets.INSTANT_PRINT_CODEC.decode(buffer);
-        require(buffer.readableBytes() == 0,
-            "decode left " + buffer.readableBytes() + " of " + encoded + " bytes unread");
-        require(decoded.type() == AllPackets.INSTANT_PRINT_TYPE,
-            "decoded payload reports type " + decoded.type());
+        require(result.encodedBytes() > 0, "packet encoded to an empty buffer");
+        require(result.unreadBytes() == 0,
+            "decode left " + result.unreadBytes() + " of " + result.encodedBytes() + " bytes unread");
+        require(result.identityMatches(), "decoded payload reports the wrong packet identity");
 
         passed++;
-        return decoded;
+        return result.packet();
     }
 
     /**

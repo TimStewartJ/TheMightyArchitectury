@@ -59,9 +59,12 @@ public enum Shaders {
 			// ResourceLocation should just be namespace:name without path prefix or extension
 			location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, name);
 		}
-	*///?} else {
+	*///?} else if >=1.21 {
 	/*private Shaders(String filename) {
 		location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "shaders/post/" + filename);
+	*///?} else {
+	/*private Shaders(String filename) {
+		location = new ResourceLocation(TheMightyArchitect.ID, "shaders/post/" + filename);
 	*///?}
 	}
 

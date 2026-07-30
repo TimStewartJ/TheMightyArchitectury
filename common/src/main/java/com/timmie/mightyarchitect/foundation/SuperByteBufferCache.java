@@ -3,9 +3,17 @@ package com.timmie.mightyarchitect.foundation;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+//? if >=1.21 {
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
+//?} else {
+/*
+*///?}
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+//? if >=1.21 {
 import com.mojang.blaze3d.vertex.MeshData;
+//?} else {
+/*
+*///?}
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
@@ -116,8 +124,13 @@ public class SuperByteBufferCache {
 		BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
 		ModelBlockRenderer blockRenderer = dispatcher.getModelRenderer();
 	*///?}
+		//? if >=1.21 {
 		ByteBufferBuilder byteBuffer = new ByteBufferBuilder(2097152);
 		BufferBuilder builder = com.timmie.mightyarchitect.foundation.compat.McCompat.quadBuffer(byteBuffer, DefaultVertexFormat.BLOCK);
+		//?} else {
+		/*BufferBuilder builder = new BufferBuilder(DefaultVertexFormat.BLOCK.getIntegerSize());
+		builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+		*///?}
 		//? if >=26 {
 		BlockPos pos = BlockPos.ZERO;
 		BlockAndTintGetter blockAccess = singleBlockAccess(minecraft, referenceState, pos);
@@ -141,11 +154,17 @@ public class SuperByteBufferCache {
 		blockRenderer.tesselateBlock(Minecraft.getInstance().level, model, referenceState, BlockPos.ZERO.above(255), ms,
 				builder, true, random, 42, OverlayTexture.NO_OVERLAY);
 		*///?}
+		//? if >=1.21 {
 		MeshData meshData = builder.build();
 
 		SuperByteBuffer result = meshData != null ? new SuperByteBuffer(meshData) : SuperByteBuffer.empty();
 		byteBuffer.close();
 		return result;
+		//?} else {
+		/*var renderedBuffer = builder.end();
+
+		return renderedBuffer != null ? new SuperByteBuffer(renderedBuffer) : SuperByteBuffer.empty();
+		*///?}
 	}
 
 	//? if >=26 {

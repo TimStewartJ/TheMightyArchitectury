@@ -7,7 +7,12 @@ import com.timmie.mightyarchitect.control.design.DesignExporter;
 import com.timmie.mightyarchitect.control.palette.Palette;
 import com.timmie.mightyarchitect.networking.SetHotbarItemPacket;
 import net.minecraft.ChatFormatting;
+// Item display names moved from NBT hover-name to a data component in 1.20.5.
+//? if >=1.20.5 {
 import net.minecraft.core.component.DataComponents;
+//?} else {
+/*
+*///?}
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -83,9 +88,15 @@ public class ArchitectKits {
 	private static void setHotbarBlock(int slot, Palette palette) {
 		BlockState state = DesignExporter.theme.getDefaultPalette().get(palette);
 		ItemStack stack = new ItemStack(state.getBlock().asItem());
+		//? if >=1.20.5 {
 		stack.set(DataComponents.CUSTOM_NAME, Component.literal(ChatFormatting.RESET + "" + ChatFormatting.GOLD
 				+ palette.getDisplayName() + ChatFormatting.WHITE + " (" + ChatFormatting.GRAY
 				+ stack.getHoverName().getString() + ChatFormatting.WHITE + ")"));
+		//?} else {
+		/*stack.setHoverName(Component.literal(ChatFormatting.RESET + "" + ChatFormatting.GOLD
+				+ palette.getDisplayName() + ChatFormatting.WHITE + " (" + ChatFormatting.GRAY
+				+ stack.getHoverName().getString() + ChatFormatting.WHITE + ")"));
+		*///?}
 		setHotbarItem(slot, stack);
 	}
 

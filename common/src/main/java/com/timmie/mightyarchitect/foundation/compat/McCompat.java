@@ -2,7 +2,11 @@ package com.timmie.mightyarchitect.foundation.compat;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+//? if >=1.21 {
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
+//?} else {
+/*
+*///?}
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -79,12 +83,19 @@ public final class McCompat {
 		//?}
 	}
 
-	/** 26.2 replaced VertexFormat.Mode with com.mojang.blaze3d.PrimitiveTopology. */
-	public static BufferBuilder quadBuffer(ByteBufferBuilder byteBuffer, VertexFormat format) {
-		//? if >=26.2 {
-		/*return new BufferBuilder(byteBuffer, com.mojang.blaze3d.PrimitiveTopology.QUADS, format);
-		*///?} else {
-		return new BufferBuilder(byteBuffer, VertexFormat.Mode.QUADS, format);
-		//?}
+	// 26.2 replaced VertexFormat.Mode with com.mojang.blaze3d.PrimitiveTopology, and
+	// ByteBufferBuilder does not exist at all before 1.21 - those nodes build their BufferBuilder
+	// directly and never call this. The arms are flat because a guard cannot nest inside a
+	// commented one.
+	//? if >=26.2 {
+	/*public static BufferBuilder quadBuffer(ByteBufferBuilder byteBuffer, VertexFormat format) {
+		return new BufferBuilder(byteBuffer, com.mojang.blaze3d.PrimitiveTopology.QUADS, format);
 	}
+	*///?} else if >=1.21 {
+	public static BufferBuilder quadBuffer(ByteBufferBuilder byteBuffer, VertexFormat format) {
+		return new BufferBuilder(byteBuffer, VertexFormat.Mode.QUADS, format);
+	}
+	//?} else {
+	/*
+	*///?}
 }

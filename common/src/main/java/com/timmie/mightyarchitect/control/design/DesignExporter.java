@@ -201,7 +201,11 @@ public class DesignExporter {
 		if (worldIn.getBlockState(signPos)
 			.getBlock() == Blocks.SPRUCE_SIGN) {
 			SignBlockEntity sign = (SignBlockEntity) worldIn.getBlockEntity(signPos);
+			//? if >=1.20 {
 			filename = sign.getFrontText().toString();
+			//?} else {
+			/*filename = sign.getMessage(1, false).getString();
+			*///?}
 			designPath = typePath + "/" + filename;
 
 		} else {

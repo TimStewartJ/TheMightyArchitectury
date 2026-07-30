@@ -24,9 +24,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 //?} else if >=1.21.10 {
 /*import net.minecraft.client.gui.GuiGraphics;
-*///?} else {
+*///?} else if >=1.20 {
 /*import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
+*///?} else {
+/*import net.minecraft.client.gui.Gui;
+import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
@@ -367,9 +370,13 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 		//? if >=26 {
 		public void extractWidgetRenderState(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
 			super.extractWidgetRenderState(ms, mouseX, mouseY, partialTicks);
-		//?} else {
+		//?} else if >=1.20 {
 		/*public void renderWidget(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
 			super.renderWidget(ms, mouseX, mouseY, partialTicks);
+		*///?} else {
+		/*public void renderWidget(com.mojang.blaze3d.vertex.PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+			super.renderWidget(poseStack, mouseX, mouseY, partialTicks);
+			GuiGraphics ms = new GuiGraphics(poseStack);
 		*///?}
 			preview(ms, minecraft);
 		}

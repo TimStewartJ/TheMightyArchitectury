@@ -383,6 +383,43 @@ function Expand-TestListArgument {
     return $expanded
 }
 
+function Get-TestVersionLoaders {
+    <#
+        Returns the loaders a Minecraft version actually ships, mirroring the branch scoping in
+        settings.gradle. NeoForge does not exist before 1.20.2 and cannot be built at all for
+        1.20.2/1.20.3 (no build in those lines publishes the Gradle module metadata ModDevGradle
+        resolves through), so 1.19.4 and 1.20.1 ship Forge instead and 1.20.2 is Fabric-only.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Version
+    )
+
+    if ($Version -in @('1.19.4', '1.20.1')) {
+        return @('fabric', 'forge')
+    }
+    if ($Version -eq '1.20.2') {
+        return @('fabric')
+    }
+    return @('fabric', 'neoforge')
+}
+
+function Select-TestVersionLoaders {
+    <#
+        Intersects the requested loaders with the ones this version actually ships, keeping the
+        caller's ability to narrow the matrix with -Loaders without inventing missing targets.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Version,
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [string[]]$Requested
+    )
+
+    return @(Get-TestVersionLoaders -Version $Version | Where-Object { $_ -in $Requested })
+}
+
 function Find-TestGradleArtifact {
     param(
         [Parameter(Mandatory = $true)]
@@ -465,7 +502,7 @@ function Test-RuntimeArtifactStale {
     }
 
     foreach ($version in $Versions) {
-        foreach ($loader in $Loaders) {
+        foreach ($loader in (Select-TestVersionLoaders -Version $version -Requested $Loaders)) {
             $target = Get-RuntimeArtifactTarget -Manifest $manifest -Version $version -Loader $loader
             if (-not $target) {
                 return "missing target $version/$loader"
@@ -487,7 +524,7 @@ function Test-RuntimeArtifactStale {
             [Globalization.DateTimeStyles]::RoundtripKind
         ).ToUniversalTime()
     }
-    $sourceRoots = @('common/src', 'fabric/src', 'neoforge/src', 'client-test/src') |
+    $sourceRoots = @('common/src', 'fabric/src', 'neoforge/src', 'forge/src', 'client-test/src') |
         ForEach-Object { Join-Path $RepoRoot $_ } |
         Where-Object { Test-Path $_ }
     $sourceRoots += @(Join-Path $RepoRoot 'buildSrc') | Where-Object { Test-Path $_ }
@@ -501,7 +538,7 @@ function Test-RuntimeArtifactStale {
     }
 
     $buildInputs = @('build.gradle', 'settings.gradle', 'stonecutter.gradle', 'gradle.properties',
-        'common/build.gradle', 'fabric/build.gradle', 'neoforge/build.gradle')
+        'common/build.gradle', 'fabric/build.gradle', 'neoforge/build.gradle', 'forge/build.gradle')
     foreach ($version in $Versions) {
         $buildInputs += "versions/$version/gradle.properties"
     }
@@ -544,6 +581,9 @@ function Test-TestRetryableFailure {
         'Read timed out',
         'Connection reset',
         'Connection timed out',
+        # Loom's asset downloader losing its own thread pool mid-run, seen as
+        # `:downloadAssets` failing with a RejectedExecutionException.
+        'rejected from java\.util\.concurrent\.ThreadPoolExecutor',
         'HashMap\$Node cannot be cast to class java\.util\.HashMap\$TreeNode'
     )
 
@@ -573,6 +613,8 @@ Export-ModuleMember -Function @(
     'Get-TestHiddenWindowOption',
     'Write-TestClientOptions',
     'Expand-TestListArgument',
+    'Get-TestVersionLoaders',
+    'Select-TestVersionLoaders',
     'Find-TestGradleArtifact',
     'Get-RuntimeArtifactManifestPath',
     'Read-RuntimeArtifactManifest',

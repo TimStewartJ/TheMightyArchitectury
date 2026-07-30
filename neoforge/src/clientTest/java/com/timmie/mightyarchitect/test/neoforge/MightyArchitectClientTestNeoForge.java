@@ -4,7 +4,9 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
 
-@Mod(value = "mightyarchitect_test", dist = Dist.CLIENT)
+// The @Mod `dist` attribute only exists from NeoForge 20.6 onward, and this source set is shared
+// verbatim by every node, so the client-only guard is the runtime check in the constructor.
+@Mod("mightyarchitect_test")
 public class MightyArchitectClientTestNeoForge {
 
     public MightyArchitectClientTestNeoForge() {

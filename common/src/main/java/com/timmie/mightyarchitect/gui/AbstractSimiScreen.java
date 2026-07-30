@@ -4,8 +4,10 @@ import com.timmie.mightyarchitect.gui.widgets.AbstractSimiWidget;
 import net.minecraft.client.Minecraft;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//?} else {
+//?} else if >=1.20 {
 /*import net.minecraft.client.gui.GuiGraphics;
+*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.Screen;
@@ -53,16 +55,25 @@ public abstract class AbstractSimiScreen extends Screen {
 		if (shouldRenderDarkBackground()) {
 			renderBackground(ms, mouseX, mouseY, partialTicks);
 		}
-	*///?} else {
+	*///?} else if >=1.20.2 {
 	/*public void render(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
 		renderBackground(ms, mouseX, mouseY, partialTicks);
+	*///?} else if >=1.20 {
+	/*public void render(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+		renderBackground(ms);
+	*///?} else {
+	/*public void render(com.mojang.blaze3d.vertex.PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+		GuiGraphics ms = new GuiGraphics(poseStack);
+		renderBackground(poseStack);
 	*///?}
 		renderWindow(ms, mouseX, mouseY, partialTicks);
 		for (AbstractWidget widget : widgets)
 			//? if >=26 {
 			widget.extractRenderState(ms, mouseX, mouseY, partialTicks);
-			//?} else {
+			//?} else if >=1.20 {
 			/*widget.render(ms, mouseX, mouseY, partialTicks);
+			*///?} else {
+			/*widget.render(ms.pose(), mouseX, mouseY, partialTicks);
 			*///?}
 		renderWindowForeground(ms, mouseX, mouseY, partialTicks);
 	}
@@ -146,12 +157,21 @@ public abstract class AbstractSimiScreen extends Screen {
 	}
 
 	@Override
+	//? if >=1.20.2 {
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
 		for (AbstractWidget widget : widgets) {
 			if (widget.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount))
 				return true;
 		}
 		return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+	//?} else {
+	/*public boolean mouseScrolled(double mouseX, double mouseY, double verticalAmount) {
+		for (AbstractWidget widget : widgets) {
+			if (widget.mouseScrolled(mouseX, mouseY, verticalAmount))
+				return true;
+		}
+		return super.mouseScrolled(mouseX, mouseY, verticalAmount);
+	*///?}
 	}
 
 	@Override
@@ -197,9 +217,12 @@ public abstract class AbstractSimiScreen extends Screen {
 					.collect(java.util.stream.Collectors.toList());
 				ms.setTooltipForNextFrame(Minecraft.getInstance().font, tooltipLines, mouseX, mouseY);
 			}
-				*///?} else {
+				*///?} else if >=1.20 {
 				/*.isEmpty())
 				ms.renderComponentTooltip(Minecraft.getInstance().font, ((AbstractSimiWidget) widget).getToolTip(), mouseX, mouseY);
+				*///?} else {
+				/*.isEmpty())
+				renderComponentTooltip(ms.pose(), ((AbstractSimiWidget) widget).getToolTip(), mouseX, mouseY);
 				*///?}
 		}
 	}

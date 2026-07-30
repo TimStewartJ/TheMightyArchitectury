@@ -205,7 +205,11 @@ public class ThemeStorage {
 						try {
 							InputStream inputStream = Files.newInputStream(Paths.get(folderPath + "/" + themeFolder),
 								StandardOpenOption.READ);
+							//? if >=1.20.3 {
 							themeFile = NbtIo.readCompressed(inputStream, NbtAccounter.unlimitedHeap());
+							//?} else {
+							/*themeFile = NbtIo.readCompressed(inputStream);
+							*///?}
 							inputStream.close();
 						} catch (IOException e) {
 							e.printStackTrace();

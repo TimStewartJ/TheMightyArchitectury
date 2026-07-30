@@ -1,0 +1,19 @@
+modLoader = "javafml"
+loaderVersion = "[${meta_forge_range},)"
+license = "MIT"
+
+[[mods]]
+modId = "mightyarchitect_test"
+version = "1.0.0"
+displayName = "The Mighty Architect Client Test"
+description = "Automated client integration-test companion."
+
+[[mixins]]
+config = "mightyarchitect-test.mixins.json"
+
+[[dependencies.mightyarchitect_test]]
+modId = "mightyarchitect"
+mandatory = true
+versionRange = "[0,)"
+ordering = "AFTER"
+side = "CLIENT"

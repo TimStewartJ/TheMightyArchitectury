@@ -1,0 +1,257 @@
+// Forge node (1.19.4, 1.20.1). NeoForge does not exist for 1.19.4, and NeoForge 1.20.1 is still
+// Forge-API compatible, so one Forge jar serves both loaders on these two versions.
+//
+// This is the same ModDevGradle the NeoForge node uses, plus its legacy addon: the mod is written
+// against official (Mojang) names and reobfuscated to SRG for production. See LEGACY.md upstream.
+def node = rootProject.project(":${stonecutter.current.version}")
+def javaVer = (node.findProperty('java_version') ?: '17') as int
+def mcVersion = node.property('minecraft_version')
+def forgeVersion = node.property('forge_version')
+def enableClientTestMod = project.findProperty("enableClientTestMod") == "true"
+def clientTestSessionId = System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SESSION_ID")
+    ?.replaceAll("[^A-Za-z0-9._-]", "-")
+def clientTestRunDir = clientTestSessionId ? "run-client-test-${clientTestSessionId}" : "run-client-test"
+def clientTestResultFile = clientTestSessionId
+    ? layout.buildDirectory.file("client-test-${clientTestSessionId}/result.json")
+    : layout.buildDirectory.file("client-test/result.json")
+
+// Source inclusion: this node compiles the matching common node's Stonecutter output alongside its
+// own (see fabric/build.gradle for the full rationale).
+def commonNode = evaluationDependsOn(":common:${stonecutter.current.version}")
+def commonGenerate = commonNode.tasks.named("stonecutterGenerate")
+
+apply plugin: "java"
+apply plugin: "mightyarchitect.moddev-legacy"
+apply plugin: "maven-publish"
+
+base { archivesName = rootProject.archives_base_name }
+version = "${rootProject.mod_version}+mc${mcVersion}"
+group = rootProject.maven_group
+
+sourceSets {
+    main {
+        java.srcDirs commonNode.sourceSets.main.java.srcDirs
+        resources.srcDirs commonNode.sourceSets.main.resources.srcDirs
+    }
+    clientTest {
+        java.srcDirs = [
+            rootProject.file("client-test/src/main/java"),
+            rootProject.file("forge/src/clientTest/java")
+        ]
+        resources.srcDirs = [
+            rootProject.file("client-test/src/main/resources"),
+            rootProject.file("forge/src/clientTest/resources")
+        ]
+        output.resourcesDir = layout.buildDirectory.dir("classes/java/clientTest").get().asFile
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath + sourceSets.main.runtimeClasspath
+    }
+    serverTest {
+        java.srcDirs = [
+            rootProject.file("server-test/src/main/java"),
+            rootProject.file("forge/src/serverTest/java")
+        ]
+        resources.srcDirs = [
+            rootProject.file("forge/src/serverTest/resources")
+        ]
+        output.resourcesDir = layout.buildDirectory.dir("classes/java/serverTest").get().asFile
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath + sourceSets.main.runtimeClasspath
+    }
+}
+
+// The generated common sources are task output, so the dependency has to be declared explicitly -
+// adding the directories to a source set does not carry one.
+tasks.named("compileJava") { dependsOn commonGenerate }
+tasks.named("processResources") { dependsOn commonGenerate }
+
+legacyForge {
+    version = forgeVersion
+
+    addModdingDependenciesTo sourceSets.clientTest
+    addModdingDependenciesTo sourceSets.serverTest
+
+    mods {
+        mightyarchitect {
+            sourceSet sourceSets.main
+        }
+        mightyarchitect_test {
+            sourceSet sourceSets.clientTest
+        }
+        mightyarchitect_server_test {
+            sourceSet sourceSets.serverTest
+        }
+    }
+
+    runs {
+        automatedClientTest {
+            client()
+            ideName = "Mighty Architect Automated Client Test"
+            gameDirectory = project.file(clientTestRunDir)
+            sourceSet = sourceSets.clientTest
+            loadedMods = enableClientTestMod
+                ? [mods.mightyarchitect, mods.mightyarchitect_test]
+                : [mods.mightyarchitect]
+            systemProperty "mightyarchitect.clientTest.enabled", "true"
+            systemProperty "mightyarchitect.clientTest.server",
+                (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SERVER")
+                    ?: project.findProperty("clientTestServer")
+                    ?: "127.0.0.1:25565").toString()
+            systemProperty "mightyarchitect.clientTest.result",
+                clientTestResultFile.get().asFile.absolutePath
+            systemProperty "mightyarchitect.clientTest.keepOpen",
+                (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_KEEP_OPEN") ?: "false").toString()
+            // Mixin configs registered through the `mixin` extension are appended to *every* run's
+            // program arguments, so the companion mod's config is passed here instead - the server
+            // run has no client-test output on its classpath and dies initialising it.
+            if (enableClientTestMod) {
+                programArgument "--mixin.config"
+                programArgument "mightyarchitect-test.mixins.json"
+            }
+        }
+        automatedServerTest {
+            server()
+            ideName = "Mighty Architect Automated Server Test"
+            gameDirectory = project.file("run-server-test")
+            sourceSet = sourceSets.serverTest
+            loadedMods = [mods.mightyarchitect, mods.mightyarchitect_server_test]
+            systemProperty "mightyarchitect.serverTest.enabled", "true"
+        }
+    }
+}
+
+// Mixins are refmapped rather than remapped in place on this era, so the annotation processor has
+// to see every source set that carries a config.
+mixin {
+    add sourceSets.main, "mightyarchitect.refmap.json"
+    add sourceSets.clientTest, "mightyarchitect-test.refmap.json"
+    config "mightyarchitect.mixins.json"
+}
+
+// Every source set registered above contributes its generated .tsrg to one shared collection that
+// all reobfuscation tasks consume, and the path comes from the project layout rather than a task
+// output - so it carries no task dependency. Without this, a plain `build` reobfuscates the main
+// jar before the client-test refmap has ever been written and the run fails on a missing file.
+tasks.matching { it.name.startsWith("reobf") }.configureEach {
+    dependsOn tasks.named("compileClientTestJava")
+}
+
+configurations {
+    clientTestImplementation.extendsFrom implementation
+    clientTestRuntimeOnly.extendsFrom runtimeOnly
+    serverTestImplementation.extendsFrom implementation
+    serverTestRuntimeOnly.extendsFrom runtimeOnly
+}
+
+dependencies {
+    annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
+    clientTestAnnotationProcessor "org.spongepowered:mixin:0.8.5:processor"
+    clientTestImplementation sourceSets.main.output
+    serverTestImplementation sourceSets.main.output
+}
+
+tasks.named("runAutomatedClientTest") {
+    dependsOn tasks.named("clientTestClasses")
+}
+
+tasks.named("runAutomatedServerTest") {
+    dependsOn tasks.named("serverTestClasses")
+}
+
+processResources {
+    def metaProps = [
+        "version"          : project.version,
+        "meta_mc_range"    : node.property('meta_mc_range'),
+        "meta_mc_max"      : node.property('meta_mc_max'),
+        "meta_pack_format" : node.property('meta_pack_format'),
+        "meta_forge_range" : node.property('meta_forge_range'),
+        "meta_java_range"  : node.property('meta_java_range')
+    ]
+    inputs.properties(metaProps)
+    filesMatching("META-INF/mods.toml") {
+        expand(metaProps)
+    }
+    filesMatching("pack.mcmeta") {
+        expand(metaProps)
+    }
+    filesMatching("mightyarchitect.mixins.json") {
+        expand(metaProps)
+    }
+    // Fabric-only mixin config: harmless in the Forge jar, but leaving an unexpanded ${...}
+    // placeholder in a shipped file is not, so drop it here.
+    exclude "mightyarchitect.fabric.mixins.json"
+}
+
+// The test companions share one unprocessed resource tree across every node, so their mixin
+// config and mod metadata follow this node's Java level and Forge loader major.
+def testMetaProps = [
+    "meta_java_range" : node.property('meta_java_range'),
+    "meta_forge_range": node.property('meta_forge_range')
+]
+
+tasks.named("processClientTestResources") {
+    inputs.properties(testMetaProps)
+    filesMatching("mightyarchitect-test.mixins.json") {
+        expand(testMetaProps)
+    }
+    filesMatching("META-INF/mods.toml") {
+        expand(testMetaProps)
+    }
+}
+
+tasks.named("processServerTestResources") {
+    inputs.properties(testMetaProps)
+    filesMatching("META-INF/mods.toml") {
+        expand(testMetaProps)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.release = javaVer
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(javaVer)
+    }
+}
+
+// FML on this era discovers mixin configs from the jar manifest, not from mods.toml.
+jar {
+    manifest.attributes(["MixinConfigs": "mightyarchitect.mixins.json"])
+    archiveClassifier.set("forge")
+}
+
+def clientTestJarTask = tasks.register("clientTestJar", Jar) {
+    dependsOn tasks.named("clientTestClasses")
+    from sourceSets.clientTest.output
+    manifest.attributes(["MixinConfigs": "mightyarchitect-test.mixins.json"])
+    archiveClassifier.set("forge-client-test-dev")
+}
+
+// The companion mod is also written against official names, so it needs the same SRG pass the
+// main jar gets before a production client will load it. Reobfuscation is driven off the main
+// source set's classpath (as upstream's shadowJar example does) because that is what carries the
+// inherited Minecraft members; clientTest has no consumable runtime elements of its own.
+obfuscation {
+    reobfuscate(clientTestJarTask, sourceSets.main) {
+        archiveClassifier.set("forge-client-test")
+    }
+}
+
+tasks.register("buildClientTestMod") {
+    group = "verification"
+    description = "Builds the distributable Forge client-test companion mod."
+    dependsOn clientTestJarTask
+}
+
+publishing {
+    publications {
+        mavenForge(MavenPublication) {
+            artifactId = rootProject.archives_base_name + "-forge"
+            from components.java
+        }
+    }
+    repositories {}
+}

@@ -1,0 +1,5 @@
+// Forge toolchain for the pre-NeoForge nodes (1.19.4, 1.20.1): ModDevGradle's legacy addon, which
+// layers SRG reobfuscation and Forge's runtime onto the same plugin the NeoForge nodes use.
+plugins {
+    id "net.neoforged.moddev.legacyforge"
+}

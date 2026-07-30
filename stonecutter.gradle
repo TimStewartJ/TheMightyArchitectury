@@ -4,22 +4,37 @@ plugins {
 
 stonecutter.active "26.1" /* [SC] DO NOT EDIT */
 
-// Aggregate task: build every Stonecutter version node for both loaders (the full release set)
-// with one command — `./gradlew buildAll` — so local builds match the CI matrix without naming
-// all 14 node paths by hand.
+// Aggregate task: build every Stonecutter version node for every loader it targets (the full
+// release set) with one command — `./gradlew buildAll` — so local builds match the CI matrix
+// without naming all the node paths by hand. Loader branches cover different version subsets
+// (NeoForge cannot be built before 1.20.4, Forge only covers 1.19.4/1.20.1), so the node list is
+// derived from the projects Stonecutter actually created rather than a hardcoded cross product.
+def loaderNodePaths = { String taskName ->
+    ["fabric", "neoforge", "forge"].collectMany { loader ->
+        stonecutter.versions.collect { v -> rootProject.findProject(":${loader}:${v.project}") }
+    }.findAll { it != null }.collect { "${it.path}:${taskName}" }
+}
+
 tasks.register("buildAll") {
     group = "build"
-    description = "Builds all version nodes for both loaders (Fabric + NeoForge)."
-    dependsOn stonecutter.versions.collect { v ->
-        [":fabric:${v.project}:build", ":neoforge:${v.project}:build"]
-    }.flatten()
+    description = "Builds all version nodes for every loader they target (Fabric + NeoForge + Forge)."
+    dependsOn loaderNodePaths("build")
 }
 
 // Convenience: assemble (no tests/checks) the full release set of jars.
 tasks.register("assembleAll") {
     group = "build"
-    description = "Assembles all version nodes for both loaders without running checks."
-    dependsOn stonecutter.versions.collect { v ->
-        [":fabric:${v.project}:assemble", ":neoforge:${v.project}:assemble"]
-    }.flatten()
+    description = "Assembles all version nodes for every loader they target without running checks."
+    dependsOn loaderNodePaths("assemble")
+}
+
+// Compile-only sweep across every node and every source set, including the test companions. This
+// is the local inner loop the workflow calls for: it catches version-specific compile breakage in
+// a few minutes without launching a single game instance, leaving the runtime matrices to CI.
+tasks.register("compileAll") {
+    group = "verification"
+    description = "Compiles main, client-test and server-test sources for every node and loader."
+    dependsOn loaderNodePaths("compileJava")
+    dependsOn loaderNodePaths("compileClientTestJava")
+    dependsOn loaderNodePaths("compileServerTestJava")
 }

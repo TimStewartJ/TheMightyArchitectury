@@ -30,8 +30,13 @@ public class SelectionScrollInput extends ScrollInput {
 	}
 
 	@Override
+	//? if >=1.20.2 {
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
 		return super.mouseScrolled(mouseX, mouseY, horizontalAmount, -verticalAmount);
+	//?} else {
+	/*public boolean mouseScrolled(double mouseX, double mouseY, double verticalAmount) {
+		return super.mouseScrolled(mouseX, mouseY, -verticalAmount);
+	*///?}
 	}
 
 	@Override

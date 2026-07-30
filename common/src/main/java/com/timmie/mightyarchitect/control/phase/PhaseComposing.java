@@ -16,8 +16,10 @@ import net.minecraft.client.input.KeyEvent;
 //?} else if >=1.21.10 {
 /*import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.input.KeyEvent;
-*///?} else {
+*///?} else if >=1.20 {
 /*import net.minecraft.client.gui.GuiGraphics;
+*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
 import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import org.apache.commons.lang3.ArrayUtils;
@@ -147,8 +149,10 @@ public class PhaseComposing extends PhaseBase implements IRenderGameOverlay {
 		toolSelection.renderPassive(ms, Minecraft.getInstance()
 			//? if >=1.21.4 {
 			.getDeltaTracker().getGameTimeDeltaPartialTick(true));
-			//?} else {
+			//?} else if >=1.21 {
 			/*.getTimer().getGameTimeDeltaPartialTick(true));
+			*///?} else {
+			/*.getDeltaFrameTime());
 			*///?}
 		activeTool.getTool()
 			.renderOverlay(ms);

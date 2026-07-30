@@ -15,8 +15,10 @@ import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 //? if >=1.21.4 {
-//?} else {
+//?} else if >=1.20 {
 /*import net.minecraft.world.level.material.MapColor;
+*///?} else {
+/*import net.minecraft.world.level.material.Material;
 *///?}
 import net.minecraft.world.phys.BlockHitResult;
 
@@ -29,9 +31,12 @@ public class SliceMarkerBlock extends Block {
 	//? if >=1.21.4 {
 	public SliceMarkerBlock(Properties properties) {
 		super(properties);
-	//?} else {
+	//?} else if >=1.20 {
 	/*public SliceMarkerBlock() {
 		super(Properties.of().mapColor(MapColor.STONE));
+	*///?} else {
+	/*public SliceMarkerBlock() {
+		super(Properties.of(Material.STONE));
 	*///?}
 		this.registerDefaultState(defaultBlockState().setValue(VARIANT, DesignSliceTrait.Standard));
 	}
@@ -50,8 +55,14 @@ public class SliceMarkerBlock extends Block {
 	}
 
 	@Override
+	// 1.20.5 split the old use(...) hook into useItemOn/useWithoutItem and dropped the hand argument.
+	//? if >=1.20.5 {
 	protected InteractionResult useWithoutItem(BlockState state, Level worldIn, BlockPos pos, Player player,
 			BlockHitResult hit) {
+	//?} else {
+	/*public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player,
+			net.minecraft.world.InteractionHand handIn, BlockHitResult hit) {
+	*///?}
 		if (hit.getDirection().getAxis() == Axis.Y)
 			return InteractionResult.PASS;
 		if (AllItems.ARCHITECT_WAND.typeOf(player.getMainHandItem()) || AllItems.ARCHITECT_WAND.typeOf(player.getOffhandItem()))

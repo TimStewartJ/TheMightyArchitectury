@@ -17,8 +17,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//?} else {
+//?} else if >=1.20 {
 /*import net.minecraft.client.gui.GuiGraphics;
+*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
 import net.minecraft.client.gui.screens.Screen;
 //? if >=1.21.10 {
@@ -100,10 +102,15 @@ public class ArchitectMenuScreen extends Screen {
 	/*public void render(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
 		// Don't call super.render() - we don't want the dark background overlay
 		// This is an in-game menu that should show over the game world
-	*///?} else {
+	*///?} else if >=1.20 {
 	/*public void render(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
 		// FOCUSED
 		super.render(ms, mouseX, mouseY, partialTicks);
+	*///?} else {
+	/*public void render(com.mojang.blaze3d.vertex.PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+		GuiGraphics ms = new GuiGraphics(poseStack);
+		// FOCUSED
+		super.render(poseStack, mouseX, mouseY, partialTicks);
 	*///?}
 		draw(ms, partialTicks);
 	}
@@ -218,8 +225,10 @@ public class ArchitectMenuScreen extends Screen {
 		Window mainWindow = mc.getWindow();
 		//? if >=1.21.4 {
 		partialTicks = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
-		//?} else {
+		//?} else if >=1.21 {
 		/*partialTicks = mc.getTimer().getGameTimeDeltaPartialTick(true);
+		*///?} else {
+		/*partialTicks = mc.getFrameTime();
 		*///?}
 
 		int x = mainWindow.getGuiScaledWidth() - menuWidth - 10;

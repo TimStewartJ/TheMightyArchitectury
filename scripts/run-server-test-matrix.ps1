@@ -1,6 +1,6 @@
 param(
-    [string[]]$Versions = @('1.21.1', '1.21.4', '1.21.6', '1.21.8', '1.21.10', '1.21.11', '26.1', '26.2'),
-    [string[]]$Loaders = @('fabric', 'neoforge'),
+    [string[]]$Versions = @('1.19.4', '1.20.1', '1.20.2', '1.20.4', '1.20.6', '1.21.1', '1.21.4', '1.21.6', '1.21.8', '1.21.10', '1.21.11', '26.1', '26.2'),
+    [string[]]$Loaders = @('fabric', 'neoforge', 'forge'),
     [int]$TimeoutSeconds = 600
 )
 
@@ -10,7 +10,7 @@ Import-Module (Join-Path $PSScriptRoot 'TestMatrix.Common.psm1') -Force
 Assert-TestMatrixPowerShell
 
 $Versions = Expand-TestListArgument -Value $Versions
-$Loaders = Expand-TestListArgument -Value $Loaders -Allowed @('fabric', 'neoforge')
+$Loaders = Expand-TestListArgument -Value $Loaders -Allowed @('fabric', 'neoforge', 'forge')
 
 $RepoRoot = Get-TestMatrixRepoRoot -ScriptRoot $PSScriptRoot
 $ResultsRoot = Join-Path (Join-Path $RepoRoot 'build') 'server-test-results'
@@ -77,7 +77,7 @@ function Invoke-ServerTest {
     $arguments.Add(":${Loader}:${Version}:runAutomatedServerTest")
     $arguments.Add('--console=plain')
     $arguments.Add('--no-daemon')
-    $arguments.Add('-Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64')
+    $arguments.Add('-Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64')
     $hiddenWindow = Get-TestHiddenWindowOption
     $process = Start-Process -FilePath $Gradle `
         -ArgumentList $arguments `
@@ -127,8 +127,10 @@ function Invoke-ServerTest {
 New-Item -ItemType Directory -Force -Path $ResultsRoot | Out-Null
 $failures = [System.Collections.Generic.List[string]]::new()
 
+$nodeCount = 0
 foreach ($version in $Versions) {
-    foreach ($loader in $Loaders) {
+    foreach ($loader in (Select-TestVersionLoaders -Version $version -Requested $Loaders)) {
+        $nodeCount++
         $passed = $false
         for ($attempt = 1; $attempt -le 2 -and -not $passed; $attempt++) {
             try {
@@ -154,4 +156,4 @@ if ($failures.Count -gt 0) {
     throw "Server-test matrix failed:`n - $($failures -join "`n - ")"
 }
 
-Write-Host "All $($Versions.Count * $Loaders.Count) server-test nodes passed."
+Write-Host "All $nodeCount server-test nodes passed."

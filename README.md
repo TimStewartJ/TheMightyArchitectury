@@ -13,10 +13,18 @@ This is experimental. Some things may still be broken!
 
 ## Contributing
 
-Everything lives on `main`. One source tree builds 8 Minecraft versions x 2 loaders
-(16 targets) through [Stonecutter](https://stonecutter.kikugie.dev/); there are no
-per-version branches. The versions are listed in `settings.gradle`, and each has its
-own dependency and metadata values in `versions/<mc>/gradle.properties`.
+Everything lives on `main`. One source tree builds 13 Minecraft versions - 25 jars - through
+[Stonecutter](https://stonecutter.kikugie.dev/); there are no per-version branches. The versions are
+listed in `settings.gradle`, and each has its own dependency and metadata values in
+`versions/<mc>/gradle.properties`.
+
+Every version ships a Fabric jar. The second loader depends on the era:
+
+| versions | second loader | why |
+| --- | --- | --- |
+| 1.19.4, 1.20.1 | Forge | NeoForge did not exist yet; NeoForge 1.20.1 loads Forge mods anyway |
+| 1.20.2 | *none* | ModDevGradle resolves NeoForge through Gradle module metadata, and no 20.2 or 20.3 build ever published any, so NeoForge cannot be built for it at all |
+| 1.20.4 and newer | NeoForge | |
 
 ### Layout
 
@@ -25,6 +33,7 @@ own dependency and metadata values in `versions/<mc>/gradle.properties`.
 | `common/` | the shared source. No toolchain of its own - Stonecutter processes it per Minecraft version and both loader modules compile the result directly (source inclusion). |
 | `fabric/` | Fabric entrypoints and metadata, built with [Fabric Loom](https://github.com/FabricMC/fabric-loom). |
 | `neoforge/` | NeoForge entrypoints and metadata, built with [ModDevGradle](https://github.com/neoforged/ModDevGradle). |
+| `forge/` | Forge entrypoints and metadata for 1.19.4 and 1.20.1, built with [ModDevGradle's legacy plugin](https://github.com/neoforged/ModDevGradle/blob/main/LEGACY.md). |
 | `client-test/` | the automated in-game client test companion mod. |
 | `server-test/` | the automated dedicated-server test companion mod (print-to-world). |
 
@@ -56,15 +65,23 @@ public void drawPassive(GuiGraphics graphics, float partialTicks) {
 ```
 
 Stonecutter rewrites these in place when you switch the active version, commenting
-out the arms that do not apply. Two consequences worth knowing: a block comment
-cannot nest, so each arm must close before the next opens; and an arm containing
-only comments loses its marker and becomes live code, so never guard commentary.
+out the arms that do not apply. Three consequences worth knowing: a block comment
+cannot nest, so each arm must close before the next opens; an arm containing only
+comments loses its marker and becomes live code, so never guard commentary; and a
+`//` comment placed between an arm's marker and its `/*` body loses its marker the
+same way, so keep such comments inside the body.
 
 ```powershell
 ./gradlew stonecutterSwitchTo1.21.8   # switch which version the tree targets
-./gradlew buildAll                     # build all 16 targets
+./gradlew compileAll                   # compile every node and source set - the local inner loop
+./gradlew buildAll                     # build all 25 jars
 ./gradlew ":fabric:1.21.8:build"       # build one target
+./gradlew ":forge:1.20.1:build"        # the Forge branch only covers 1.19.4 and 1.20.1
 ```
+
+Prefer `compileAll` locally and let CI run the matrices: it validates every version in
+parallel on clean runners, where a full local matrix takes hours and collides with other
+worktrees on ports and Gradle daemons.
 
 Switching rewrites the tree in place, so it leaves a cosmetic diff on files with
 empty guard arms. That churn carries no behaviour and is safe to discard with
@@ -78,10 +95,11 @@ Branches from before the migration are kept as tags rather than branches. `git t
 
 ## Runtime testing
 
-PowerShell 7 is required.
+PowerShell 7 is required. The matrices cover every version and each version's loaders;
+`-Loaders` narrows them, and a version with no NeoForge build runs Forge, or Fabric alone.
 
 ```powershell
-# All versions x both loaders
+# All versions x their loaders
 pwsh -File scripts/run-server-test-matrix.ps1
 pwsh -File scripts/run-client-test-matrix.ps1
 

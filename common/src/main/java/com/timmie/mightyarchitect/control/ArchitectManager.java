@@ -19,12 +19,17 @@ import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import com.timmie.mightyarchitect.gui.*;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
 import net.minecraft.ChatFormatting;
+//? if >=1.21 {
 import net.minecraft.client.DeltaTracker;
+//?} else {
+/*
+*///?}
 import net.minecraft.client.Minecraft;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//?} else {
-/*import net.minecraft.client.gui.GuiGraphics;*///?}
+//?} else if >=1.20 {
+/*import net.minecraft.client.gui.GuiGraphics;*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;*///?}
 import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -325,16 +330,22 @@ public class ArchitectManager {
 			((IDrawBlockHighlights) phaseHandler).tickHighlightOutlines();
 	}
 
+	// The HUD callback carried a raw partial-tick float until 1.21 replaced it with DeltaTracker.
 	//? if >=26 {
 	public static void onDrawGameOverlay(GuiGraphicsExtractor poseStack, DeltaTracker deltaTracker) {
-	//?} else {
-	/*public static void onDrawGameOverlay(GuiGraphics poseStack, DeltaTracker deltaTracker) {*///?}
+		float partialTicks = deltaTracker.getGameTimeDeltaPartialTick(true);
+	//?} else if >=1.21 {
+	/*public static void onDrawGameOverlay(GuiGraphics poseStack, DeltaTracker deltaTracker) {
+		float partialTicks = deltaTracker.getGameTimeDeltaPartialTick(true);
+	*///?} else {
+	/*public static void onDrawGameOverlay(GuiGraphics poseStack, float partialTicks) {
+	*///?}
 		IArchitectPhase phaseHandler = phase.getPhaseHandler();
 		if (phaseHandler instanceof IRenderGameOverlay) {
-			((IRenderGameOverlay) phaseHandler).renderGameOverlay(poseStack, deltaTracker.getGameTimeDeltaPartialTick(true));
+			((IRenderGameOverlay) phaseHandler).renderGameOverlay(poseStack, partialTicks);
 		}
 
-		menu.drawPassive(poseStack, deltaTracker.getGameTimeDeltaPartialTick(true));
+		menu.drawPassive(poseStack, partialTicks);
 		//? if <1.21.6 {
 		/*com.mojang.blaze3d.systems.RenderSystem.enableBlend();*///?}
 

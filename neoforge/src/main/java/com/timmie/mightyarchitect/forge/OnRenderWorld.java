@@ -8,7 +8,11 @@ import net.minecraft.client.Minecraft;
 *///?}
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//?} else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 //? if >=26.2 {
 /*import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent.AfterLevel;
@@ -79,5 +83,17 @@ public class OnRenderWorld {
     }
     //?} else {
     /*
+    *///?}
+
+    // NeoForge 20.4 still ships ExtendedGui, which replaces the vanilla Gui instance and overrides
+    // render() without calling super - so the shared GuiMixin never fires there and the HUD has to
+    // come off Forge's own overlay event. 20.5 dropped ExtendedGui for layered rendering on
+    // vanilla's Gui, where the mixin works, so this arm is empty from then on.
+    //? if <1.20.5 {
+    /*@SubscribeEvent
+    public static void onRenderHud(net.neoforged.neoforge.client.event.RenderGuiEvent.Post event) {
+        com.timmie.mightyarchitect.platform.ClientHooks.renderHud(event.getGuiGraphics(),
+            event.getPartialTick());
+    }
     *///?}
 }

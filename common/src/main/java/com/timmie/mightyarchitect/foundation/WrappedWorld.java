@@ -16,7 +16,12 @@ import net.minecraft.world.clock.ClockManager;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.flag.FeatureFlagSet;
+// Brewing recipes and the MapId wrapper only exist from 1.20.5 onward.
+//? if >=1.20.5 {
 import net.minecraft.world.item.alchemy.PotionBrewing;
+//?} else {
+/*
+*///?}
 //? if >=26 {
 import net.minecraft.world.item.crafting.RecipeAccess;
 import net.minecraft.world.level.CardinalLighting;
@@ -46,14 +51,23 @@ import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.entity.LevelEntityGetter;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.material.Fluid;
+//? if >=1.20.5 {
 import net.minecraft.world.level.saveddata.maps.MapId;
+//?} else {
+/*
+*///?}
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.minecraft.world.level.storage.WritableLevelData;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.ticks.LevelTickAccess;
+// TickRateManager (the /tick command) arrived in 1.20.3.
+//? if >=1.20.3 {
 import net.minecraft.world.TickRateManager;
+//?} else {
+/*
+*///?}
 
 //? if >=1.21.6 {
 //?} else {
@@ -199,7 +213,12 @@ public class WrappedWorld extends Level implements BlockAndTintGetter {
 	*///?}
 
 	@Override
+	// GameEvent became registry-held (Holder) in 1.20.5.
+	//? if >=1.20.5 {
 	public void gameEvent(Holder<GameEvent> gameEvent, Vec3 vec3, GameEvent.Context context) {
+	//?} else {
+	/*public void gameEvent(GameEvent gameEvent, Vec3 vec3, GameEvent.Context context) {
+	*///?}
 
 	}
 
@@ -214,10 +233,13 @@ public class WrappedWorld extends Level implements BlockAndTintGetter {
 	}
 
 	@Override
+	// Level only started carrying the Holder<SoundEvent> overload in 1.21.
 	//? if >=1.21.6 {
 	public void playSound(@Nullable Entity source, double x, double y, double z, Holder<SoundEvent> soundIn, SoundSource category,
-	//?} else {
+	//?} else if >=1.21 {
 	/*public void playSound(@Nullable Player player, double x, double y, double z, Holder<SoundEvent> soundIn, SoundSource category,
+	*///?} else {
+	/*public void playSound(@Nullable Player player, double x, double y, double z, SoundEvent soundIn, SoundSource category,
 	*///?}
 		float volume, float pitch) {}
 
@@ -248,7 +270,12 @@ public class WrappedWorld extends Level implements BlockAndTintGetter {
 	}
 
 	@Override
+	// The map identifier became a MapId record in 1.20.5.
+	//? if >=1.20.5 {
 	public MapItemSavedData getMapData(MapId mapId) {
+	//?} else {
+	/*public MapItemSavedData getMapData(String mapName) {
+	*///?}
 		return null;
 	}
 
@@ -262,17 +289,22 @@ public class WrappedWorld extends Level implements BlockAndTintGetter {
 	@Override
 	//? if >=1.21.6 {
 	public void destroyBlockProgress(int breakerId, BlockPos pos, int progress) {}
-	//?} else {
+	//?} else if >=1.20.5 {
 	/*public void setMapData(MapId mapId, MapItemSavedData mapDataIn) {}
+	*///?} else {
+	/*public void setMapData(String mapId, MapItemSavedData mapDataIn) {}
 	*///?}
 
 	@Override
 	//? if >=1.21.6 {
 	public Scoreboard getScoreboard() {
 		return world.getScoreboard();
-	//?} else {
+	//?} else if >=1.20.5 {
 	/*public MapId getFreeMapId() {
 		return new MapId(0);
+	*///?} else {
+	/*public int getFreeMapId() {
+		return 0;
 	*///?}
 	}
 
@@ -374,15 +406,24 @@ public class WrappedWorld extends Level implements BlockAndTintGetter {
 		return world.enabledFeatures();
 	}
 
+	// PotionBrewing moved onto Level in 1.20.5; TickRateManager arrived with the /tick command in 1.20.3.
+	//? if >=1.20.5 {
 	@Override
 	public PotionBrewing potionBrewing() {
 		return world.potionBrewing();
 	}
+	//?} else {
+	/*
+	*///?}
 
+	//? if >=1.20.3 {
 	@Override
 	public TickRateManager tickRateManager() {
 		return world.tickRateManager();
 	}
+	//?} else {
+	/*
+	*///?}
 
 	@Override
 	//? if >=26 {

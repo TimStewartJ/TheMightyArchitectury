@@ -13,22 +13,34 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 *///?}
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 
-// Constructed by FML only on the physical client, which is also how the mod learns its side
-// without reaching into loader internals.
+// From 20.5 FML constructs this only on the physical client, which is also how the mod learns its
+// side without reaching into loader internals. 20.4's @Mod has no dist attribute, so there the main
+// entrypoint calls init() behind its own side check instead.
+//? if >=1.20.5 {
 @Mod(value = TheMightyArchitectForge.ID, dist = Dist.CLIENT)
 public class TheMightyArchitectForgeClient {
 
 	public TheMightyArchitectForgeClient(IEventBus modEventBus) {
+//?} else {
+/*public class TheMightyArchitectForgeClient {
+
+	public static void init(IEventBus modEventBus) {
+*///?}
 		Env.setClient(true);
 
 		// Key mappings have to exist before RegisterKeyMappingsEvent, which NeoForge fires while
 		// Options is being built - so build them here rather than in a setup listener.
 		MightyClient.init();
 
+		// The client-side distributor moved to its own class in 21.8, and before 1.20.5 there is no
+		// payload-level send at all - the payload has to be wrapped in the vanilla packet first.
 		//? if >=1.21.8 {
 		AllPackets.setSender(ClientPacketDistributor::sendToServer);
-		//?} else {
+		//?} else if >=1.20.5 {
 		/*AllPackets.setSender(PacketDistributor::sendToServer);
+		*///?} else {
+		/*AllPackets.setSender(packet -> PacketDistributor.SERVER.noArg()
+			.send(new net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket(packet)));
 		*///?}
 
 		modEventBus.addListener(TheMightyArchitectForgeClient::registerKeyMappings);

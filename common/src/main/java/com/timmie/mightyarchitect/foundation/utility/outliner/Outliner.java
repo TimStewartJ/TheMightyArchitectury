@@ -165,8 +165,10 @@ public class Outliner {
 				float alpha = Mth.lerp(Minecraft.getInstance()
 					//? if >=1.21.4 {
 					.getDeltaTracker().getGameTimeDeltaPartialTick(true), lastAlpha, currentAlpha);
-					//?} else {
+					//?} else if >=1.21 {
 					/*.getTimer().getGameTimeDeltaPartialTick(true), lastAlpha, currentAlpha);
+					*///?} else {
+					/*.getFrameTime(), lastAlpha, currentAlpha);
 					*///?}
 
 				outline.params.alpha = alpha * alpha * alpha;

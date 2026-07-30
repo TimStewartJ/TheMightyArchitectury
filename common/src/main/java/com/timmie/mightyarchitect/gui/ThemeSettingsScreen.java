@@ -10,8 +10,9 @@ import com.timmie.mightyarchitect.gui.widgets.Label;
 import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//?} else {
-/*import net.minecraft.client.gui.GuiGraphics;*///?}
+//?} else if >=1.20 {
+/*import net.minecraft.client.gui.GuiGraphics;*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;*///?}
 import net.minecraft.client.gui.components.EditBox;
 //? if >=1.21.10 {
 import net.minecraft.client.input.MouseButtonEvent;
