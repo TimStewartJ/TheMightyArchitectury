@@ -1,19 +1,28 @@
 package com.timmie.mightyarchitect.networking;
 
 import com.timmie.mightyarchitect.AllPackets;
+import com.timmie.mightyarchitect.platform.MightyPacket;
 import com.timmie.mightyarchitect.platform.PacketContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
+import net.minecraft.network.FriendlyByteBuf;
+// The buffer gained a registry-access view in 1.20.5, which is also when payloads stopped being
+// written through the interface and started going through a stream codec. RegistryFriendlyByteBuf
+// extends FriendlyByteBuf, so the writer itself is shared.
+//? if >=1.20.5 {
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?} else {
+/*import net.minecraft.resources.ResourceLocation;
+*///?}
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.*;
 
-public class InstantPrintPacket implements CustomPacketPayload {
+public class InstantPrintPacket implements MightyPacket {
 
 	private BunchOfBlocks blocks;
 
@@ -21,7 +30,11 @@ public class InstantPrintPacket implements CustomPacketPayload {
 		this.blocks = blocks;
 	}
 
+	//? if >=1.20.5 {
 	public InstantPrintPacket(RegistryFriendlyByteBuf buf) {
+	//?} else {
+	/*public InstantPrintPacket(FriendlyByteBuf buf) {
+	*///?}
 		// Store raw NBT data to decode on server side with proper registry
 		int size = buf.readInt();
 		this.blocks = new BunchOfBlocks(new HashMap<>());
@@ -36,11 +49,26 @@ public class InstantPrintPacket implements CustomPacketPayload {
 	}
 
 	@Override
+	//? if >=1.20.5 {
 	public Type<? extends CustomPacketPayload> type() {
 		return AllPackets.INSTANT_PRINT_TYPE;
 	}
 
 	public static void write(RegistryFriendlyByteBuf buf, InstantPrintPacket packet) {
+		writeTo(buf, packet);
+	}
+	//?} else {
+	/*public ResourceLocation id() {
+		return AllPackets.INSTANT_PRINT_ID;
+	}
+
+	@Override
+	public void write(FriendlyByteBuf buf) {
+		writeTo(buf, this);
+	}
+	*///?}
+
+	private static void writeTo(FriendlyByteBuf buf, InstantPrintPacket packet) {
 		buf.writeInt(packet.blocks.size);
 		packet.blocks.blocks.forEach((pos, state) -> {
 			buf.writeNbt(NbtUtils.writeBlockState(state));
@@ -49,7 +77,12 @@ public class InstantPrintPacket implements CustomPacketPayload {
 	}
 
 	public static void handle(InstantPrintPacket packet, PacketContext context) {
+		// Entity.level() replaced the public level field in 1.20.
+		//? if >=1.20 {
 		context.enqueue(() -> apply(context.player().level(), packet));
+		//?} else {
+		/*context.enqueue(() -> apply(context.player().level, packet));
+		*///?}
 	}
 
 	// Separated from handle so the automated server test can drive the same placement logic

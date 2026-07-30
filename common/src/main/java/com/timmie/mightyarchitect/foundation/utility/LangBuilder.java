@@ -150,8 +150,10 @@ public class LangBuilder {
 			.result()
 			.map(JsonElement::toString)
 			.orElse("");
-		//?} else {
+		//?} else if >=1.20.5 {
 		/*return Component.Serializer.toJson(component(), Minecraft.getInstance().level.registryAccess());
+		*///?} else {
+		/*return Component.Serializer.toJson(component());
 		*///?}
 	}
 

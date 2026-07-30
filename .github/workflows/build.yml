@@ -13,34 +13,59 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # One job per Minecraft version; each builds BOTH loaders (they share the
-        # :common:<mc> compile under Stonecutter, so pairing them avoids a double compile).
-        mc: ["1.21.1", "1.21.4", "1.21.6", "1.21.8", "1.21.10", "1.21.11", "26.1", "26.2"]
+        # One job per Minecraft version; each builds every loader that version targets (they share
+        # the :common:<mc> compile under Stonecutter, so pairing them avoids a double compile).
+        #
+        # `loader2` is the Forge-family loader for that version:
+        #   forge     - 1.19.4 and 1.20.1, which predate NeoForge (and NeoForge 1.20.1 loads Forge mods)
+        #   neoforge  - 1.20.4 and newer
+        #   ""        - 1.20.2, which is Fabric-only: ModDevGradle resolves NeoForge through Gradle
+        #               module metadata and no 20.2 or 20.3 build ever published any.
+        include:
+          - { mc: "1.19.4",  loader2: forge }
+          - { mc: "1.20.1",  loader2: forge }
+          - { mc: "1.20.2",  loader2: "" }
+          - { mc: "1.20.4",  loader2: neoforge }
+          - { mc: "1.20.6",  loader2: neoforge }
+          - { mc: "1.21.1",  loader2: neoforge }
+          - { mc: "1.21.4",  loader2: neoforge }
+          - { mc: "1.21.6",  loader2: neoforge }
+          - { mc: "1.21.8",  loader2: neoforge }
+          - { mc: "1.21.10", loader2: neoforge }
+          - { mc: "1.21.11", loader2: neoforge }
+          - { mc: "26.1",    loader2: neoforge }
+          - { mc: "26.2",    loader2: neoforge }
     steps:
       - uses: actions/checkout@v4
         with:
           # Root build.gradle derives the CI version from `git rev-list --count HEAD`.
           fetch-depth: 0
 
-      # Install both toolchains: obf nodes (<=1.21.x) use JDK 21, the unobfuscated 26.x nodes use JDK 25.
+      # Install every toolchain the matrix needs: 1.19.4..1.20.4 target JDK 17, the remaining
+      # obf nodes (<=1.21.x) use JDK 21, and the unobfuscated 26.x nodes use JDK 25.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: |
+            17
             21
             25
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build ${{ matrix.mc }} (both loaders)
+      - name: Build ${{ matrix.mc }}
+        env:
+          JDKS: JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64
         run: |
           chmod +x ./gradlew
-          ./gradlew ":fabric:${{ matrix.mc }}:build" ":neoforge:${{ matrix.mc }}:build" \
-            -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64 \
-            --stacktrace
+          tasks=":fabric:${{ matrix.mc }}:build"
+          if [ -n "${{ matrix.loader2 }}" ]; then
+            tasks="$tasks :${{ matrix.loader2 }}:${{ matrix.mc }}:build"
+          fi
+          ./gradlew $tasks -Porg.gradle.java.installations.fromEnv=$JDKS --stacktrace
 
       # Guards the exact bug packaged E2E caught: metadata must declare THIS version's
-      # dependency range, not the 26.x base's hardcoded one. Expected values are read from
+      # dependency range, not the newest node's hardcoded one. Expected values are read from
       # the version's own gradle.properties so the assertion cannot drift from the build.
       - name: Verify mod metadata version range
         run: |
@@ -53,24 +78,33 @@ jobs:
           [ -n "$mc_min" ] && [ -n "$mc_max" ] && [ -n "$pack_format" ] \
             || { echo "::error::$props is missing meta_mc_range, meta_mc_max or meta_pack_format"; exit 1; }
 
-          nf_jar=$(ls neoforge/versions/${{ matrix.mc }}/build/libs/*neoforge.jar | grep -Ev 'sources|dev|raw' | head -n1)
-          unzip -p "$nf_jar" META-INF/neoforge.mods.toml > /tmp/nf.toml
-          echo "--- neoforge.mods.toml ---"; cat /tmp/nf.toml
-          grep -A2 'modId = "minecraft"' /tmp/nf.toml | grep -qF "versionRange = \"[$mc_min,$mc_max)\"" \
-            || { echo "::error::neoforge minecraft versionRange is not [$mc_min,$mc_max)"; exit 1; }
+          if [ -n "${{ matrix.loader2 }}" ]; then
+            l2_jar=$(ls ${{ matrix.loader2 }}/versions/${{ matrix.mc }}/build/libs/*${{ matrix.loader2 }}.jar \
+              | grep -Ev 'sources|dev|raw|client-test|server-test' | head -n1)
+            # Forge reads META-INF/mods.toml; NeoForge reads META-INF/neoforge.mods.toml.
+            toml=$(unzip -Z1 "$l2_jar" | grep -E '^META-INF/(neoforge\.)?mods\.toml$' | head -n1)
+            [ -n "$toml" ] || { echo "::error::$l2_jar has no META-INF mods toml"; exit 1; }
+            unzip -p "$l2_jar" "$toml" > /tmp/l2.toml
+            echo "--- $toml ---"; cat /tmp/l2.toml
+            grep -A3 'modId = "minecraft"' /tmp/l2.toml | grep -qF "versionRange = \"[$mc_min,$mc_max)\"" \
+              || { echo "::error::${{ matrix.loader2 }} minecraft versionRange is not [$mc_min,$mc_max)"; exit 1; }
 
-          unzip -p "$nf_jar" pack.mcmeta > /tmp/nf.mcmeta
-          echo "--- pack.mcmeta ---"; cat /tmp/nf.mcmeta
-          grep -qE "\"pack_format\"[[:space:]]*:[[:space:]]*$pack_format[[:space:]]*$" /tmp/nf.mcmeta \
-            || { echo "::error::neoforge pack_format is not $pack_format"; exit 1; }
+            unzip -p "$l2_jar" pack.mcmeta > /tmp/l2.mcmeta
+            echo "--- pack.mcmeta ---"; cat /tmp/l2.mcmeta
+            grep -qE "\"pack_format\"[[:space:]]*:[[:space:]]*$pack_format[[:space:]]*$" /tmp/l2.mcmeta \
+              || { echo "::error::${{ matrix.loader2 }} pack_format is not $pack_format"; exit 1; }
+          else
+            echo "Fabric-only version; no second loader to verify."
+          fi
 
-          fb_jar=$(ls fabric/versions/${{ matrix.mc }}/build/libs/*fabric.jar | grep -Ev 'sources|dev|raw' | head -n1)
+          fb_jar=$(ls fabric/versions/${{ matrix.mc }}/build/libs/*fabric.jar \
+            | grep -Ev 'sources|dev|raw|client-test|server-test' | head -n1)
           unzip -p "$fb_jar" fabric.mod.json > /tmp/fb.json
           echo "--- fabric.mod.json ---"; cat /tmp/fb.json
           grep -qF "\"minecraft\": \">=$mc_min <$mc_max\"" /tmp/fb.json \
             || { echo "::error::fabric minecraft depend is not >=$mc_min <$mc_max"; exit 1; }
 
-      - name: Dedicated server smoke (both loaders)
+      - name: Dedicated server smoke
         shell: pwsh
         run: ./scripts/run-server-test-matrix.ps1 -Versions '${{ matrix.mc }}'
 
@@ -79,7 +113,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb libgl1 libgl1-mesa-dri mesa-utils
 
-      - name: Automated client feature tests (both loaders)
+      - name: Automated client feature tests
         env:
           CI: true
           LIBGL_ALWAYS_SOFTWARE: "1"
@@ -104,10 +138,11 @@ jobs:
           if-no-files-found: error
           path: |
             fabric/versions/${{ matrix.mc }}/build/libs/*fabric.jar
+            forge/versions/${{ matrix.mc }}/build/libs/*forge.jar
             neoforge/versions/${{ matrix.mc }}/build/libs/*neoforge.jar
 
   # Single aggregated status to use as the required check in branch protection:
-  # a PR only passes when all 8 versions x 2 loaders build green + metadata verifies.
+  # a PR only passes when every version builds green and its metadata verifies.
   all-green:
     name: All versions green
     needs: build
@@ -120,4 +155,4 @@ jobs:
             echo "One or more version builds failed."
             exit 1
           fi
-          echo "All 8 versions x 2 loaders built green."
+          echo "All 13 versions built green (25 jars: 13 Fabric + 12 Forge-family)."

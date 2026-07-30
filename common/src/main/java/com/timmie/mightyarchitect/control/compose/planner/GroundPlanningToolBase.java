@@ -44,7 +44,12 @@ public abstract class GroundPlanningToolBase extends ComposerToolBase {
 		LocalPlayer player = Minecraft.getInstance().player;
 		transparentStacks.clear();
 
+		// Entity.level() replaced the public level field in 1.20.
+		//? if >=1.20 {
 		BlockHitResult trace = RaycastHelper.rayTraceRange(player.level(), player, 75);
+		//?} else {
+		/*BlockHitResult trace = RaycastHelper.rayTraceRange(player.level, player, 75);
+		*///?}
 		if (trace != null && trace.getType() == Type.BLOCK) {
 
 			var hitVec = trace.getLocation();
@@ -52,7 +57,11 @@ public abstract class GroundPlanningToolBase extends ComposerToolBase {
 			BlockPos hit = new BlockPos(hitVec3i);
 			makeStacksTransparent(player, hit);
 
+			//? if >=1.20 {
 			boolean replaceable = player.level().getBlockState(hit)
+			//?} else {
+			/*boolean replaceable = player.level.getBlockState(hit)
+			*///?}
 				.canBeReplaced(new BlockPlaceContext(new UseOnContext(player, InteractionHand.MAIN_HAND, trace)));
 			if (trace.getDirection()
 				.getAxis()

@@ -19,14 +19,21 @@ public class TheMightyArchitect {
 	public static TheMightyArchitect instance;
 	public static Logger logger = LogManager.getLogger();
 
+	// ResourceLocation's public constructor was replaced by the fromNamespaceAndPath factory in
+	// 1.21, and the class itself was renamed to Identifier in 1.21.11.
 	//? if >=1.21.11 {
 	public static Identifier id(String path) {
 		return Identifier.fromNamespaceAndPath(ID, path);
 	}
 
-	//?} else {
+	//?} else if >=1.21 {
 	/*public static ResourceLocation id(String path) {
 		return ResourceLocation.fromNamespaceAndPath(ID, path);
+	}
+
+	*///?} else {
+	/*public static ResourceLocation id(String path) {
+		return new ResourceLocation(ID, path);
 	}
 
 	*///?}

@@ -131,9 +131,10 @@ tasks.named("runAutomatedServerTest") {
 }
 
 processResources {
-    // The blueprint post-process shader is driven from a mixin on Fabric; 1.21.1 predates the
-    // post_effect API that mixin targets, so that node ships no client mixins of its own.
-    def includeGameRendererMixin = stonecutter.current.version != "1.21.1"
+    // The blueprint post-process shader is driven from a mixin on Fabric; the post_effect API it
+    // targets only exists from 1.21.4, so every older node ships no client mixins of its own.
+    def postEffectVersions = ["1.21.4", "1.21.6", "1.21.8", "1.21.10", "1.21.11", "26.1"]
+    def includeGameRendererMixin = postEffectVersions.contains(stonecutter.current.version)
     def metaProps = [
         "version"            : project.version,
         "meta_mc_range"      : node.property('meta_mc_range'),
@@ -148,6 +149,17 @@ processResources {
     }
     filesMatching(["mightyarchitect.mixins.json", "mightyarchitect.fabric.mixins.json"]) {
         expand(metaProps + ["client_mixins": includeGameRendererMixin ? '["GameRendererMixin"]' : '[]'])
+    }
+}
+
+// The client-test and server-test companions share one unprocessed resource tree across every
+// node, so their mixin config follows this node's Java level rather than a hardcoded one.
+def testMetaProps = ["meta_java_range": node.property('meta_java_range')]
+
+tasks.named("processClientTestResources") {
+    inputs.properties(testMetaProps)
+    filesMatching("mightyarchitect-test.mixins.json") {
+        expand(testMetaProps)
     }
 }
 

@@ -1,6 +1,10 @@
 package com.timmie.mightyarchitect.foundation;
 
+//? if >=1.21 {
 import com.mojang.blaze3d.vertex.MeshData;
+//?} else {
+/*import com.mojang.blaze3d.vertex.BufferBuilder;
+*///?}
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 //? if >=26 {
@@ -72,10 +76,18 @@ public class SuperByteBuffer {
 	}
 
 	//*
-	 //* Constructs a SuperByteBuffer from MeshData (1.21.1+ API)
+	 //* Constructs a SuperByteBuffer from the renderer's finished mesh. 1.21+ hands out MeshData;
+	 //* the older versions hand out BufferBuilder.RenderedBuffer. Both expose the same draw state
+	 //* (vertex count + format) and a raw little-endian vertex ByteBuffer, so only the parameter
+	 //* type and the draw-state accessor differ.
 	 //
+	//? if >=1.21 {
 	public SuperByteBuffer(MeshData meshData) {
 		if (meshData == null) {
+	//?} else {
+	/*public SuperByteBuffer(BufferBuilder.RenderedBuffer meshData) {
+		if (meshData == null) {
+	*///?}
 			this.vertexData = new int[0];
 			this.vertexCount = 0;
 			this.formatSize = DEFAULT_VERTEX_SIZE;
@@ -84,7 +96,11 @@ public class SuperByteBuffer {
 			return;
 		}
 
+		//? if >=1.21 {
 		MeshData.DrawState drawState = meshData.drawState();
+		//?} else {
+		/*BufferBuilder.DrawState drawState = meshData.drawState();
+		*///?}
 		this.vertexCount = drawState.vertexCount();
 		//? if >=26 {
 		VertexFormat format = drawState.format();
@@ -153,49 +169,71 @@ public class SuperByteBuffer {
 			pos.mul(t);
 			lightPos.mul(localTransforms);
 
-			builder.addVertex(pos.x(), pos.y(), pos.z());
-
 			int color = getColor(i);
 			byte r = (byte) ((color >> 0) & 0xFF);
 			byte g = (byte) ((color >> 8) & 0xFF);
 			byte b = (byte) ((color >> 16) & 0xFF);
 			byte a = (byte) ((color >> 24) & 0xFF);
 
+			int outR, outG, outB, outA;
 			if (shouldColor) {
 				float lum = (r < 0 ? 255 + r : r) / 256f;
-				builder.setColor((int) (this.r * lum), (int) (this.g * lum), (int) (this.b * lum), this.a);
-			} else
-				builder.setColor(r & 0xFF, g & 0xFF, b & 0xFF, a & 0xFF);
+				outR = (int) (this.r * lum);
+				outG = (int) (this.g * lum);
+				outB = (int) (this.b * lum);
+				outA = this.a;
+			} else {
+				outR = r & 0xFF;
+				outG = g & 0xFF;
+				outB = b & 0xFF;
+				outA = a & 0xFF;
+			}
 
 			float u = getU(i);
 			float v = getV(i);
 
 			if (shouldShiftUV) {
-				float targetU = spriteShift.getTarget()
-					.getU((getUnInterpolatedU(spriteShift.getOriginal(), u) / sheetSize) + uTarget * 16);
-				float targetV = spriteShift.getTarget()
-					.getV((getUnInterpolatedV(spriteShift.getOriginal(), v) / sheetSize) + vTarget * 16);
-				builder.setUv(targetU, targetV);
-			} else
-				builder.setUv(u, v);
+				u = spriteShift.getTarget()
+					.getU((getUnInterpolatedU(spriteShift.getOriginal(), getU(i)) / sheetSize) + uTarget * 16);
+				v = spriteShift.getTarget()
+					.getV((getUnInterpolatedV(spriteShift.getOriginal(), getV(i)) / sheetSize) + vTarget * 16);
+			}
 
-			builder.setOverlay(OverlayTexture.NO_OVERLAY);
-
+			int light;
 			if (shouldLight) {
-				int light = packedLightCoords;
+				light = packedLightCoords;
 				if (lightTransform != null) {
 					lightPos.mul(lightTransform);
 					light = getLight(Minecraft.getInstance().level, lightPos);
 				}
-				builder.setLight(light);
 			} else
-				builder.setLight(getLightData(i));
+				light = getLightData(i);
+
+			// 1.21 replaced the chained-and-terminated VertexConsumer builder (vertex(...)...endVertex())
+			// with stateful setters that implicitly finish the previous vertex.
+			//? if >=1.21 {
+			builder.addVertex(pos.x(), pos.y(), pos.z());
+			builder.setColor(outR, outG, outB, outA);
+			builder.setUv(u, v);
+			builder.setOverlay(OverlayTexture.NO_OVERLAY);
+			builder.setLight(light);
+			//?} else {
+			/*builder.vertex(pos.x(), pos.y(), pos.z())
+				.color(outR, outG, outB, outA)
+				.uv(u, v)
+				.overlayCoords(OverlayTexture.NO_OVERLAY)
+				.uv2(light)
+				.normal(getNX(i), getNY(i), getNZ(i))
+				.endVertex();
+			*///?}
 
 			//? if >=26 {
 			if (hasNormal)
 				builder.setNormal(getNX(i), getNY(i), getNZ(i));
-			//?} else {
+			//?} else if >=1.21 {
 			/*builder.setNormal(getNX(i), getNY(i), getNZ(i));
+			*///?} else {
+			/*
 			*///?}
 		}
 

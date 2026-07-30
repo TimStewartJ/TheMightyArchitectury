@@ -1,6 +1,6 @@
 param(
-    [string[]]$Versions = @('1.21.1', '1.21.4', '1.21.6', '1.21.8', '1.21.10', '1.21.11', '26.1', '26.2'),
-    [string[]]$Loaders = @('fabric', 'neoforge'),
+    [string[]]$Versions = @('1.19.4', '1.20.1', '1.20.2', '1.20.4', '1.20.6', '1.21.1', '1.21.4', '1.21.6', '1.21.8', '1.21.10', '1.21.11', '26.1', '26.2'),
+    [string[]]$Loaders = @('fabric', 'neoforge', 'forge'),
     [int]$Port = 25565,
     [int]$ClientTimeoutSeconds = 600,
     [ValidateSet('Always', 'Auto', 'Never')]
@@ -15,7 +15,7 @@ Import-Module (Join-Path $PSScriptRoot 'TestMatrix.Common.psm1') -Force
 Assert-TestMatrixPowerShell
 
 $Versions = Expand-TestListArgument -Value $Versions
-$Loaders = Expand-TestListArgument -Value $Loaders -Allowed @('fabric', 'neoforge')
+$Loaders = Expand-TestListArgument -Value $Loaders -Allowed @('fabric', 'neoforge', 'forge')
 
 if (-not $IsWindows) {
     throw 'The packaged matrix currently requires Prism Launcher on Windows.'
@@ -425,6 +425,7 @@ $failures = [System.Collections.Generic.List[string]]::new()
 $keptOpenSessions = [System.Collections.Generic.List[object]]::new()
 $targetIndex = 0
 
+$nodeCount = 0
 foreach ($version in $Versions) {
     $properties = Get-TestNodeProperties -RepoRoot $RepoRoot -Version $version
     $sharedServer = $null
@@ -434,7 +435,8 @@ foreach ($version in $Versions) {
                 -Port $Port -Motd 'Mighty Architect Packaged Client Test'
         }
 
-        foreach ($loader in $Loaders) {
+        foreach ($loader in (Select-TestVersionLoaders -Version $version -Requested $Loaders)) {
+            $nodeCount++
             $instancePort = if ($KeepOpen) { $Port + $targetIndex } else { $Port }
             $targetIndex++
             $server = $sharedServer
@@ -494,5 +496,5 @@ if ($failures.Count -gt 0) {
 }
 
 if ($keptOpenSessions.Count -eq 0) {
-    Write-Host "All $($Versions.Count * $Loaders.Count) packaged client-test nodes passed."
+    Write-Host "All $nodeCount packaged client-test nodes passed."
 }

@@ -3,8 +3,10 @@ package com.timmie.mightyarchitect.gui;
 import com.timmie.mightyarchitect.foundation.compat.McCompat;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//?} else {
+//?} else if >=1.20 {
 /*import net.minecraft.client.gui.GuiGraphics;
+*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;

@@ -37,9 +37,16 @@ public abstract class Design {
 		} else if (compound.get("Size") instanceof CompoundTag) { // CompoundTag (old format)
 			CompoundTag sizeTag = compound.getCompound("Size").orElse(new CompoundTag());
 			size = new BlockPos(sizeTag.getInt("X").orElse(0), sizeTag.getInt("Y").orElse(0), sizeTag.getInt("Z").orElse(0));
-		//?} else {
+		//?} else if >=1.20.5 {
 		/*if (compound.contains("Size", 11)) { // 11 = IntArrayTag (new format)
 			size = NbtUtils.readBlockPos(compound, "Size").orElse(BlockPos.ZERO);
+		} else if (compound.contains("Size", 10)) { // 10 = CompoundTag (old format)
+			CompoundTag sizeTag = compound.getCompound("Size");
+			size = new BlockPos(sizeTag.getInt("X"), sizeTag.getInt("Y"), sizeTag.getInt("Z"));
+		*///?} else {
+		/*if (compound.contains("Size", 11)) { // 11 = IntArrayTag (new format)
+			int[] arr = compound.getIntArray("Size");
+			size = arr.length >= 3 ? new BlockPos(arr[0], arr[1], arr[2]) : BlockPos.ZERO;
 		} else if (compound.contains("Size", 10)) { // 10 = CompoundTag (old format)
 			CompoundTag sizeTag = compound.getCompound("Size");
 			size = new BlockPos(sizeTag.getInt("X"), sizeTag.getInt("Y"), sizeTag.getInt("Z"));

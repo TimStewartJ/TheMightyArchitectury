@@ -1,9 +1,17 @@
 package com.timmie.mightyarchitect.control;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
+//? if >=1.21 {
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
+//?} else {
+/*
+*///?}
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+//? if >=1.21 {
 import com.mojang.blaze3d.vertex.MeshData;
+//?} else {
+/*
+*///?}
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.timmie.mightyarchitect.MightyClient;
@@ -215,9 +223,12 @@ public class SchematicRenderer {
 		/*Map<ChunkSectionLayer, ByteBufferBuilder> byteBuffers = new HashMap<>();
 		Map<ChunkSectionLayer, BufferBuilder> buffers = new HashMap<>();
 		PoseStack ms = new PoseStack();
-		*///?} else {
+		*///?} else if >=1.21 {
 		/*Map<RenderType, ByteBufferBuilder> byteBuffers = new HashMap<>();
 		Map<RenderType, BufferBuilder> buffers = new HashMap<>();
+		PoseStack ms = new PoseStack();
+		*///?} else {
+		/*Map<RenderType, BufferBuilder> buffers = new HashMap<>();
 		PoseStack ms = new PoseStack();
 		*///?}
 
@@ -260,7 +271,7 @@ public class SchematicRenderer {
 						buffers.get(blockRenderLayer).putBlockBakedQuad(x, y, z, quad, instance);
 						usedBlockRenderLayers.add(blockRenderLayer);
 					};
-						//?} else {
+						//?} else if >=1.21 {
 						/*if (!buffers.containsKey(blockRenderLayer))
 					{
 						int bufferSize = MightyClient.iris_presence ? 262144 : 2097152;
@@ -269,6 +280,14 @@ public class SchematicRenderer {
 						buffers.put(blockRenderLayer, com.timmie.mightyarchitect.foundation.compat.McCompat.quadBuffer(byteBuffer, DefaultVertexFormat.BLOCK));
 						startedBufferBuilders.add(blockRenderLayer);
 					}
+						*///?} else {
+						/*if (!buffers.containsKey(blockRenderLayer))
+					{
+						int bufferSize = MightyClient.iris_presence ? 262144 : 2097152;
+						buffers.put(blockRenderLayer, new BufferBuilder(bufferSize));
+					}
+					if (startedBufferBuilders.add(blockRenderLayer))
+						buffers.get(blockRenderLayer).begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 						*///?}
 
 					//? if >=26 {
@@ -316,6 +335,7 @@ public class SchematicRenderer {
 			if (!startedBufferBuilders.contains(layer))
 				continue;
 			BufferBuilder buf = buffers.get(layer);
+			//? if >=1.21 {
 			MeshData meshData = buf.build();
 			if (meshData != null) {
 				bufferCache.put(layer, new SuperByteBuffer(meshData));
@@ -325,6 +345,12 @@ public class SchematicRenderer {
 			if (byteBuffer != null) {
 				byteBuffer.close();
 			}
+			//?} else {
+			/*var renderedBuffer = buf.end();
+			if (renderedBuffer != null) {
+				bufferCache.put(layer, new SuperByteBuffer(renderedBuffer));
+			}
+			*///?}
 		}
 	}
 

@@ -21,4 +21,7 @@ file("../gradle.properties").withInputStream { rootProps.load(it) }
 dependencies {
     implementation "net.fabricmc:fabric-loom:${rootProps.loom_version}"
     implementation "net.neoforged.moddev:net.neoforged.moddev.gradle.plugin:${rootProps.moddev_version}"
+    // ModDevGradle's legacy addon, released in lockstep with the main plugin. It is what builds
+    // the 1.19.4 / 1.20.1 Forge targets, where NeoForge does not exist yet.
+    implementation "net.neoforged.moddev.legacyforge:net.neoforged.moddev.legacyforge.gradle.plugin:${rootProps.moddev_version}"
 }

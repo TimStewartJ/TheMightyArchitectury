@@ -18,11 +18,21 @@ stonecutter {
     centralScript = "build.gradle"
 
     create(rootProject) {
-        versions "1.21.1", "1.21.4", "1.21.6", "1.21.8", "1.21.10", "1.21.11", "26.1", "26.2"
+        versions "1.19.4", "1.20.1", "1.20.2", "1.20.4", "1.20.6", "1.21.1", "1.21.4", "1.21.6", "1.21.8", "1.21.10", "1.21.11", "26.1", "26.2"
         vcsVersion = "26.1"
         branch("common")
         branch("fabric")
-        branch("neoforge")
+        // NeoForge only becomes buildable at 1.20.4: ModDevGradle resolves NeoForge through Gradle
+        // module metadata, and the earliest build that publishes any is 20.4.238 - the 20.2 and
+        // 20.3 lines went EOL without it, so no toolchain we ship can target them.
+        branch("neoforge") {
+            versions "1.20.4", "1.20.6", "1.21.1", "1.21.4", "1.21.6", "1.21.8", "1.21.10", "1.21.11", "26.1", "26.2"
+        }
+        // Forge, for the two versions predating NeoForge. NeoForge 1.20.1 (47.x) is still
+        // Forge-API compatible, so this jar serves both loaders there.
+        branch("forge") {
+            versions "1.19.4", "1.20.1"
+        }
     }
 }
 

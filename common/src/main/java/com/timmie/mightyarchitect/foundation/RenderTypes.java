@@ -66,7 +66,7 @@ public class RenderTypes {
 						.setLightmapState(LIGHTMAP)
 						.setOverlayState(OVERLAY)
 						.createCompositeState(true));
-	*///?} else {
+	*///?} else if >=1.21 {
 	/*public static RenderType getOutlineSolid(ResourceLocation texture) {
 		return RenderType.create(createLayerName("outline_solid"), DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, true,
 				false, RenderType.CompositeState.builder()
@@ -75,6 +75,9 @@ public class RenderTypes {
 						.setLightmapState(LIGHTMAP)
 						.setOverlayState(OVERLAY)
 						.createCompositeState(true));
+	*///?} else {
+	/*public static RenderType getOutlineSolid(ResourceLocation texture) {
+		return RenderType.entityCutout(texture);
 	*///?}
 	}
 
@@ -104,7 +107,7 @@ public class RenderTypes {
 						.setOverlayState(OVERLAY)
 						.setWriteMaskState(RenderStateShard.COLOR_WRITE)
 						.createCompositeState(true));
-	*///?} else {
+	*///?} else if >=1.21 {
 	/*public static RenderType getOutlineTranslucent(ResourceLocation texture, boolean cull) {
 		return RenderType.create(createLayerName("outline_translucent" + (cull ? "_cull" : "")),
 				DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, true, true, RenderType.CompositeState.builder()
@@ -116,6 +119,9 @@ public class RenderTypes {
 						.setOverlayState(OVERLAY)
 						.setWriteMaskState(RenderStateShard.COLOR_WRITE)
 						.createCompositeState(true));
+	*///?} else {
+	/*public static RenderType getOutlineTranslucent(ResourceLocation texture, boolean cull) {
+		return RenderType.entityTranslucent(texture, !cull);
 	*///?}
 	}
 
@@ -134,7 +140,7 @@ public class RenderTypes {
 						.setLightmapState(LIGHTMAP)
 						.setOverlayState(OVERLAY)
 						.createCompositeState(true));
-	*///?} else {
+	*///?} else if >=1.21 {
 	/*public static RenderType getGlowingSolid(ResourceLocation texture) {
 		return RenderType.create(createLayerName("glowing_solid"), DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256,
 				true, false, RenderType.CompositeState.builder()
@@ -143,6 +149,9 @@ public class RenderTypes {
 						.setLightmapState(LIGHTMAP)
 						.setOverlayState(OVERLAY)
 						.createCompositeState(true));
+	*///?} else {
+	/*public static RenderType getGlowingSolid(ResourceLocation texture) {
+		return RenderType.entitySolid(texture);
 	*///?}
 	}
 
@@ -176,7 +185,7 @@ public class RenderTypes {
 						.setLightmapState(LIGHTMAP)
 						.setOverlayState(OVERLAY)
 						.createCompositeState(true));
-	*///?} else {
+	*///?} else if >=1.21 {
 	/*public static RenderType getGlowingTranslucent(ResourceLocation texture) {
 		return RenderType.create(createLayerName("glowing_translucent"), DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS,
 				256, true, true, RenderType.CompositeState.builder()
@@ -187,6 +196,9 @@ public class RenderTypes {
 						.setLightmapState(LIGHTMAP)
 						.setOverlayState(OVERLAY)
 						.createCompositeState(true));
+	*///?} else {
+	/*public static RenderType getGlowingTranslucent(ResourceLocation texture) {
+		return RenderType.entityTranslucent(texture);
 	*///?}
 	}
 
@@ -213,7 +225,7 @@ public class RenderTypes {
 			net.minecraft.client.renderer.rendertype.RenderTypes.entitySolid(TextureAtlas.LOCATION_BLOCKS);
 			//?} else if >=1.21.6 {
 			/*RenderType.entitySolid(TextureAtlas.LOCATION_BLOCKS);
-			*///?} else {
+			*///?} else if >=1.21 {
 			/*RenderType.create(createLayerName("item_partial_solid"), DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, true,
 					false, RenderType.CompositeState.builder()
 							.setShaderState(RENDERTYPE_ENTITY_SOLID_SHADER)
@@ -222,6 +234,8 @@ public class RenderTypes {
 							.setLightmapState(LIGHTMAP)
 							.setOverlayState(OVERLAY)
 							.createCompositeState(true));
+			*///?} else {
+			/*RenderType.entitySolid(InventoryMenu.BLOCK_ATLAS);
 			*///?}
 
 	public static RenderType getItemPartialSolid() {
@@ -236,7 +250,7 @@ public class RenderTypes {
 	/*@SuppressWarnings("deprecation")
 	private static final RenderType ITEM_PARTIAL_TRANSLUCENT =
 			RenderType.entityTranslucent(TextureAtlas.LOCATION_BLOCKS);
-	*///?} else {
+	*///?} else if >=1.21 {
 	/*private static final RenderType ITEM_PARTIAL_TRANSLUCENT = RenderType.create(createLayerName("item_partial_translucent"),
 			DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, true, true, RenderType.CompositeState.builder()
 					.setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_SHADER)
@@ -245,6 +259,9 @@ public class RenderTypes {
 					.setLightmapState(LIGHTMAP)
 					.setOverlayState(OVERLAY)
 					.createCompositeState(true));
+	*///?} else {
+	/*private static final RenderType ITEM_PARTIAL_TRANSLUCENT =
+			RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS);
 	*///?}
 
 	public static RenderType getItemPartialTranslucent() {
@@ -259,7 +276,7 @@ public class RenderTypes {
 	/*@SuppressWarnings("deprecation")
 	private static final RenderType FLUID =
 			RenderType.entityTranslucent(TextureAtlas.LOCATION_BLOCKS);
-	*///?} else {
+	*///?} else if >=1.21 {
 	/*private static final RenderType FLUID = RenderType.create(createLayerName("fluid"),
 			DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, true, true, RenderType.CompositeState.builder()
 					.setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_SHADER)
@@ -268,6 +285,8 @@ public class RenderTypes {
 					.setLightmapState(LIGHTMAP)
 					.setOverlayState(OVERLAY)
 					.createCompositeState(true));
+	*///?} else {
+	/*private static final RenderType FLUID = RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS);
 	*///?}
 
 	public static RenderType getFluid() {

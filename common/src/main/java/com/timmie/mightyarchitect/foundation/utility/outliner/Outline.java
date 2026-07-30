@@ -160,12 +160,32 @@ public abstract class Outline {
 		if (useFaceColor && params.faceRgb != null)
 			color = params.faceRgb;
 
+		// 1.21 renamed the VertexConsumer builder methods; 1.20.5 had already swapped the normal
+		// matrix argument for the whole Pose.
+		//? if >=1.21 {
 		builder.addVertex(peek.pose(), (float) pos.x, (float) pos.y, (float) pos.z)
 			.setColor((float) color.x, (float) color.y, (float) color.z, params.alpha)
 			.setUv(u, v)
 			.setOverlay(OverlayTexture.NO_OVERLAY)
 			.setLight(params.lightMap)
 			.setNormal(peek, xOffset, yOffset, zOffset);
+		//?} else if >=1.20.5 {
+		/*builder.vertex(peek.pose(), (float) pos.x, (float) pos.y, (float) pos.z)
+			.color((float) color.x, (float) color.y, (float) color.z, params.alpha)
+			.uv(u, v)
+			.overlayCoords(OverlayTexture.NO_OVERLAY)
+			.uv2(params.lightMap)
+			.normal(peek, xOffset, yOffset, zOffset)
+			.endVertex();
+		*///?} else {
+		/*builder.vertex(peek.pose(), (float) pos.x, (float) pos.y, (float) pos.z)
+			.color((float) color.x, (float) color.y, (float) color.z, params.alpha)
+			.uv(u, v)
+			.overlayCoords(OverlayTexture.NO_OVERLAY)
+			.uv2(params.lightMap)
+			.normal(peek.normal(), xOffset, yOffset, zOffset)
+			.endVertex();
+		*///?}
 
 		transformNormals = null;
 	}

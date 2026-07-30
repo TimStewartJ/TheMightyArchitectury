@@ -62,8 +62,10 @@ public class LineOutline extends Outline {
 			float pt = Minecraft.getInstance()
 				//? if >=1.21.4 {
 				.getDeltaTracker().getGameTimeDeltaPartialTick(true);
-				//?} else {
+				//?} else if >=1.21 {
 				/*.getTimer().getGameTimeDeltaPartialTick(true);
+				*///?} else {
+				/*.getFrameTime();
 				*///?}
 			renderCuboidLine(ms, buffer, VecHelper.lerp(prevStart, start, pt), VecHelper.lerp(prevEnd, end, pt));
 		}
@@ -96,8 +98,10 @@ public class LineOutline extends Outline {
 			float pt = Minecraft.getInstance()
 				//? if >=1.21.4 {
 				.getDeltaTracker().getGameTimeDeltaPartialTick(true);
-				//?} else {
+				//?} else if >=1.21 {
 				/*.getTimer().getGameTimeDeltaPartialTick(true);
+				*///?} else {
+				/*.getFrameTime();
 				*///?}
 			float distanceToTarget = 1 - Mth.lerp(pt, prevProgress, progress);
 			Vec3 start = end.add(this.start.subtract(end)

@@ -6,8 +6,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 //? if >=1.21.4 {
-//?} else {
+//?} else if >=1.20 {
 /*import net.minecraft.world.level.material.MapColor;
+*///?} else {
+/*import net.minecraft.world.level.material.Material;
 *///?}
 
 public class DesignAnchorBlock extends Block {
@@ -17,9 +19,12 @@ public class DesignAnchorBlock extends Block {
 	//? if >=1.21.4 {
 	public DesignAnchorBlock(Properties properties) {
 		super(properties);
-	//?} else {
+	//?} else if >=1.20 {
 	/*public DesignAnchorBlock() {
 		super(Properties.of().mapColor(MapColor.STONE));
+	*///?} else {
+	/*public DesignAnchorBlock() {
+		super(Properties.of(Material.STONE));
 	*///?}
 	}
 

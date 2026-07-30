@@ -4,12 +4,21 @@ import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.foundation.utility.ShaderManager;
 import com.timmie.mightyarchitect.gui.ScreenHelper;
+// DeltaTracker replaced the raw partial-tick float in 1.21, and GuiGraphics itself only exists
+// from 1.20 - before that the HUD is drawn straight onto a PoseStack, which the mod's own
+// GuiGraphics stand-in wraps.
+//? if >=1.21 {
 import net.minecraft.client.DeltaTracker;
+//?} else {
+/*
+*///?}
 import net.minecraft.client.Minecraft;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//?} else {
+//?} else if >=1.20 {
 /*import net.minecraft.client.gui.GuiGraphics;
+*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
 
 /**
@@ -36,11 +45,17 @@ public final class ClientHooks {
 
 	//? if >=26 {
 	public static void renderHud(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
-	//?} else {
-	/*public static void renderHud(GuiGraphics graphics, DeltaTracker deltaTracker) {
-	*///?}
 		ArchitectManager.onDrawGameOverlay(graphics, deltaTracker);
 	}
+	//?} else if >=1.21 {
+	/*public static void renderHud(GuiGraphics graphics, DeltaTracker deltaTracker) {
+		ArchitectManager.onDrawGameOverlay(graphics, deltaTracker);
+	}
+	*///?} else {
+	/*public static void renderHud(GuiGraphics graphics, float partialTicks) {
+		ArchitectManager.onDrawGameOverlay(graphics, partialTicks);
+	}
+	*///?}
 
 	/**
 	 * @return true when the mod consumed the scroll, so vanilla must not also act on it.

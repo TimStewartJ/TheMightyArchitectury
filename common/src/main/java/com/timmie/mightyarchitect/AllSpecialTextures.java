@@ -43,8 +43,10 @@ public enum AllSpecialTextures {
     private AllSpecialTextures(String filename) {
         //? if >=1.21.11 {
         location = Identifier.fromNamespaceAndPath(TheMightyArchitect.ID,
-        //?} else {
+        //?} else if >=1.21 {
         /*location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID,
+        *///?} else {
+        /*location = new ResourceLocation(TheMightyArchitect.ID,
         *///?}
                 "textures/block/marker/" + filename);
     }

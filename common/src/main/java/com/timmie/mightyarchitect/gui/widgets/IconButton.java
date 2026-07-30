@@ -10,8 +10,10 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.gui.ScreenResources;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//?} else {
+//?} else if >=1.20 {
 /*import net.minecraft.client.gui.GuiGraphics;
+*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 //? if >=1.21.10 {
@@ -39,8 +41,11 @@ public class IconButton extends AbstractSimiWidget {
 	@Override
 	//? if >=26 {
 	public void extractWidgetRenderState(GuiGraphicsExtractor ms, int mouseX, int mouseY, float partialTicks) {
-	//?} else {
+	//?} else if >=1.20 {
 	/*public void renderWidget(GuiGraphics ms, int mouseX, int mouseY, float partialTicks) {
+	*///?} else {
+	/*public void renderWidget(com.mojang.blaze3d.vertex.PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+		GuiGraphics ms = new GuiGraphics(poseStack);
 	*///?}
 		if (this.visible) {
 			this.isHovered =

@@ -1,6 +1,6 @@
 param(
-    [string[]]$Versions = @('1.21.1', '1.21.4', '1.21.6', '1.21.8', '1.21.10', '1.21.11', '26.1', '26.2'),
-    [string[]]$Loaders = @('fabric', 'neoforge'),
+    [string[]]$Versions = @('1.19.4', '1.20.1', '1.20.2', '1.20.4', '1.20.6', '1.21.1', '1.21.4', '1.21.6', '1.21.8', '1.21.10', '1.21.11', '26.1', '26.2'),
+    [string[]]$Loaders = @('fabric', 'neoforge', 'forge'),
     [int]$Port = 25565,
     [int]$ClientTimeoutSeconds = 600,
     [switch]$KeepOpen
@@ -13,7 +13,7 @@ Import-Module (Join-Path $PSScriptRoot 'TestMatrix.Common.psm1') -Force
 Assert-TestMatrixPowerShell
 
 $Versions = Expand-TestListArgument -Value $Versions
-$Loaders = Expand-TestListArgument -Value $Loaders -Allowed @('fabric', 'neoforge')
+$Loaders = Expand-TestListArgument -Value $Loaders -Allowed @('fabric', 'neoforge', 'forge')
 
 $RepoRoot = Get-TestMatrixRepoRoot -ScriptRoot $PSScriptRoot
 $BuildRoot = Join-Path $RepoRoot 'build'
@@ -21,7 +21,7 @@ $RuntimeRoot = Join-Path $BuildRoot 'client-test-runtime'
 $ResultsRoot = Join-Path $BuildRoot 'client-test-results'
 $Gradle = Get-TestGradleCommand -RepoRoot $RepoRoot
 
-if ($KeepOpen -and ($Versions.Count -ne 1 -or $Loaders.Count -ne 1)) {
+if ($KeepOpen -and ($Versions.Count -ne 1 -or (Select-TestVersionLoaders -Version $Versions[0] -Requested $Loaders).Count -ne 1)) {
     throw '-KeepOpen requires exactly one version and one loader. Start multiple invocations with distinct -Port values for simultaneous clients.'
 }
 
@@ -103,10 +103,12 @@ function Invoke-ClientTest {
         $gradleArguments.Add(":${Loader}:${Version}:runAutomatedClientTest")
         $gradleArguments.Add('--console=plain')
         $gradleArguments.Add('--no-daemon')
-        if ($Loader -eq 'neoforge') {
+        # Fabric runs the companion from its own source set; the Forge-family loaders load it as a
+        # local runtime mod jar instead.
+        if ($Loader -eq 'neoforge' -or $Loader -eq 'forge') {
             $gradleArguments.Add('-PenableClientTestMod=true')
         }
-        $gradleArguments.Add('-Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64')
+        $gradleArguments.Add('-Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64')
         $hiddenWindow = Get-TestHiddenWindowOption
         $gradleProcess = Start-Process -FilePath $Gradle `
             -ArgumentList $gradleArguments `
@@ -165,13 +167,14 @@ function Invoke-ClientTest {
                 if ($shutdownWatchdog -and $resultPassed) {
                     Write-Host "WARN $Version / $Loader - checks passed; client missed the 15s shutdown deadline and vanilla force-exited it ($gradleExit)" -ForegroundColor Yellow
                 } else {
-                    if (Test-Path $gradleStdout) {
-                        Get-Content $gradleStdout -Tail 30 | ForEach-Object { Write-Host $_ }
-                    }
-                    if (Test-Path $gradleStderr) {
-                        Get-Content $gradleStderr -Tail 30 | ForEach-Object { Write-Host $_ -ForegroundColor Red }
-                    }
-                    throw "Gradle client test exited $gradleExit"
+                    $stdoutTail = if (Test-Path $gradleStdout) { (Get-Content $gradleStdout -Tail 30) -join "`n" } else { '' }
+                    $stderrTail = if (Test-Path $gradleStderr) { (Get-Content $gradleStderr -Tail 30) -join "`n" } else { '' }
+                    if ($stdoutTail) { Write-Host $stdoutTail }
+                    if ($stderrTail) { Write-Host $stderrTail -ForegroundColor Red }
+                    # The tail travels in the message so infrastructure failures inside Gradle itself
+                    # (asset downloads and the like) can be classified as retryable, the way the
+                    # server matrix already does.
+                    throw "Gradle client test exited $gradleExit`n$stdoutTail`n$stderrTail"
                 }
             }
         }
@@ -227,16 +230,18 @@ New-Item -ItemType Directory -Force -Path $RuntimeRoot, $ResultsRoot | Out-Null
 $failures = [System.Collections.Generic.List[string]]::new()
 $keptOpenSession = $null
 
+$nodeCount = 0
 foreach ($version in $Versions) {
     $properties = Get-TestNodeProperties -RepoRoot $RepoRoot -Version $version
     $server = $null
     try {
         # Key the server runtime directory by port so concurrent invocations on different
         # ports never share a world/logs/server.properties directory.
-        $serverNodeId = if ($KeepOpen) { "$version-$($Loaders[0])-$Port" } else { "$version-$Port" }
+        $serverNodeId = if ($KeepOpen) { "$version-$((Select-TestVersionLoaders -Version $version -Requested $Loaders)[0])-$Port" } else { "$version-$Port" }
         $server = Start-TestVanillaServer -NodeId $serverNodeId -Properties $properties -RuntimeRoot $RuntimeRoot `
             -Port $Port -Motd 'Mighty Architect Client Test'
-        foreach ($loader in $Loaders) {
+        foreach ($loader in (Select-TestVersionLoaders -Version $version -Requested $Loaders)) {
+            $nodeCount++
             $passed = $false
             for ($attempt = 1; $attempt -le 2 -and -not $passed; $attempt++) {
                 try {
@@ -285,4 +290,4 @@ if ($keptOpenSession) {
     return
 }
 
-Write-Host "All $($Versions.Count * $Loaders.Count) client-test nodes passed."
+Write-Host "All $nodeCount client-test nodes passed."

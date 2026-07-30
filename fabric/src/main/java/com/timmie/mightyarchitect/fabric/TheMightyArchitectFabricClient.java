@@ -29,7 +29,18 @@ public class TheMightyArchitectFabricClient implements ClientModInitializer {
 		KeyBindingHelper.registerKeyBinding(MightyClient.TOOL_MENU);
 		*///?}
 
+		// Before 1.20.5 there is no payload type to send: packets go out as a raw buffer on a
+		// named channel, so the mod serialises them itself.
+		//? if >=1.20.5 {
 		AllPackets.setSender(ClientPlayNetworking::send);
+		//?} else {
+		/*AllPackets.setSender(packet -> {
+			net.minecraft.network.FriendlyByteBuf buffer =
+				net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
+			packet.write(buffer);
+			ClientPlayNetworking.send(packet.id(), buffer);
+		});
+		*///?}
 
 		OnRenderWorld.RegisterRenderEvent();
 	}

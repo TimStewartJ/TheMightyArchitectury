@@ -34,7 +34,12 @@ public class CylinderRoomTool extends RoomTool {
 		LocalPlayer player = Minecraft.getInstance().player;
 		transparentStacks.clear();
 
+		// Entity.level() replaced the public level field in 1.20.
+		//? if >=1.20 {
 		BlockHitResult trace = RaycastHelper.rayTraceRange(player.level(), player, 75);
+		//?} else {
+		/*BlockHitResult trace = RaycastHelper.rayTraceRange(player.level, player, 75);
+		*///?}
 		if (trace != null && trace.getType() == Type.BLOCK) {
 
 			BlockPos hit = trace.getBlockPos();

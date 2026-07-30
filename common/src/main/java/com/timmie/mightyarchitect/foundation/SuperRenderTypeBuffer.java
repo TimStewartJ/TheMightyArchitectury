@@ -270,7 +270,11 @@ public class SuperRenderTypeBuffer implements MightyBuffers {
 *///?} else {
 package com.timmie.mightyarchitect.foundation;
 
+//? if >=1.21 {
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
+//?} else {
+/*import com.mojang.blaze3d.vertex.BufferBuilder;
+*///?}
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 //? if >=1.21.11 {
@@ -287,7 +291,11 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.resources.model.ModelBakery;
 
+//? if >=1.21 {
 import java.util.SequencedMap;
+//?} else {
+/*import java.util.SortedMap;
+*///?}
 
 public class SuperRenderTypeBuffer implements MultiBufferSource, MightyBuffers {
 
@@ -336,7 +344,13 @@ public class SuperRenderTypeBuffer implements MultiBufferSource, MightyBuffers {
 
 	private static class SuperRenderTypeBufferPhase {
 
+		// 1.21 swapped the immediate-mode buffer pool from BufferBuilder to ByteBufferBuilder and
+		// the map type from fastutil's SortedMap view to SequencedMap.
+		//? if >=1.21 {
 		private final SequencedMap<RenderType, ByteBufferBuilder> fixedBuffers = Util.make(new Object2ObjectLinkedOpenHashMap<>(), map -> {
+		//?} else {
+		/*private final SortedMap<RenderType, BufferBuilder> fixedBuffers = Util.make(new Object2ObjectLinkedOpenHashMap<>(), map -> {
+		*///?}
 			//? if >=26 {
 			put(map, net.minecraft.client.renderer.rendertype.RenderTypes.solidMovingBlock());
 			put(map, net.minecraft.client.renderer.rendertype.RenderTypes.cutoutMovingBlock());
@@ -404,11 +418,19 @@ public class SuperRenderTypeBuffer implements MultiBufferSource, MightyBuffers {
 				put(map, p_173062_);
 			});
 		});
+		//? if >=1.21 {
 		private final BufferSource bufferSource = MultiBufferSource.immediateWithBuffers(fixedBuffers, new ByteBufferBuilder(256));
 
 		private static void put(Object2ObjectLinkedOpenHashMap<RenderType, ByteBufferBuilder> map, RenderType type) {
 			map.put(type, new ByteBufferBuilder(type.bufferSize()));
 		}
+		//?} else {
+		/*private final BufferSource bufferSource = MultiBufferSource.immediateWithBuffers(fixedBuffers, new BufferBuilder(256));
+
+		private static void put(Object2ObjectLinkedOpenHashMap<RenderType, BufferBuilder> map, RenderType type) {
+			map.put(type, new BufferBuilder(type.bufferSize()));
+		}
+		*///?}
 
 	}
 

@@ -3,6 +3,11 @@ def javaVer = (node.findProperty('java_version') ?: '21') as int
 def mcVersion = node.property('minecraft_version')
 def neoforgeVersion = node.property('neoforge_version')
 def enableClientTestMod = project.findProperty("enableClientTestMod") == "true"
+// NeoForge only started reading META-INF/neoforge.mods.toml in 20.5/1.20.5. Older nodes get the
+// same template renamed back to the Forge-era path. (20.4 does already accept `type` dependency
+// entries, so only the file name differs.)
+def legacyModsToml = stonecutter.eval(stonecutter.current.version, "<1.20.5")
+final String LEGACY_METADATA_PATH = "META-INF/mods.toml"
 def clientTestSessionId = System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SESSION_ID")
     ?.replaceAll("[^A-Za-z0-9._-]", "-")
 def clientTestRunDir = clientTestSessionId ? "run-client-test-${clientTestSessionId}" : "run-client-test"
@@ -139,8 +144,12 @@ processResources {
         "meta_fml_range"      : (node.findProperty('meta_fml_range') ?: '3')
     ]
     inputs.properties(metaProps)
+    inputs.property("legacy_mods_toml", legacyModsToml)
     filesMatching("META-INF/neoforge.mods.toml") {
         expand(metaProps)
+        if (legacyModsToml) {
+            it.path = LEGACY_METADATA_PATH
+        }
     }
     filesMatching("pack.mcmeta") {
         expand(metaProps)
@@ -151,6 +160,38 @@ processResources {
     // Fabric-only mixin config: harmless in the NeoForge jar, but leaving an unexpanded
     // ${...} placeholder in a shipped file is not, so drop it here.
     exclude "mightyarchitect.fabric.mixins.json"
+}
+
+// The test companions share one unprocessed resource tree across every node, so their mixin
+// config and mod metadata follow this node's Java level and FML loader major.
+def testMetaProps = [
+    "meta_java_range": node.property('meta_java_range'),
+    "meta_fml_range" : (node.findProperty('meta_fml_range') ?: '3')
+]
+
+tasks.named("processClientTestResources") {
+    inputs.properties(testMetaProps)
+    inputs.property("legacy_mods_toml", legacyModsToml)
+    filesMatching("mightyarchitect-test.mixins.json") {
+        expand(testMetaProps)
+    }
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand(testMetaProps)
+        if (legacyModsToml) {
+            it.path = LEGACY_METADATA_PATH
+        }
+    }
+}
+
+tasks.named("processServerTestResources") {
+    inputs.properties(testMetaProps)
+    inputs.property("legacy_mods_toml", legacyModsToml)
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand(testMetaProps)
+        if (legacyModsToml) {
+            it.path = LEGACY_METADATA_PATH
+        }
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {

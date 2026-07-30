@@ -1,6 +1,6 @@
 param(
-    [string[]]$Versions = @('1.21.1', '1.21.4', '1.21.6', '1.21.8', '1.21.10', '1.21.11', '26.1', '26.2'),
-    [string[]]$Loaders = @('fabric', 'neoforge')
+    [string[]]$Versions = @('1.19.4', '1.20.1', '1.20.2', '1.20.4', '1.20.6', '1.21.1', '1.21.4', '1.21.6', '1.21.8', '1.21.10', '1.21.11', '26.1', '26.2'),
+    [string[]]$Loaders = @('fabric', 'neoforge', 'forge')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -10,7 +10,7 @@ Import-Module (Join-Path $PSScriptRoot 'TestMatrix.Common.psm1') -Force
 Assert-TestMatrixPowerShell
 
 $Versions = Expand-TestListArgument -Value $Versions
-$Loaders = Expand-TestListArgument -Value $Loaders -Allowed @('fabric', 'neoforge')
+$Loaders = Expand-TestListArgument -Value $Loaders -Allowed @('fabric', 'neoforge', 'forge')
 
 $RepoRoot = Get-TestMatrixRepoRoot -ScriptRoot $PSScriptRoot
 $Gradle = Get-TestGradleCommand -RepoRoot $RepoRoot
@@ -48,15 +48,17 @@ function Get-ClientTestJar {
 }
 
 $tasks = [System.Collections.Generic.List[string]]::new()
+$targetCount = 0
 foreach ($version in $Versions) {
-    foreach ($loader in $Loaders) {
+    foreach ($loader in (Select-TestVersionLoaders -Version $version -Requested $Loaders)) {
+        $targetCount++
         $tasks.Add(":${loader}:${version}:build")
         $tasks.Add(":${loader}:${version}:buildClientTestMod")
     }
 }
 
-Write-Host "Preparing runtime artifacts for $($Versions.Count * $Loaders.Count) target(s)"
-$arguments = $tasks + @('--console=plain', '-Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64')
+Write-Host "Preparing runtime artifacts for $targetCount target(s)"
+$arguments = $tasks + @('--console=plain', '-Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64')
 & $Gradle @arguments
 if ($LASTEXITCODE -ne 0) {
     throw "Gradle artifact preparation failed with exit code $LASTEXITCODE"
@@ -65,7 +67,7 @@ if ($LASTEXITCODE -ne 0) {
 $targets = [System.Collections.Generic.List[object]]::new()
 foreach ($version in $Versions) {
     $properties = Get-TestNodeProperties -RepoRoot $RepoRoot -Version $version
-    foreach ($loader in $Loaders) {
+    foreach ($loader in (Select-TestVersionLoaders -Version $version -Requested $Loaders)) {
         $modJar = Get-ProductionJar -Version $version -Loader $loader
         $testJar = Get-ClientTestJar -Version $version -Loader $loader
 

@@ -8,8 +8,10 @@ import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import net.minecraft.ChatFormatting;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//?} else {
+//?} else if >=1.20 {
 /*import net.minecraft.client.gui.GuiGraphics;
+*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 //? if >=1.21.10 {
@@ -90,7 +92,11 @@ public class ScrollInput extends AbstractSimiWidget {
 	}
 
 	@Override
+	//? if >=1.20.2 {
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+	//?} else {
+	/*public boolean mouseScrolled(double mouseX, double mouseY, double verticalAmount) {
+	*///?}
 		if (!isHovered)
 			return false;
 
@@ -144,8 +150,10 @@ public class ScrollInput extends AbstractSimiWidget {
 	@Override
 	//? if >=26 {
 	public void extractWidgetRenderState(GuiGraphicsExtractor poseStack, int i, int j, float f) {
-	//?} else {
+	//?} else if >=1.20 {
 	/*public void renderWidget(GuiGraphics poseStack, int i, int j, float f) {
+	*///?} else {
+	/*public void renderWidget(com.mojang.blaze3d.vertex.PoseStack poseStack, int i, int j, float f) {
 	*///?}
 
 	}

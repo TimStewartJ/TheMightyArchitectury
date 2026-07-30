@@ -54,8 +54,10 @@ public class OutlinedText extends Outline {
 		Minecraft mc = Minecraft.getInstance();
 		//? if >=1.21.4 {
 		float pt = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
-		//?} else {
+		//?} else if >=1.21 {
 		/*float pt = mc.getTimer().getGameTimeDeltaPartialTick(true);
+		*///?} else {
+		/*float pt = mc.getFrameTime();
 		*///?}
 		Vec3 vec = VecHelper.lerp(prevLocation, location, pt);
 

@@ -10,8 +10,9 @@ import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
 import com.timmie.mightyarchitect.gui.widgets.SelectionScrollInput;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//?} else {
-/*import net.minecraft.client.gui.GuiGraphics;*///?}
+//?} else if >=1.20 {
+/*import net.minecraft.client.gui.GuiGraphics;*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;*///?}
 
 import java.util.ArrayList;
 import java.util.List;

@@ -22,8 +22,11 @@ import net.minecraft.resources.ResourceLocation;
 /*import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
-*///?} else {
+*///?} else if >=1.20 {
 /*import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
+*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 *///?}
 
@@ -137,8 +140,10 @@ public enum ScreenResources {
 
 	private ScreenResources(String location, int startX, int startY, int width, int height, int textureWidth, int textureHeight) {
 		this.location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "textures/gui/" + location);
-		*///?} else {
+		*///?} else if >=1.21 {
 		/*this.location = ResourceLocation.fromNamespaceAndPath(TheMightyArchitect.ID, "textures/gui/" + location);
+		*///?} else {
+		/*this.location = new ResourceLocation(TheMightyArchitect.ID, "textures/gui/" + location);
 		*///?}
 		this.width = width; this.height = height;
 		this.startX = startX; this.startY = startY;

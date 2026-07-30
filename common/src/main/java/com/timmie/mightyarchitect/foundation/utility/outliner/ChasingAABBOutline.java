@@ -32,8 +32,10 @@ public class ChasingAABBOutline extends AABBOutline {
 		renderBB(ms, buffer, interpolateBBs(prevBB, bb, Minecraft.getInstance()
 			//? if >=1.21.4 {
 			.getDeltaTracker().getGameTimeDeltaPartialTick(true)));
-			//?} else {
+			//?} else if >=1.21 {
 			/*.getTimer().getGameTimeDeltaPartialTick(true)));
+			*///?} else {
+			/*.getFrameTime()));
 			*///?}
 	}
 

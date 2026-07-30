@@ -5,7 +5,12 @@ import com.timmie.mightyarchitect.control.design.partials.Design;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+// NbtIo.readCompressed gained the NbtAccounter size guard in 1.20.3.
+//? if >=1.20.3 {
 import net.minecraft.nbt.NbtAccounter;
+//?} else {
+/*
+*///?}
 import net.minecraft.nbt.NbtIo;
 
 import java.io.IOException;
@@ -76,7 +81,11 @@ public class DesignResourceLoader {
 			try {
 				InputStream inputStream = Files.newInputStream(Paths.get("themes/" + theme.getFilePath()),
 						StandardOpenOption.READ);
+				//? if >=1.20.3 {
 				importedThemeFile = NbtIo.readCompressed(inputStream, NbtAccounter.unlimitedHeap());
+				//?} else {
+				/*importedThemeFile = NbtIo.readCompressed(inputStream);
+				*///?}
 				inputStream.close();
 			} catch (IOException e) {
 				e.printStackTrace();

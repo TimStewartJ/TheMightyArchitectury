@@ -17,8 +17,10 @@ import com.timmie.mightyarchitect.foundation.utility.RaycastHelper.PredicateTrac
 import net.minecraft.client.Minecraft;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//?} else {
+//?} else if >=1.20 {
 /*import net.minecraft.client.gui.GuiGraphics;
+*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -111,10 +113,15 @@ public abstract class ComposerToolBase implements IComposerTool {
 		ms.pose().translate(25,
 				-Mth.lerp(mc.getDeltaTracker().getGameTimeDeltaPartialTick(true), lastToolModeYOffset, toolModeYOffset),
 				0);
-		*///?} else {
+		*/		//?} else if >=1.21 {
 		/*ms.pose().translate(mainWindow.getGuiScaledWidth() / 2, mainWindow.getGuiScaledHeight() / 2 - 3, 0);
 		ms.pose().translate(25,
 				-Mth.lerp(mc.getTimer().getGameTimeDeltaPartialTick(true), lastToolModeYOffset, toolModeYOffset),
+				0);
+		*///?} else {
+		/*ms.pose().translate(mainWindow.getGuiScaledWidth() / 2, mainWindow.getGuiScaledHeight() / 2 - 3, 0);
+		ms.pose().translate(25,
+				-Mth.lerp(mc.getFrameTime(), lastToolModeYOffset, toolModeYOffset),
 				0);
 		*///?}
 
