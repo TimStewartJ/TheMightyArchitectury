@@ -4,6 +4,7 @@ package com.timmie.mightyarchitect.gui;
 //?} else {
 /*import com.mojang.blaze3d.vertex.PoseStack;
 *///?}
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.design.DesignExporter;
@@ -257,7 +258,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 		if (!(button instanceof PaletteButton)) {
 			if (button == buttonAddPalette) {
 				ArchitectManager.createPalette(true);
-				minecraft.setScreen(null);
+				McCompat.setScreen(minecraft, null);
 			}
 		} else {
 			ArchitectManager.getModel()
@@ -277,7 +278,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 
 		if (!(button instanceof PaletteButton)) {
 			ArchitectManager.createPalette(false);
-			minecraft.setScreen(null);
+			McCompat.setScreen(minecraft, null);
 		} else {
 			ArchitectManager.getModel()
 				.swapSecondaryPalette(((PaletteButton) button).palette);

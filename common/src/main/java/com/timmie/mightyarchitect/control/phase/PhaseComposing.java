@@ -1,5 +1,6 @@
 package com.timmie.mightyarchitect.control.phase;
 
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.MightyClient;
@@ -18,7 +19,7 @@ import net.minecraft.client.input.KeyEvent;
 *///?} else {
 /*import net.minecraft.client.gui.GuiGraphics;
 *///?}
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
@@ -127,7 +128,7 @@ public class PhaseComposing extends PhaseBase implements IRenderGameOverlay {
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {}
+	public void render(PoseStack ms, MightyBuffers buffer) {}
 
 	@Override
 	public void whenExited() {
@@ -140,7 +141,7 @@ public class PhaseComposing extends PhaseBase implements IRenderGameOverlay {
 	//?} else {
 	/*public void renderGameOverlay(GuiGraphics ms, float partialTicks) {
 	*///?}
-		if (Minecraft.getInstance().screen != null)
+		if (McCompat.currentScreen(Minecraft.getInstance()) != null)
 			return;
 
 		toolSelection.renderPassive(ms, Minecraft.getInstance()

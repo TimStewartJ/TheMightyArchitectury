@@ -93,7 +93,13 @@ public class SuperByteBuffer {
 		/*this.formatSize = drawState.format().getVertexSize();
 		*///?}
 		this.intsPerVertex = formatSize / 4;
-		//? if >=26 {
+		//? if >=26.2 {
+		/*// 26.2 addresses format elements by semantic name; VertexFormatElement is a plain record now.
+		this.hasNormal = format.contains(com.mojang.blaze3d.vertex.DefaultVertexFormat.NORMAL_SEMANTIC_NAME);
+		this.normalIntOffset = hasNormal
+			? format.getElement(com.mojang.blaze3d.vertex.DefaultVertexFormat.NORMAL_SEMANTIC_NAME).offset() / 4
+			: -1;
+		*///?} else if >=26 {
 		this.hasNormal = format.contains(VertexFormatElement.NORMAL);
 		this.normalIntOffset = hasNormal ? format.getOffset(VertexFormatElement.NORMAL) / 4 : -1;
 		//?} else {

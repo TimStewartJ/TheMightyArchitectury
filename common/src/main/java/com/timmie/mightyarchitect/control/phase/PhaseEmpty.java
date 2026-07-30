@@ -2,7 +2,7 @@ package com.timmie.mightyarchitect.control.phase;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 
 import java.util.List;
 
@@ -21,7 +21,7 @@ public class PhaseEmpty extends PhaseBase {
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {
+	public void render(PoseStack ms, MightyBuffers buffer) {
 	}
 
 	@Override

@@ -17,7 +17,7 @@ import net.minecraft.client.Minecraft;
 //?} else {
 /*import net.minecraft.client.renderer.ItemBlockRenderTypes;
 *///?}
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 //? if >=26 {
 import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.client.renderer.block.BlockQuadOutput;
@@ -156,13 +156,17 @@ public class SchematicRenderer {
 		changed = false;
 	}
 
-	public void render(PoseStack ms, MultiBufferSource buffer) {
+	public void render(PoseStack ms, MightyBuffers buffer) {
 		if (!active)
 			return;
 
 		ms.pushPose();
 		ms.translate(anchor.getX(), anchor.getY(), anchor.getZ());
-		//? if >=26 {
+		//? if >=26.2 {
+		/*// No ordering hint here: 26.2 sorts submitted geometry itself, and seeding an empty buffer
+		// would only create a recording that never gets submitted.
+		for (ChunkSectionLayer layer : CHUNK_SECTION_LAYERS) {
+		*///?} else if >=26 {
 		buffer.getBuffer(RenderTypes.solidMovingBlock());
 		for (ChunkSectionLayer layer : CHUNK_SECTION_LAYERS) {
 		//?} else if >=1.21.11 {
@@ -238,7 +242,7 @@ public class SchematicRenderer {
 							int bufferSize = MightyClient.iris_presence ? 262144 : 2097152;
 							ByteBufferBuilder byteBuffer = new ByteBufferBuilder(bufferSize);
 							byteBuffers.put(blockRenderLayer, byteBuffer);
-							buffers.put(blockRenderLayer, new BufferBuilder(byteBuffer, VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK));
+							buffers.put(blockRenderLayer, com.timmie.mightyarchitect.foundation.compat.McCompat.quadBuffer(byteBuffer, DefaultVertexFormat.BLOCK));
 							startedBufferBuilders.add(blockRenderLayer);
 						}
 				//?} else if >=1.21.6 {
@@ -262,7 +266,7 @@ public class SchematicRenderer {
 						int bufferSize = MightyClient.iris_presence ? 262144 : 2097152;
 						ByteBufferBuilder byteBuffer = new ByteBufferBuilder(bufferSize);
 						byteBuffers.put(blockRenderLayer, byteBuffer);
-						buffers.put(blockRenderLayer, new BufferBuilder(byteBuffer, VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK));
+						buffers.put(blockRenderLayer, com.timmie.mightyarchitect.foundation.compat.McCompat.quadBuffer(byteBuffer, DefaultVertexFormat.BLOCK));
 						startedBufferBuilders.add(blockRenderLayer);
 					}
 						*///?}

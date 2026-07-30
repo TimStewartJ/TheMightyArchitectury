@@ -1,5 +1,6 @@
 package com.timmie.mightyarchitect.control;
 
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.MightyClient;
@@ -24,7 +25,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 //?} else {
 /*import net.minecraft.client.gui.GuiGraphics;*///?}
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
@@ -266,7 +267,7 @@ public class ArchitectManager {
 
 	// Returns true when the scroll was consumed and vanilla must not also act on it.
 	public static boolean onMouseScrolled(double horizontalAmount, double verticalAmount) {
-		if (Minecraft.getInstance().screen != null)
+		if (McCompat.currentScreen(Minecraft.getInstance()) != null)
 			return false;
 		if (phase.getPhaseHandler()
 			.onScroll((int) Math.signum(verticalAmount)))
@@ -274,14 +275,14 @@ public class ArchitectManager {
 		return false;
 	}
 
-	public static void render(PoseStack ms, MultiBufferSource buffer) {
+	public static void render(PoseStack ms, MightyBuffers buffer) {
 		if (Minecraft.getInstance().level != null)
 			phase.getPhaseHandler()
 				.render(ms, buffer);
 	}
 
 	public static void onClick(int button, int action) {
-		if (Minecraft.getInstance().screen != null)
+		if (McCompat.currentScreen(Minecraft.getInstance()) != null)
 			return;
 		if (action != Keyboard.PRESS)
 			return;
@@ -297,7 +298,7 @@ public class ArchitectManager {
 			}
 			return;
 		}
-		if (Minecraft.getInstance().screen != null)
+		if (McCompat.currentScreen(Minecraft.getInstance()) != null)
 			return;
 		if (MightyClient.COMPOSE.consumeClick()) {
 			if (!menu.isFocused())

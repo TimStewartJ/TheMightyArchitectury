@@ -9,7 +9,7 @@ import com.timmie.mightyarchitect.foundation.RenderTypes;
 import com.timmie.mightyarchitect.foundation.utility.AngleHelper;
 import com.timmie.mightyarchitect.foundation.utility.ColorHelper;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
@@ -33,9 +33,9 @@ public abstract class Outline {
 		params = new OutlineParams();
 	}
 
-	public abstract void render(PoseStack ms, MultiBufferSource buffer);
+	public abstract void render(PoseStack ms, MightyBuffers buffer);
 
-	public void renderCuboidLine(PoseStack ms, MultiBufferSource buffer, Vec3 start, Vec3 end) {
+	public void renderCuboidLine(PoseStack ms, MightyBuffers buffer, Vec3 start, Vec3 end) {
 		Vec3 diff = end.subtract(start);
 		float hAngle = AngleHelper.deg(Mth.atan2(diff.x, diff.z));
 		float hDistance = (float) diff.multiply(1, 0, 1)
@@ -50,7 +50,7 @@ public abstract class Outline {
 		ms.popPose();
 	}
 
-	public void renderAACuboidLine(PoseStack ms, MultiBufferSource buffer, Vec3 start, Vec3 end) {
+	public void renderAACuboidLine(PoseStack ms, MightyBuffers buffer, Vec3 start, Vec3 end) {
 		VertexConsumer builder = buffer.getBuffer(RenderTypes.getOutlineSolid(AllSpecialTextures.BLANK.getLocation()));//todo simplify
 
 		Vec3 diff = end.subtract(start);

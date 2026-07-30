@@ -47,7 +47,7 @@ public class HudTextBuffer {
 
 		Minecraft mc = Minecraft.getInstance();
 		Font font = mc.font;
-		Camera camera = mc.gameRenderer.getMainCamera();
+		Camera camera = com.timmie.mightyarchitect.foundation.compat.McCompat.mainCamera(mc);
 
 		int guiWidth = gfx.guiWidth();
 		int guiHeight = gfx.guiHeight();
@@ -136,7 +136,7 @@ public class HudTextBuffer {
 
 		Minecraft mc = Minecraft.getInstance();
 		Font font = mc.font;
-		Camera camera = mc.gameRenderer.getMainCamera();
+		Camera camera = com.timmie.mightyarchitect.foundation.compat.McCompat.mainCamera(mc);
 
 		int guiWidth = gfx.guiWidth();
 		int guiHeight = gfx.guiHeight();

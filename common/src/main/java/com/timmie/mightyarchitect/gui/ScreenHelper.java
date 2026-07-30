@@ -1,5 +1,6 @@
 package com.timmie.mightyarchitect.gui;
 
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 
@@ -9,7 +10,7 @@ public class ScreenHelper {
 
 	public static void onClientTick(Minecraft minecraft) {
 		if (openedGuiNextTick != null) {
-			Minecraft.getInstance().setScreen(openedGuiNextTick);
+			McCompat.setScreen(Minecraft.getInstance(), openedGuiNextTick);
 			openedGuiNextTick = null;
 		}
 	}

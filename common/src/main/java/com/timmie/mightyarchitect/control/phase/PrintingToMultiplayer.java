@@ -5,7 +5,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.state.BlockState;
@@ -98,7 +98,7 @@ public class PrintingToMultiplayer extends PhaseBase {
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {
+	public void render(PoseStack ms, MightyBuffers buffer) {
 	}
 
 	@Override

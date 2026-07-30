@@ -1,5 +1,6 @@
 package com.timmie.mightyarchitect.gui;
 
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.design.*;
 import com.timmie.mightyarchitect.gui.widgets.IconButton;
@@ -232,7 +233,7 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 
 	protected void buttonClicked(IconButton button) {
 		if (button == confirm) {
-			minecraft.setScreen(null);
+			McCompat.setScreen(minecraft, null);
 			return;
 		}
 

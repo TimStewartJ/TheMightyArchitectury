@@ -13,8 +13,8 @@ This is experimental. Some things may still be broken!
 
 ## Contributing
 
-Everything lives on `main`. One source tree builds 7 Minecraft versions x 2 loaders
-(14 targets) through [Stonecutter](https://stonecutter.kikugie.dev/); there are no
+Everything lives on `main`. One source tree builds 8 Minecraft versions x 2 loaders
+(16 targets) through [Stonecutter](https://stonecutter.kikugie.dev/); there are no
 per-version branches. The versions are listed in `settings.gradle`, and each has its
 own dependency and metadata values in `versions/<mc>/gradle.properties`.
 
@@ -62,7 +62,7 @@ only comments loses its marker and becomes live code, so never guard commentary.
 
 ```powershell
 ./gradlew stonecutterSwitchTo1.21.8   # switch which version the tree targets
-./gradlew buildAll                     # build all 14 targets
+./gradlew buildAll                     # build all 16 targets
 ./gradlew ":fabric:1.21.8:build"       # build one target
 ```
 

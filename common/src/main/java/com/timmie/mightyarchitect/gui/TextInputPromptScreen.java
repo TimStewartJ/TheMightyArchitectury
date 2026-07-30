@@ -1,5 +1,6 @@
 package com.timmie.mightyarchitect.gui;
 
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 //?} else {
@@ -58,11 +59,11 @@ public class TextInputPromptScreen extends AbstractSimiScreen {
 		confirm = Button.builder(buttonTextConfirm, button -> {
 			callback.accept(nameField.getValue());
 			confirmed = true;
-			minecraft.setScreen(null);
+			McCompat.setScreen(minecraft, null);
 		}).pos(topLeftX - 5, topLeftY + 50).size(100, 20).build();
 
 		abort = Button.builder(buttonTextAbort, button -> {
-			minecraft.setScreen(null);
+			McCompat.setScreen(minecraft, null);
 		}).pos(topLeftX + 100, topLeftY + 50).size(100, 20).build();
 
 		widgets.add(confirm);

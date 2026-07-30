@@ -2,7 +2,7 @@ package com.timmie.mightyarchitect.foundation.utility.outliner;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 
@@ -28,7 +28,7 @@ public class ChasingAABBOutline extends AABBOutline {
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {
+	public void render(PoseStack ms, MightyBuffers buffer) {
 		renderBB(ms, buffer, interpolateBBs(prevBB, bb, Minecraft.getInstance()
 			//? if >=1.21.4 {
 			.getDeltaTracker().getGameTimeDeltaPartialTick(true)));
