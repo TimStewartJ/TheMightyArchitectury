@@ -1,7 +1,7 @@
 package com.timmie.mightyarchitect.control.phase;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 
 import java.util.List;
 
@@ -9,7 +9,7 @@ public interface IArchitectPhase {
 
 	public void whenEntered();
 	public void update();
-	public void render(PoseStack ms, MultiBufferSource buffer);
+	public void render(PoseStack ms, MightyBuffers buffer);
 	public void whenExited();
 	
 	public List<String> getToolTip();

@@ -21,7 +21,7 @@ import com.timmie.mightyarchitect.foundation.utility.VecHelper;
 import net.minecraft.client.Minecraft;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.client.renderer.block.BlockQuadOutput;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.block.MovingBlockRenderState;
@@ -336,7 +336,9 @@ public class GuiGameElement {
 		*///?}
 
 		//? if >=26 {
-		protected void renderModel(Minecraft minecraft, MultiBufferSource.BufferSource buffer, PoseStack ms) {
+		// Unused from 1.21.6 on: GUI previews go through renderAsGuiItem, the GUI's own item
+		// pipeline. Kept in the mod's buffer type so 26.2, which has no MultiBufferSource, compiles.
+		protected void renderModel(Minecraft minecraft, MightyBuffers buffer, PoseStack ms) {
 			MovingBlockRenderState renderState = new MovingBlockRenderState();
 			renderState.blockPos = BlockPos.ZERO;
 			renderState.randomSeedPos = BlockPos.ZERO;
@@ -374,7 +376,10 @@ public class GuiGameElement {
 				.renderModel(ms.last(), vb, blockState, blockmodel, (float) rgb.x, (float) rgb.y, (float) rgb.z,
 					0xF000F0, OverlayTexture.NO_OVERLAY);
 		*///?}
-			buffer.endBatch();
+			//? if >=26 {
+			//?} else {
+			/*buffer.endBatch();
+			*///?}
 			//? if >=1.21.6 {
 			//?} else {
 			/*Lighting.setupFor3DItems();

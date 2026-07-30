@@ -3,7 +3,7 @@ package com.timmie.mightyarchitect.foundation.utility.outliner;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
@@ -19,7 +19,7 @@ public class LineOutline extends Outline {
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {
+	public void render(PoseStack ms, MightyBuffers buffer) {
 		renderCuboidLine(ms, buffer, start, end);
 	}
 
@@ -58,7 +58,7 @@ public class LineOutline extends Outline {
 		}
 
 		@Override
-		public void render(PoseStack ms, MultiBufferSource buffer) {
+		public void render(PoseStack ms, MightyBuffers buffer) {
 			float pt = Minecraft.getInstance()
 				//? if >=1.21.4 {
 				.getDeltaTracker().getGameTimeDeltaPartialTick(true);
@@ -92,7 +92,7 @@ public class LineOutline extends Outline {
 		}
 
 		@Override
-		public void render(PoseStack ms, MultiBufferSource buffer) {
+		public void render(PoseStack ms, MightyBuffers buffer) {
 			float pt = Minecraft.getInstance()
 				//? if >=1.21.4 {
 				.getDeltaTracker().getGameTimeDeltaPartialTick(true);

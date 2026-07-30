@@ -5,7 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.timmie.mightyarchitect.AllSpecialTextures;
 import com.timmie.mightyarchitect.foundation.RenderTypes;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 //? if >=1.21.11 {
 import net.minecraft.client.renderer.rendertype.RenderType;
 //?} else {
@@ -29,7 +29,7 @@ public class BlockClusterOutline extends Outline {
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {
+	public void render(PoseStack ms, MightyBuffers buffer) {
 		for (MergeEntry edge : cluster.visibleEdges) {
 			Vec3 start = Vec3.atLowerCornerOf(edge.pos);
 			Direction direction = Direction.get(AxisDirection.POSITIVE, edge.axis);
@@ -46,7 +46,7 @@ public class BlockClusterOutline extends Outline {
 		}
 	}
 
-	protected void renderBlockFace(PoseStack ms, MultiBufferSource buffer, BlockPos pos, Direction face) {
+	protected void renderBlockFace(PoseStack ms, MightyBuffers buffer, BlockPos pos, Direction face) {
 		Optional<AllSpecialTextures> faceTexture = params.faceTexture;
 		if (!faceTexture.isPresent())
 			return;

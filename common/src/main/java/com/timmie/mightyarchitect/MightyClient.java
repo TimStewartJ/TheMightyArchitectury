@@ -1,5 +1,6 @@
 package com.timmie.mightyarchitect;
 
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.SchematicRenderer;
@@ -15,7 +16,11 @@ import com.timmie.mightyarchitect.foundation.utility.outliner.Outliner;
 import net.minecraft.client.Camera;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+//? if >=26.2 {
+
+//?} else {
 import net.minecraft.client.renderer.MultiBufferSource;
+//?}
 //? if >=1.21.11 {
 import net.minecraft.resources.Identifier;
 //?} else if >=1.21.10 {
@@ -68,27 +73,34 @@ public class MightyClient {
 		MightyClient.renderer.tick();
 	}
 
-	//? if >=26 {
+	//? if >=26.2 {
+	/*// 26.2 hands mods a SubmitNodeCollector for the frame instead of a buffer source to flush.
+	public static void onRenderWorld(net.minecraft.client.renderer.SubmitNodeCollector collector) {
+		Minecraft mc = Minecraft.getInstance();
+		SuperRenderTypeBuffer.beginFrame(collector);
+		Camera info = McCompat.mainCamera(mc);
+		Vec3 view = info.position();
+	*///?} else if >=26 {
 	public static void onRenderWorld() {
 		Minecraft mc = Minecraft.getInstance();
-		Camera info = mc.gameRenderer.getMainCamera();
+		Camera info = McCompat.mainCamera(mc);
 		Vec3 view = info.position();
 	//?} else if >=1.21.11 {
 	/*public static void onRenderWorld() {
 		// In 1.21.6, world rendering uses PoseStack directly, not GuiGraphics
 		PoseStack ms = new PoseStack();
-		Camera info = Minecraft.getInstance().gameRenderer.getMainCamera();
+		Camera info = McCompat.mainCamera(Minecraft.getInstance());
 		Vec3 view = info.position();
 	*///?} else if >=1.21.6 {
 	/*public static void onRenderWorld() {
 		// In 1.21.6, world rendering uses PoseStack directly, not GuiGraphics
 		PoseStack ms = new PoseStack();
-		Camera info = Minecraft.getInstance().gameRenderer.getMainCamera();
+		Camera info = McCompat.mainCamera(Minecraft.getInstance());
 		Vec3 view = info.getPosition();
 	*///?} else {
 	/*public static void onRenderWorld(PoseStack poseStack) {
 		PoseStack ms = poseStack;
-		Camera info = Minecraft.getInstance().gameRenderer.getMainCamera();
+		Camera info = McCompat.mainCamera(Minecraft.getInstance());
 		Vec3 view = info.getPosition();
 	*///?}
 
@@ -105,13 +117,16 @@ public class MightyClient {
 		*///?}
 		ms.pushPose();
 		ms.translate(-view.x(), -view.y(), -view.z());
-		//? if >=26 {
+		//? if >=26.2 {
+		
+		//?} else if >=26 {
 		MultiBufferSource.BufferSource buffer = mc.renderBuffers()
+			.bufferSource();
 		//?} else {
 		/*MultiBufferSource.BufferSource buffer = Minecraft.getInstance()
 			.renderBuffers()
-		*///?}
 			.bufferSource();
+		*///?}
 
 		SuperRenderTypeBuffer b = SuperRenderTypeBuffer.getInstance();
 
@@ -120,7 +135,11 @@ public class MightyClient {
 		MightyClient.outliner.renderOutlines(ms, b);
 
 		b.draw();
+		//? if >=26.2 {
+		
+		//?} else {
 		buffer.endBatch();
+		//?}
 		ms.popPose();
 	}
 

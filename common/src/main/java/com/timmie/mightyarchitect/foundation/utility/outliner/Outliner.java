@@ -5,7 +5,7 @@ import com.timmie.mightyarchitect.foundation.utility.outliner.LineOutline.Chasin
 import com.timmie.mightyarchitect.foundation.utility.outliner.LineOutline.EndChasingLineOutline;
 import com.timmie.mightyarchitect.foundation.utility.outliner.Outline.OutlineParams;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
@@ -152,7 +152,7 @@ public class Outliner {
 		toClear.forEach(outlines::remove);
 	}
 
-	public void renderOutlines(PoseStack ms, MultiBufferSource buffer) {
+	public void renderOutlines(PoseStack ms, MightyBuffers buffer) {
 		outlines.forEach((key, entry) -> {
 			Outline outline = entry.getOutline();
 			//outline.params.alpha = 1;

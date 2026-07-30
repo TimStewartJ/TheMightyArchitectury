@@ -7,7 +7,7 @@ import com.timmie.mightyarchitect.control.Schematic;
 import com.timmie.mightyarchitect.control.palette.Palette;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 //? if >=26 {
 import net.minecraft.client.renderer.block.BlockQuadOutput;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
@@ -95,7 +95,7 @@ public class PhaseCreatingPalette extends PhaseBase implements IDrawBlockHighlig
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {
+	public void render(PoseStack ms, MightyBuffers buffer) {
 		// Blocks
 		for (int i = 0; i < 16; i++) {
 			BlockState state = palette.get(Palette.values()[i]);
@@ -114,14 +114,14 @@ public class PhaseCreatingPalette extends PhaseBase implements IDrawBlockHighlig
 			renderSingleBlock(state, ms, buffer);
 			//?} else {
 			/*minecraft.getBlockRenderer()
-				.renderSingleBlock(state, ms, buffer, 0xF000F0, OverlayTexture.NO_OVERLAY);
+				.renderSingleBlock(state, ms, (net.minecraft.client.renderer.MultiBufferSource) buffer, 0xF000F0, OverlayTexture.NO_OVERLAY);
 			*///?}
 			ms.popPose();
 		}
 	}
 
 	//? if >=26 {
-	private void renderSingleBlock(BlockState state, PoseStack ms, MultiBufferSource buffer) {
+	private void renderSingleBlock(BlockState state, PoseStack ms, MightyBuffers buffer) {
 		MovingBlockRenderState renderState = new MovingBlockRenderState();
 		renderState.blockPos = BlockPos.ZERO;
 		renderState.randomSeedPos = BlockPos.ZERO;

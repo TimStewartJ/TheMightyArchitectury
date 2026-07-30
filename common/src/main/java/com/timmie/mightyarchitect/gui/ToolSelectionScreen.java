@@ -1,5 +1,6 @@
 package com.timmie.mightyarchitect.gui;
 
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.mojang.blaze3d.platform.Window;
 //? if >=1.21.6 {
 //?} else {
@@ -308,7 +309,7 @@ public class ToolSelectionScreen extends Screen {
 	//?} else {
 	/*public void renderPassive(GuiGraphics ms, float partialTicks) {
 	*///?}
-		if (Minecraft.getInstance().screen != null)
+		if (McCompat.currentScreen(Minecraft.getInstance()) != null)
 			return;
 		draw(ms, partialTicks);
 	}

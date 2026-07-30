@@ -3,8 +3,9 @@ package com.timmie.mightyarchitect.foundation.utility.outliner;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.timmie.mightyarchitect.foundation.RenderTypes;
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
 //? if >=1.21.11 {
@@ -24,17 +25,12 @@ public class AABBOutline extends Outline {
 	}
 
 	@Override
-	public void render(PoseStack ms, MultiBufferSource buffer) {
+	public void render(PoseStack ms, MightyBuffers buffer) {
 		renderBB(ms, buffer, bb);
 	}
 
-	public void renderBB(PoseStack ms, MultiBufferSource buffer, AABB bb) {
-		Vec3 projectedView = Minecraft.getInstance().gameRenderer.getMainCamera()
-			//? if >=1.21.11 {
-			.position();
-			//?} else {
-			/*.getPosition();
-			*///?}
+	public void renderBB(PoseStack ms, MightyBuffers buffer, AABB bb) {
+		Vec3 projectedView = McCompat.cameraPos(Minecraft.getInstance());
 		boolean noCull = bb.contains(projectedView);
 		bb = bb.inflate(noCull ? -1 / 128d : 1 / 128d);
 		noCull |= params.disableCull;
@@ -77,7 +73,7 @@ public class AABBOutline extends Outline {
 
 	}
 
-	protected void renderFace(PoseStack ms, MultiBufferSource buffer, Direction direction, Vec3 p1, Vec3 p2, Vec3 p3,
+	protected void renderFace(PoseStack ms, MightyBuffers buffer, Direction direction, Vec3 p1, Vec3 p2, Vec3 p3,
 		Vec3 p4, boolean noCull) {
 		if (params.faceTexture.isEmpty())
 			return;
