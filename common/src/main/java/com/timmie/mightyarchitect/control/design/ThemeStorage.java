@@ -10,7 +10,6 @@ import net.minecraft.nbt.NbtIo;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.*;
 import java.util.*;
 
@@ -145,15 +144,8 @@ public class ThemeStorage {
 		massiveThemeTag.put("Designs", layers);
 
 		if (compressed) {
-			try {
-				Path path = Paths.get(folderPath + "/" + theme.getFilePath() + ".theme");
-				Files.deleteIfExists(path);
-				OutputStream outputStream = Files.newOutputStream(path, StandardOpenOption.CREATE);
-				NbtIo.writeCompressed(massiveThemeTag, outputStream);
-				outputStream.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			Path path = Paths.get(folderPath + "/" + theme.getFilePath() + ".theme");
+			FilesHelper.writeAtomically(path, out -> NbtIo.writeCompressed(massiveThemeTag, out));
 		} else {
 			FilesHelper.saveTagCompoundAsJsonCompact(massiveThemeTag, folderPath + "/" + theme.getFilePath() + ".json");
 		}

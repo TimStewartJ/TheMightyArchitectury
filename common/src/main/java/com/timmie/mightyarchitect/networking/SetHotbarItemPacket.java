@@ -13,10 +13,15 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 //?} else {
 /*import net.minecraft.resources.ResourceLocation;
 *///?}
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
+import io.netty.handler.codec.DecoderException;
+
 public class SetHotbarItemPacket implements MightyPacket {
+
+	/** The packet only ever addresses the hotbar; anything else is not something to honour. */
+	private static final int HOTBAR_SIZE = 9;
 
 	private final int slot;
 	private final ItemStack stack;
@@ -30,15 +35,24 @@ public class SetHotbarItemPacket implements MightyPacket {
 	// carries the item itself.
 	//? if >=1.20.5 {
 	public SetHotbarItemPacket(RegistryFriendlyByteBuf buffer) {
-		this.slot = buffer.readInt();
+		this.slot = validateSlot(buffer.readInt());
 		this.stack = ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer);
 	}
 	//?} else {
 	/*public SetHotbarItemPacket(FriendlyByteBuf buffer) {
-		this.slot = buffer.readInt();
+		this.slot = validateSlot(buffer.readInt());
 		this.stack = buffer.readItem();
 	}
 	*///?}
+
+	// The slot goes straight into Inventory.setItem, so it has to be a slot this packet is allowed
+	// to address before anything else reads it.
+	private static int validateSlot(int slot) {
+		if (slot < 0 || slot >= HOTBAR_SIZE)
+			throw new DecoderException("SetHotbarItemPacket addressed slot " + slot + "; the hotbar is 0.."
+				+ (HOTBAR_SIZE - 1));
+		return slot;
+	}
 
 	@Override
 	//? if >=1.20.5 {
@@ -63,9 +77,15 @@ public class SetHotbarItemPacket implements MightyPacket {
 	*///?}
 
 	public static void handle(SetHotbarItemPacket packet, PacketContext context) {
+		ServerPlayer player = context.player();
 		context.enqueue(() -> {
-			Player player = context.player();
-			if (!player.isCreative())
+			if (!ServerBuildGuard.mayReceiveHotbarKit(player)) {
+				ServerBuildGuard.reportDenied(player, "hand out a toolkit");
+				return;
+			}
+			// The decoder already rejects out-of-range slots; this keeps the invariant local to the
+			// call that depends on it, since a slot that is not a slot corrupts the inventory.
+			if (packet.slot < 0 || packet.slot >= HOTBAR_SIZE)
 				return;
 
 			player.getInventory().setItem(packet.slot, packet.stack);

@@ -15,6 +15,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 /*import net.minecraft.resources.ResourceLocation;
 *///?}
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
@@ -72,17 +73,19 @@ public class PlaceSignPacket implements MightyPacket {
 	}
 
 	public static void handle(PlaceSignPacket packet, PacketContext context) {
+		ServerPlayer player = context.player();
 		context.enqueue(() -> {
-			// Entity.level() replaced the public level field in 1.20.
-			//? if >=1.20 {
-			Level entityWorld = context.player().level();
-			//?} else {
-			/*Level entityWorld = context.player().level;
-			*///?}
-			entityWorld.setBlockAndUpdate(packet.position, Blocks.SPRUCE_SIGN.defaultBlockState());
-			SignBlockEntity sign = (SignBlockEntity) entityWorld.getBlockEntity(packet.position);
+			if (!ServerBuildGuard.mayBuildAt(player, packet.position)) {
+				ServerBuildGuard.reportDenied(player, "place a design sign");
+				return;
+			}
+			if (!ServerBuildGuard.claimBlockBudget(player, 1))
+				return;
 
-			if (sign != null) {
+			Level entityWorld = ServerBuildGuard.levelOf(player);
+			entityWorld.setBlockAndUpdate(packet.position, Blocks.SPRUCE_SIGN.defaultBlockState());
+
+			if (entityWorld.getBlockEntity(packet.position) instanceof SignBlockEntity sign) {
 				//? if >=1.20 {
 				sign.setText(new SignText().setMessage(0, Component.literal(packet.text1)).setMessage(1, Component.literal(packet.text2)), true);
 				//?} else {

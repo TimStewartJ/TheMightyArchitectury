@@ -1,12 +1,18 @@
 package com.timmie.mightyarchitect.test.server;
 
 import com.timmie.mightyarchitect.TheMightyArchitect;
+import com.timmie.mightyarchitect.networking.DetachedServerPlayer;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
 import com.timmie.mightyarchitect.networking.PacketWire;
+import com.timmie.mightyarchitect.networking.ServerBuildGuard;
+import com.timmie.mightyarchitect.platform.PacketContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -31,6 +37,11 @@ import java.util.Map;
  * They also cover {@code WrappedWorld}, which is client-only from 26.1 onwards and so cannot be
  * loaded here at all.
  * <p>
+ * The second half of the run covers {@link ServerBuildGuard}: first the parts that need no
+ * connected player - the decode-time bounds on both packets, the per-player placement budget
+ * and the reach test - and then the gate end to end, with a real player, a real packet and real
+ * blocks.
+ * <p>
  * Results are written to the server log as {@code [SERVER-TEST]} lines;
  * {@code scripts/run-server-test-matrix.ps1} waits for the {@code RESULT} line.
  */
@@ -46,6 +57,8 @@ public final class ServerPrintTest {
 
     /** Relative position of the palette entry carrying a non-default blockstate property. */
     private static final BlockPos AXIS_PROBE = new BlockPos(0, 0, 2);
+
+    private static final long ONE_SECOND_NANOS = 1_000_000_000L;
 
     private static boolean ran;
     private static int passed;
@@ -78,6 +91,8 @@ public final class ServerPrintTest {
             pass("applied all " + packets.size() + " packets to the level");
 
             verifyPlaced(level, schematic);
+            verifyGuards(server);
+            verifyLiveGate(server, level);
 
             TheMightyArchitect.logger.info("{} RESULT PASS ({} checks)", TAG, passed);
         } catch (Throwable failure) {
@@ -154,6 +169,134 @@ public final class ServerPrintTest {
                 && log.getValue(RotatedPillarBlock.AXIS) == Direction.Axis.X,
             "oak log lost its non-default axis through the NBT round-trip: " + log);
         pass("non-default blockstate property survived the packet round-trip");
+    }
+
+    /**
+     * The authorization gate the handlers now go through. These are the parts of it that are pure -
+     * decode-time bounds, the placement budget and the reach test - so they can be asserted here
+     * without a connected player, and so a regression in any of them turns the matrix red rather
+     * than going unnoticed until someone reads the code.
+     */
+    private static void verifyGuards(MinecraftServer server) {
+        RegistryAccess registries = server.registryAccess();
+
+        require(PacketWire.instantPrintRejectsSize(registries, Integer.MAX_VALUE),
+            "InstantPrintPacket accepted a payload declaring Integer.MAX_VALUE blocks");
+        require(PacketWire.instantPrintRejectsSize(registries, -1),
+            "InstantPrintPacket accepted a payload declaring a negative block count");
+        pass("InstantPrintPacket rejects an out-of-range block count at decode time");
+
+        require(PacketWire.setHotbarItemRejectsSlot(registries, 9),
+            "SetHotbarItemPacket accepted a slot past the end of the hotbar");
+        require(PacketWire.setHotbarItemRejectsSlot(registries, -1),
+            "SetHotbarItemPacket accepted a negative slot");
+        pass("SetHotbarItemPacket rejects an out-of-range hotbar slot at decode time");
+
+        ServerBuildGuard.Budget budget = new ServerBuildGuard.Budget(0L);
+        require(budget.claim(ServerBuildGuard.BLOCK_BUDGET_BURST, 0L),
+            "a fresh block budget did not cover one full burst");
+        require(!budget.claim(1, 0L), "the block budget allowed an overdraw");
+        require(budget.claim(ServerBuildGuard.BLOCK_BUDGET_PER_SECOND, ONE_SECOND_NANOS),
+            "one second did not refill the sustained block rate");
+        pass("the per-player block budget refuses an overdraw and refills over time");
+
+        BlockPos withinReach = ORIGIN.offset(0, 0, ServerBuildGuard.MAX_BUILD_DISTANCE - 1);
+        BlockPos outOfReach = ORIGIN.offset(0, 0, ServerBuildGuard.MAX_BUILD_DISTANCE + 8);
+        require(ServerBuildGuard.withinReach(ORIGIN.getX(), ORIGIN.getY(), ORIGIN.getZ(), withinReach),
+            "the reach test rejected a position " + (ServerBuildGuard.MAX_BUILD_DISTANCE - 1) + " blocks away");
+        require(!ServerBuildGuard.withinReach(ORIGIN.getX(), ORIGIN.getY(), ORIGIN.getZ(), outOfReach),
+            "the reach test accepted a position past " + ServerBuildGuard.MAX_BUILD_DISTANCE + " blocks");
+        require(!ServerBuildGuard.mayBuild(null), "the build gate authorised an absent player");
+        pass("the build gate refuses out-of-reach positions and an absent player");
+    }
+
+    /**
+     * The gate end to end: a real packet, off the wire, handed to the real handler with a real
+     * {@link ServerPlayer}, ending in real blocks or the absence of them.
+     * <p>
+     * {@link #verifyGuards} covers the pure halves. This covers the composition - that an
+     * authorised sender still gets their build, which is the regression that would otherwise be
+     * silent, and that an unauthorised or out-of-reach one does not.
+     * <p>
+     * The probe player is deliberately detached: both loaders deliver play payloads on the server
+     * thread and {@code ServerStartedEvent} already runs there, so the context can run its work
+     * inline and still be faithful to how the handler is really invoked.
+     */
+    private static void verifyLiveGate(MinecraftServer server, ServerLevel level) {
+        ServerPlayer player = DetachedServerPlayer.create(server, level, "GateProbe");
+        // Above the printed slab, in the chunk the test already forced loaded.
+        BlockPos target = ORIGIN.offset(0, 5, 0);
+        clear(level, target);
+
+        setGameMode(player, GameType.CREATIVE);
+        standAt(player, target);
+        printOneBlock(server, player, target);
+        require(level.getBlockState(target).getBlock() == Blocks.STONE,
+            "the gate refused an authorised creative player's own build at " + target);
+        pass("an authorised player's packet places blocks through the live gate");
+
+        clear(level, target);
+        standAt(player, target.offset(ServerBuildGuard.MAX_BUILD_DISTANCE * 2, 0, 0));
+        printOneBlock(server, player, target);
+        require(level.getBlockState(target).isAir(),
+            "the gate placed a block " + (ServerBuildGuard.MAX_BUILD_DISTANCE * 2) + " blocks out of the sender's reach");
+        pass("the live gate refuses a position out of the sender's reach");
+
+        clear(level, target);
+        setGameMode(player, GameType.SURVIVAL);
+        standAt(player, target);
+        printOneBlock(server, player, target);
+        require(level.getBlockState(target).isAir(),
+            "the gate let a player who is neither creative nor an operator place a block");
+        pass("the live gate refuses a player who is neither creative nor an operator");
+
+        clear(level, target);
+    }
+
+    /**
+     * Puts the probe player into a game mode without a client to tell about it.
+     * <p>
+     * Vanilla sets the mode first and only then notifies: {@code onUpdateAbilities} already returns
+     * early when there is no connection, but the tab-list broadcast that follows reads
+     * {@code player.connection.latency()} and throws. By that point the mode has been set, which is
+     * the only part this test needs - so the notification failure is swallowed and the result is
+     * then asserted rather than assumed. A version that reordered those two steps would fail here
+     * instead of quietly testing the wrong game mode.
+     */
+    private static void setGameMode(ServerPlayer player, GameType mode) {
+        try {
+            player.gameMode.changeGameModeForPlayer(mode);
+        } catch (NullPointerException noClientToNotify) {
+            // The mode is already set; only the broadcast to a connection we do not have failed.
+        }
+        require(player.gameMode.getGameModeForPlayer() == mode && player.isCreative() == mode.isCreative(),
+            "could not put the probe player into " + mode + " mode");
+    }
+
+    private static void standAt(ServerPlayer player, BlockPos pos) {
+        player.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+    }
+
+    private static void clear(ServerLevel level, BlockPos pos) {
+        level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+        require(level.getBlockState(pos).isAir(), "could not clear " + pos + " before the next gate check");
+    }
+
+    /** Sends one block the way a client does: encoded, decoded, then through {@code handle}. */
+    private static void printOneBlock(MinecraftServer server, ServerPlayer player, BlockPos target) {
+        Map<BlockPos, BlockState> single = Map.of(BlockPos.ZERO, Blocks.STONE.defaultBlockState());
+        for (InstantPrintPacket packet : InstantPrintPacket.sendSchematic(single, target))
+            InstantPrintPacket.handle(roundTrip(server, packet), new PacketContext() {
+                @Override
+                public ServerPlayer player() {
+                    return player;
+                }
+
+                @Override
+                public void enqueue(Runnable work) {
+                    work.run();
+                }
+            });
     }
 
     /**

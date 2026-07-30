@@ -34,21 +34,11 @@ public class PrintingToMultiplayer extends PhaseBase {
 
 		success = true;
 
-		// todo: /me doesn't work anymore
-		// String cmd = "me is printing a structure created by the Mighty Architect.";
-		// Minecraft.getInstance().player.connection.sendCommand(cmd);
-		String cmd = "gamerule sendCommandFeedback false";
-		//? if >=1.21.6 {
-		Minecraft.getInstance().player.connection.sendCommand(cmd);
-		//?} else {
-		/*Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
-		*///?}
-		cmd = "gamerule logAdminCommands false";
-		//? if >=1.21.6 {
-		Minecraft.getInstance().player.connection.sendCommand(cmd);
-		//?} else {
-		/*Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
-		*///?}
+		// Printing deliberately does NOT touch the server's gamerules. It used to turn off
+		// sendCommandFeedback and logAdminCommands and turn them back on afterwards, which
+		// silently disabled the server's admin-command audit log for everyone, and left it
+		// disabled for good if the print was interrupted by a crash, kick or disconnect. The
+		// resulting command feedback in chat is the honest cost of building with commands.
 
 		remaining = new LinkedList<>(getModel().getMaterializedSketch().getAllPositions());
 		remaining.sort((o1, o2) -> Integer.compare(o1.getY(), o2.getY()));
@@ -110,24 +100,13 @@ public class PrintingToMultiplayer extends PhaseBase {
 			/*Minecraft.getInstance().player.displayClientMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"),
 					false);
 			*///?}
-			String cmd = "gamerule logAdminCommands true";
-			//? if >=1.21.6 {
-			Minecraft.getInstance().player.connection.sendCommand(cmd);
-			//?} else {
-			/*Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
-			*///?}
-			cmd = "gamerule sendCommandFeedback true";
-			//? if >=1.21.6 {
-			Minecraft.getInstance().player.connection.sendCommand(cmd);
-			//?} else {
-			/*Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
-			*///?}
 		}
 	}
 
 	@Override
 	public List<String> getToolTip() {
-		return ImmutableList.of("Please be patient while your building is being transferred.");
+		return ImmutableList.of("Please be patient while your building is being transferred.",
+			"Your server will report each block as it is placed.");
 	}
 
 }

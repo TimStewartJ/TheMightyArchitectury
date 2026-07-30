@@ -17,10 +17,14 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 //?} else {
 /*import net.minecraft.resources.ResourceLocation;
 *///?}
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
+import io.netty.handler.codec.DecoderException;
+
 import java.util.*;
+import java.util.function.Predicate;
 
 public class InstantPrintPacket implements MightyPacket {
 
@@ -37,6 +41,11 @@ public class InstantPrintPacket implements MightyPacket {
 	*///?}
 		// Store raw NBT data to decode on server side with proper registry
 		int size = buf.readInt();
+		// sendSchematic never emits more than MAX_SIZE per packet, so anything larger is either
+		// corrupt or hostile - and this loop allocates per iteration.
+		if (size < 0 || size > BunchOfBlocks.MAX_SIZE)
+			throw new DecoderException(
+				"InstantPrintPacket declared " + size + " blocks; the limit is " + BunchOfBlocks.MAX_SIZE);
 		this.blocks = new BunchOfBlocks(new HashMap<>());
 		this.blocks.rawData = new ArrayList<>();
 		this.blocks.size = size;
@@ -77,28 +86,46 @@ public class InstantPrintPacket implements MightyPacket {
 	}
 
 	public static void handle(InstantPrintPacket packet, PacketContext context) {
-		// Entity.level() replaced the public level field in 1.20.
-		//? if >=1.20 {
-		context.enqueue(() -> apply(context.player().level(), packet));
-		//?} else {
-		/*context.enqueue(() -> apply(context.player().level, packet));
-		*///?}
+		ServerPlayer player = context.player();
+		context.enqueue(() -> {
+			if (!ServerBuildGuard.mayBuild(player)) {
+				ServerBuildGuard.reportDenied(player, "print blocks");
+				return;
+			}
+			if (!ServerBuildGuard.claimBlockBudget(player, packet.blocks.size))
+				return;
+			apply(ServerBuildGuard.levelOf(player), packet, pos -> ServerBuildGuard.mayBuildAt(player, pos));
+		});
 	}
 
-	// Separated from handle so the automated server test can drive the same placement logic
-	// against a real ServerLevel without needing a connected player.
+	/**
+	 * Places every block in the packet, unconditionally.
+	 * <p>
+	 * <b>Unauthorised.</b> Anything that got this packet off the wire must go through
+	 * {@link ServerBuildGuard} first - {@link #handle} does. This overload exists for the automated
+	 * server test, which drives the same placement logic against a real {@code ServerLevel} without
+	 * a connected player to authorise.
+	 */
 	public static void apply(Level level, InstantPrintPacket packet) {
+		apply(level, packet, pos -> true);
+	}
+
+	/** Places the blocks the given filter accepts; see {@link ServerBuildGuard#mayBuildAt}. */
+	public static void apply(Level level, InstantPrintPacket packet, Predicate<BlockPos> allowed) {
 		var holderGetter = level.holderLookup(Registries.BLOCK);
 		if (packet.blocks.rawData != null) {
 			// Decode from raw data on server side
 			for (BlockData data : packet.blocks.rawData) {
+				if (!allowed.test(data.pos))
+					continue;
 				BlockState state = NbtUtils.readBlockState(holderGetter, data.tag);
 				level.setBlock(data.pos, state, 3);
 			}
 		} else {
 			// Already decoded (shouldn't happen for C2S)
 			packet.blocks.blocks.forEach((pos, state) -> {
-				level.setBlock(pos, state, 3);
+				if (allowed.test(pos))
+					level.setBlock(pos, state, 3);
 			});
 		}
 	}
