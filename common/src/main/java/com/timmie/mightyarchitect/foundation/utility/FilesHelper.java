@@ -17,8 +17,15 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
 public class FilesHelper {
@@ -30,6 +37,53 @@ public class FilesHelper {
 			} catch (IOException e) {
 				TheMightyArchitect.logger.warn("Could not create Folder: " + name);
 			}
+		}
+	}
+
+	/** The body of a write, run against a stream that only becomes the real file once it succeeds. */
+	@FunctionalInterface
+	public interface StreamWriter {
+		void writeTo(OutputStream out) throws IOException;
+	}
+
+	/**
+	 * Writes a file without ever leaving a half-written one behind.
+	 * <p>
+	 * The previous pattern here was delete, open, write, close - so a crash anywhere in between
+	 * destroyed the old file and produced nothing in its place. Themes and palettes are hours of
+	 * user work, so instead the content goes to a temporary sibling and only replaces the target
+	 * once it is complete and closed, which the filesystem does atomically.
+	 *
+	 * @return whether the file was written
+	 */
+	public static boolean writeAtomically(Path target, StreamWriter body) {
+		Path directory = target.toAbsolutePath()
+			.getParent();
+		Path temp = target.resolveSibling(target.getFileName() + ".tmp");
+		try {
+			if (directory != null)
+				Files.createDirectories(directory);
+
+			try (OutputStream out = Files.newOutputStream(temp, StandardOpenOption.CREATE,
+				StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
+				body.writeTo(out);
+			}
+
+			try {
+				Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);
+			} catch (AtomicMoveNotSupportedException unsupported) {
+				Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+			}
+			return true;
+
+		} catch (IOException e) {
+			TheMightyArchitect.logger.error("Could not write " + target, e);
+			try {
+				Files.deleteIfExists(temp);
+			} catch (IOException cleanup) {
+				TheMightyArchitect.logger.warn("Could not remove the leftover " + temp, cleanup);
+			}
+			return false;
 		}
 	}
 
@@ -51,31 +105,21 @@ public class FilesHelper {
 	}
 
 	public static boolean saveTagCompoundAsJson(CompoundTag compound, String path) {
-		try {
-			Files.deleteIfExists(Paths.get(path));
-			JsonWriter writer = new JsonWriter(Files.newBufferedWriter(Paths.get(path), StandardOpenOption.CREATE));
-			writer.setIndent("  ");
-			Streams.write(JsonParser.parseString(compound.toString()), writer);
-			writer.close();
-			return true;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return false;
+		return saveTagCompoundAsJson(compound, path, "  ");
 	}
 
 	public static boolean saveTagCompoundAsJsonCompact(CompoundTag compound, String path) {
-		try {
-			Files.deleteIfExists(Paths.get(path));
-			JsonWriter writer = new JsonWriter(Files.newBufferedWriter(Paths.get(path), StandardOpenOption.CREATE));
-			Streams.write(JsonParser.parseString(compound.toString()), writer);
-			writer.close();
-			return true;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return false;
+		return saveTagCompoundAsJson(compound, path, "");
+	}
 
+	private static boolean saveTagCompoundAsJson(CompoundTag compound, String path, String indent) {
+		return writeAtomically(Paths.get(path), out -> {
+			try (Writer stream = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+				JsonWriter writer = new JsonWriter(stream)) {
+				writer.setIndent(indent);
+				Streams.write(JsonParser.parseString(compound.toString()), writer);
+			}
+		});
 	}
 
 	public static CompoundTag loadJsonNBT(InputStream inputStream) {

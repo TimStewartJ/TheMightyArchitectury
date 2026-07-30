@@ -35,14 +35,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.Component;
-import org.apache.commons.io.IOUtils;
 import org.lwjgl.glfw.GLFW;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 
 public class ArchitectManager {
 
@@ -156,17 +151,11 @@ public class ArchitectManager {
 		String filename = FilesHelper.findFirstValidFilename(name, folderPath, "nbt");
 		String filepath = folderPath + "/" + filename;
 
-		OutputStream outputStream = null;
-		try {
-			outputStream = Files.newOutputStream(Paths.get(filepath), StandardOpenOption.CREATE);
-			CompoundTag nbttagcompound = getModel().writeToTemplate()
-				.save(new CompoundTag());
-			NbtIo.writeCompressed(nbttagcompound, outputStream);
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			if (outputStream != null)
-				IOUtils.closeQuietly(outputStream);
+		CompoundTag nbttagcompound = getModel().writeToTemplate()
+			.save(new CompoundTag());
+		if (!FilesHelper.writeAtomically(Paths.get(filepath), out -> NbtIo.writeCompressed(nbttagcompound, out))) {
+			status("Could not save " + filepath);
+			return;
 		}
 		status("Saved as " + filepath);
 

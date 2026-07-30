@@ -3,8 +3,10 @@ package com.timmie.mightyarchitect.test.server;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
 import com.timmie.mightyarchitect.networking.PacketWire;
+import com.timmie.mightyarchitect.networking.ServerBuildGuard;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
@@ -31,6 +33,10 @@ import java.util.Map;
  * They also cover {@code WrappedWorld}, which is client-only from 26.1 onwards and so cannot be
  * loaded here at all.
  * <p>
+ * The second half of the run covers the parts of {@link ServerBuildGuard} that do not need a
+ * connected player: the decode-time bounds on both packets, the per-player placement budget and
+ * the reach test.
+ * <p>
  * Results are written to the server log as {@code [SERVER-TEST]} lines;
  * {@code scripts/run-server-test-matrix.ps1} waits for the {@code RESULT} line.
  */
@@ -46,6 +52,8 @@ public final class ServerPrintTest {
 
     /** Relative position of the palette entry carrying a non-default blockstate property. */
     private static final BlockPos AXIS_PROBE = new BlockPos(0, 0, 2);
+
+    private static final long ONE_SECOND_NANOS = 1_000_000_000L;
 
     private static boolean ran;
     private static int passed;
@@ -78,6 +86,7 @@ public final class ServerPrintTest {
             pass("applied all " + packets.size() + " packets to the level");
 
             verifyPlaced(level, schematic);
+            verifyGuards(server);
 
             TheMightyArchitect.logger.info("{} RESULT PASS ({} checks)", TAG, passed);
         } catch (Throwable failure) {
@@ -154,6 +163,45 @@ public final class ServerPrintTest {
                 && log.getValue(RotatedPillarBlock.AXIS) == Direction.Axis.X,
             "oak log lost its non-default axis through the NBT round-trip: " + log);
         pass("non-default blockstate property survived the packet round-trip");
+    }
+
+    /**
+     * The authorization gate the handlers now go through. These are the parts of it that are pure -
+     * decode-time bounds, the placement budget and the reach test - so they can be asserted here
+     * without a connected player, and so a regression in any of them turns the matrix red rather
+     * than going unnoticed until someone reads the code.
+     */
+    private static void verifyGuards(MinecraftServer server) {
+        RegistryAccess registries = server.registryAccess();
+
+        require(PacketWire.instantPrintRejectsSize(registries, Integer.MAX_VALUE),
+            "InstantPrintPacket accepted a payload declaring Integer.MAX_VALUE blocks");
+        require(PacketWire.instantPrintRejectsSize(registries, -1),
+            "InstantPrintPacket accepted a payload declaring a negative block count");
+        pass("InstantPrintPacket rejects an out-of-range block count at decode time");
+
+        require(PacketWire.setHotbarItemRejectsSlot(registries, 9),
+            "SetHotbarItemPacket accepted a slot past the end of the hotbar");
+        require(PacketWire.setHotbarItemRejectsSlot(registries, -1),
+            "SetHotbarItemPacket accepted a negative slot");
+        pass("SetHotbarItemPacket rejects an out-of-range hotbar slot at decode time");
+
+        ServerBuildGuard.Budget budget = new ServerBuildGuard.Budget(0L);
+        require(budget.claim(ServerBuildGuard.BLOCK_BUDGET_BURST, 0L),
+            "a fresh block budget did not cover one full burst");
+        require(!budget.claim(1, 0L), "the block budget allowed an overdraw");
+        require(budget.claim(ServerBuildGuard.BLOCK_BUDGET_PER_SECOND, ONE_SECOND_NANOS),
+            "one second did not refill the sustained block rate");
+        pass("the per-player block budget refuses an overdraw and refills over time");
+
+        BlockPos withinReach = ORIGIN.offset(0, 0, ServerBuildGuard.MAX_BUILD_DISTANCE - 1);
+        BlockPos outOfReach = ORIGIN.offset(0, 0, ServerBuildGuard.MAX_BUILD_DISTANCE + 8);
+        require(ServerBuildGuard.withinReach(ORIGIN.getX(), ORIGIN.getY(), ORIGIN.getZ(), withinReach),
+            "the reach test rejected a position " + (ServerBuildGuard.MAX_BUILD_DISTANCE - 1) + " blocks away");
+        require(!ServerBuildGuard.withinReach(ORIGIN.getX(), ORIGIN.getY(), ORIGIN.getZ(), outOfReach),
+            "the reach test accepted a position past " + ServerBuildGuard.MAX_BUILD_DISTANCE + " blocks");
+        require(!ServerBuildGuard.mayBuild(null), "the build gate authorised an absent player");
+        pass("the build gate refuses out-of-reach positions and an absent player");
     }
 
     /**

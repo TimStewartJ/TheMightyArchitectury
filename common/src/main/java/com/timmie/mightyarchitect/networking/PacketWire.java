@@ -2,6 +2,7 @@ package com.timmie.mightyarchitect.networking;
 
 import com.timmie.mightyarchitect.AllPackets;
 import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.DecoderException;
 import net.minecraft.core.RegistryAccess;
 //? if >=1.20.5 {
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -45,5 +46,48 @@ public final class PacketWire {
 		boolean identity = decoded.id().equals(AllPackets.INSTANT_PRINT_ID);
 		*///?}
 		return new RoundTrip(decoded, encoded, buffer.readableBytes(), identity);
+	}
+
+	/**
+	 * Whether the {@link InstantPrintPacket} decoder refuses a payload declaring this many blocks.
+	 * <p>
+	 * The block count is read straight off the wire and drives an allocating loop, so it has to be
+	 * checked before it is used. Building the hostile buffer is version-variable in the same way
+	 * {@link #roundTrip} is, which is why the assertion is expressed as a boolean here rather than
+	 * left to the (version-agnostic) test module.
+	 */
+	public static boolean instantPrintRejectsSize(RegistryAccess registries, int declaredSize) {
+		try {
+			//? if >=1.20.5 {
+			RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registries);
+			buffer.writeInt(declaredSize);
+			AllPackets.INSTANT_PRINT_CODEC.decode(buffer);
+			//?} else {
+			/*FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+			buffer.writeInt(declaredSize);
+			AllPackets.INSTANT_PRINT_DECODER.apply(buffer);
+			*///?}
+			return false;
+		} catch (DecoderException rejected) {
+			return true;
+		}
+	}
+
+	/** Whether the {@link SetHotbarItemPacket} decoder refuses a payload addressing this slot. */
+	public static boolean setHotbarItemRejectsSlot(RegistryAccess registries, int slot) {
+		try {
+			//? if >=1.20.5 {
+			RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registries);
+			buffer.writeInt(slot);
+			AllPackets.SET_HOTBAR_ITEM_CODEC.decode(buffer);
+			//?} else {
+			/*FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+			buffer.writeInt(slot);
+			AllPackets.SET_HOTBAR_ITEM_DECODER.apply(buffer);
+			*///?}
+			return false;
+		} catch (DecoderException rejected) {
+			return true;
+		}
 	}
 }
