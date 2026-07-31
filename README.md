@@ -105,18 +105,23 @@ pwsh -File scripts/run-client-test-matrix.ps1
 
 # The same client harness against the packaged jars (Fabric, all versions)
 pwsh -File scripts/run-client-test-matrix.ps1 -Mode prod
-
-# Exact production jars in disposable Prism instances (Windows)
-pwsh -File scripts/run-packaged-client-test-matrix.ps1
 ```
 
 `-Mode prod` runs the identical harness, but launched the way a launcher launches the game:
 remapped artifacts, intermediary names, mods discovered from jars. It needs no launcher and no
 account — Loom's `ClientProductionRunTask` resolves the client jar, Fabric Loader, intermediary and
-the runtime libraries itself — so it runs in CI alongside everything else, on all 13 versions. It is
-Fabric-only because ModDevGradle ships no production run task; NeoForge runs official mappings at
-runtime, so the divergence this catches largely does not exist there, while legacy Forge
-(1.19.4/1.20.1) does run SRG and is reachable only through the Prism matrix below.
+the runtime libraries itself — so it runs in CI alongside everything else, on all 13 versions.
+
+It is Fabric-only: ModDevGradle ships no production run task. NeoForge performs no remap at all
+(its `jar` *is* the shipped artifact), so the defect class this catches cannot arise there; legacy
+Forge on 1.19.4/1.20.1 reobfuscates to SRG and **is** exposed.
+
+> **Known gap.** The Forge-family jars — 12 of the 25 shipped artifacts — currently have no
+> automated production coverage. A Prism-based runner used to claim it, but its loader branch wrote
+> a NeoForge component for every non-Fabric loader and the two Forge versions have no
+> `neoforge_version`, so it never worked for the only versions it was the sole cover for. It was
+> removed rather than left masquerading as coverage. The intended replacement is HeadlessMC, which
+> supports Forge/NeoForge headlessly and would drive this same companion mod.
 
 The server matrix boots a real dedicated server per target and runs the print-to-world test in
 `server-test/`: a schematic is turned into `InstantPrintPacket`s, round-tripped through the
@@ -128,29 +133,15 @@ bounds on both packets, the per-player placement budget and the reach test, and 
 to end — a real packet handed to the real handler with a real `ServerPlayer`, asserting that an
 authorised sender's build lands and that an out-of-reach or unauthorised one does not.
 
-The packaged runner is artifact-first: Gradle only ever runs in
-`scripts/prepare-runtime-artifacts.ps1`, which builds every requested target once
-and records the resulting jars in `build/runtime-artifacts/manifest.json`. Client
-launches only copy those prebuilt jars, so many clients can start without racing
-concurrent builds. Use `-Build Always|Auto|Never` to control preparation;
-`Auto` (the default) rebuilds only when the manifest is missing or stale.
+For manual testing, add `-KeepOpen` — in either mode. The target runs the full automated suite
+first and then stays connected in-world with the composer active. `-Mode prod -KeepOpen` is the way
+to play with the actual distributable jars:
 
 ```powershell
-pwsh -File scripts/prepare-runtime-artifacts.ps1
-pwsh -File scripts/run-packaged-client-test-matrix.ps1 -Build Never
+pwsh -File scripts/run-client-test-matrix.ps1 -Mode prod -Versions 1.21.8 -Port 25601 -KeepOpen
 ```
 
-For manual testing, add `-KeepOpen`. Targets are launched one at a time, each
-running the full automated suite first and then remaining connected in-world with
-the composer active, so every requested target ends up open simultaneously. Ports
-are assigned sequentially from `-Port`:
-
-```powershell
-pwsh -File scripts/run-packaged-client-test-matrix.ps1 `
-  -Versions 1.21.1,1.21.8,26.1 -Loaders fabric,neoforge -Port 25601 -KeepOpen
-```
-
-The command prints a session manifest per client and a stop command.
+The command prints a session manifest and a stop command.
 To stop every retained session:
 
 ```powershell

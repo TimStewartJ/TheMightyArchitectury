@@ -127,10 +127,10 @@ jobs:
       # names, mods discovered the way a launcher discovers them. Nothing above this step can see
       # that layer, and its first run found two real defects that only exist there.
       #
-      # Fabric only - ModDevGradle ships no production run task, and modern NeoForge runs official
-      # mappings at runtime so dev and production names coincide there anyway. Legacy Forge
-      # (1.19.4/1.20.1) does run SRG and is genuinely uncovered; the packaged Prism matrix is still
-      # the only thing that reaches it.
+      # Fabric only - ModDevGradle ships no production run task, and NeoForge performs no remap at
+      # all (its `jar` is the shipped artifact), so the defect class this catches cannot arise
+      # there. Legacy Forge (1.19.4/1.20.1) reobfuscates to SRG and IS exposed; the Forge-family
+      # jars have no automated production coverage today. See the known gap in README.md.
       #
       # The display is set up here rather than left to Loom's own getUseXVFB(), which would start
       # xvfb-run at its default screen. Both client matrices sharing one explicitly sized 24-bit

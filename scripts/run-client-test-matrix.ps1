@@ -220,7 +220,6 @@ function Invoke-ClientTest {
                 port = $ServerPort
                 serverProcess = Get-TestProcessIdentity -Process $ServerProcess
                 clientProcesses = @(Get-TestProcessIdentity -Process $gradleProcess)
-                instancePath = $null
                 createdAt = (Get-Date).ToString('o')
             }
             $manifest = Write-TestSessionManifest -RepoRoot $RepoRoot `
