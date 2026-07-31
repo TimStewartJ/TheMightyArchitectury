@@ -103,9 +103,20 @@ PowerShell 7 is required. The matrices cover every version and each version's lo
 pwsh -File scripts/run-server-test-matrix.ps1
 pwsh -File scripts/run-client-test-matrix.ps1
 
+# The same client harness against the packaged jars (Fabric, all versions)
+pwsh -File scripts/run-client-test-matrix.ps1 -Mode prod
+
 # Exact production jars in disposable Prism instances (Windows)
 pwsh -File scripts/run-packaged-client-test-matrix.ps1
 ```
+
+`-Mode prod` runs the identical harness, but launched the way a launcher launches the game:
+remapped artifacts, intermediary names, mods discovered from jars. It needs no launcher and no
+account — Loom's `ClientProductionRunTask` resolves the client jar, Fabric Loader, intermediary and
+the runtime libraries itself — so it runs in CI alongside everything else, on all 13 versions. It is
+Fabric-only because ModDevGradle ships no production run task; NeoForge runs official mappings at
+runtime, so the divergence this catches largely does not exist there, while legacy Forge
+(1.19.4/1.20.1) does run SRG and is reachable only through the Prism matrix below.
 
 The server matrix boots a real dedicated server per target and runs the print-to-world test in
 `server-test/`: a schematic is turned into `InstantPrintPacket`s, round-tripped through the

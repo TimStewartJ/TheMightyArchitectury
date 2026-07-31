@@ -122,6 +122,27 @@ jobs:
           xvfb-run -a -s "-screen 0 1280x720x24" \
             pwsh -NoProfile -File ./scripts/run-client-test-matrix.ps1 -Versions '${{ matrix.mc }}'
 
+      # The same 40-check harness, launched from the *packaged* jars through Loom's
+      # ClientProductionRunTask instead of the dev classpath: remapped artifacts, intermediary
+      # names, mods discovered the way a launcher discovers them. Nothing above this step can see
+      # that layer, and its first run found two real defects that only exist there.
+      #
+      # Fabric only - ModDevGradle ships no production run task, and modern NeoForge runs official
+      # mappings at runtime so dev and production names coincide there anyway. Legacy Forge
+      # (1.19.4/1.20.1) does run SRG and is genuinely uncovered; the packaged Prism matrix is still
+      # the only thing that reaches it.
+      #
+      # The display is set up here rather than left to Loom's own getUseXVFB(), which would start
+      # xvfb-run at its default screen. Both client matrices sharing one explicitly sized 24-bit
+      # display is what makes a screenshot assertion comparable between dev and production.
+      - name: Production client test (Fabric)
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          ALSOFT_DRIVERS: "null"
+        run: |
+          xvfb-run -a -s "-screen 0 1280x720x24" \
+            pwsh -NoProfile -File ./scripts/run-client-test-matrix.ps1 -Mode prod -Versions '${{ matrix.mc }}'
+
       - name: Upload runtime test evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -130,6 +151,7 @@ jobs:
           if-no-files-found: warn
           path: |
             build/client-test-results/${{ matrix.mc }}/
+            build/prod-client-test-results/${{ matrix.mc }}/
             build/server-test-results/${{ matrix.mc }}/
 
       - uses: actions/upload-artifact@v4
@@ -155,4 +177,4 @@ jobs:
             echo "One or more version builds failed."
             exit 1
           fi
-          echo "All 13 versions built green (25 jars: 13 Fabric + 12 Forge-family)."
+          echo "All 13 versions built green (25 jars: 13 Fabric + 12 Forge-family), with production-jar client coverage on all 13 Fabric nodes."

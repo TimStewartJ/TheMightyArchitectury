@@ -1,3 +1,5 @@
+import net.fabricmc.loom.task.prod.ClientProductionRunTask
+
 def node = rootProject.project(":${stonecutter.current.version}")
 def unobf = node.findProperty('unobfuscated') == 'true'
 def javaVer = (node.findProperty('java_version') ?: '21') as int
@@ -10,6 +12,16 @@ def clientTestRunDir = clientTestSessionId ? "run-client-test-${clientTestSessio
 def clientTestResultFile = clientTestSessionId
     ? layout.buildDirectory.file("client-test-${clientTestSessionId}/result.json")
     : layout.buildDirectory.file("client-test/result.json")
+def prodClientTestRunDir = clientTestSessionId
+    ? "run-prod-client-test-${clientTestSessionId}"
+    : "run-prod-client-test"
+def prodClientTestResultFile = clientTestSessionId
+    ? layout.buildDirectory.file("prod-client-test-${clientTestSessionId}/result.json")
+    : layout.buildDirectory.file("prod-client-test/result.json")
+def clientTestServer = (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SERVER")
+    ?: project.findProperty("clientTestServer")
+    ?: "127.0.0.1:25565").toString()
+def clientTestKeepOpen = (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_KEEP_OPEN") ?: "false").toString()
 
 // Source inclusion: this node compiles the matching common node's Stonecutter output alongside its
 // own. There is no shared artifact and no bytecode transformer - each loader compiles the shared
@@ -74,14 +86,10 @@ loom {
             name "Mighty Architect Automated Client Test"
             runDir clientTestRunDir
             property "mightyarchitect.clientTest.enabled", "true"
-            property "mightyarchitect.clientTest.server",
-                (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SERVER")
-                    ?: project.findProperty("clientTestServer")
-                    ?: "127.0.0.1:25565").toString()
+            property "mightyarchitect.clientTest.server", clientTestServer
             property "mightyarchitect.clientTest.result",
                 clientTestResultFile.get().asFile.absolutePath
-            property "mightyarchitect.clientTest.keepOpen",
-                (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_KEEP_OPEN") ?: "false").toString()
+            property "mightyarchitect.clientTest.keepOpen", clientTestKeepOpen
         }
         automatedServerTest {
             inherit server
@@ -118,6 +126,12 @@ dependencies {
         modImplementation "net.fabricmc.fabric-api:fabric-api:${fapiVersion}"
     }
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
+    // The production run loads real mod jars, so Fabric API has to be there as one. This is a
+    // plain configuration on purpose: the published artifact is already in the runtime namespace,
+    // and routing it through modImplementation would hand the run a dev-mapped jar instead.
+    // Non-transitive because the bundle already jar-in-jars every module it depends on - resolving
+    // them alongside it would offer Fabric Loader two candidates for each mod id.
+    productionRuntimeMods("net.fabricmc.fabric-api:fabric-api:${fapiVersion}") { transitive = false }
     clientTestImplementation sourceSets.main.output
     serverTestImplementation sourceSets.main.output
 }
@@ -188,6 +202,13 @@ if (unobf) {
         inputFile.set(clientTestJarTask.flatMap { it.archiveFile })
         dependsOn clientTestJarTask
         archiveClassifier.set("fabric-client-test")
+        // RemapJarTask seeds its remap classpath with `compileClasspath`, which holds the mod's
+        // dependencies but not the mod. Tiny-remapper only renames an override when it can see the
+        // hierarchy that declares it, so without the mod's own classes here it could not tell that
+        // WrappedWorld extends Level: the companion went on calling `getBlockState` while the mod
+        // jar renamed the same method to `method_8320`, and the two jars first met at runtime, as a
+        // NoSuchMethodError. Remap the companion against exactly what it compiled against.
+        classpath.from sourceSets.clientTest.compileClasspath
     }
 }
 
@@ -195,6 +216,54 @@ tasks.register("buildClientTestMod") {
     group = "verification"
     description = "Builds the distributable Fabric client-test companion mod."
     dependsOn packagedClientTestJar
+}
+
+// Production client test. `runAutomatedClientTest` above launches the game from the dev classpath
+// under Mojang names; this launches the *packaged* jars the way a launcher does - remapped
+// artifacts, intermediary names on every obfuscated node, and none of the dev-only classpath.
+// That is the layer where a name-bound reflective lookup or a mis-declared dependency shows up,
+// and until now nothing in CI ran it.
+//
+// There is no launcher to write: Loom's ClientProductionRunTask resolves the client jar,
+// fabric-loader, intermediary (only where the production namespace is intermediary) and the
+// client runtime libraries itself, and depends on `downloadAssets`. It also seeds `mods` with
+// this node's own production artifact - `remapJar`, or `jar` where Loom does not remap - so only
+// the companion and Fabric API have to be named here.
+tasks.register("runProductionClientTest", ClientProductionRunTask) {
+    group = "verification"
+    description = "Runs the automated client test against the packaged production jars."
+
+    mods.from packagedClientTestJar
+    runDir = layout.projectDirectory.dir(prodClientTestRunDir)
+
+    jvmArgs.addAll(
+        "-Dmightyarchitect.clientTest.enabled=true",
+        "-Dmightyarchitect.clientTest.server=${clientTestServer}".toString(),
+        "-Dmightyarchitect.clientTest.result=${prodClientTestResultFile.get().asFile.absolutePath}".toString(),
+        "-Dmightyarchitect.clientTest.keepOpen=${clientTestKeepOpen}".toString()
+    )
+
+    // Vanilla's Main marks --accessToken and --version `required()` on every version in the
+    // matrix (checked on 1.19.4, 1.21.8 and 26.2), and Loom supplies neither - it passes only
+    // --assetIndex, --assetsDir and --gameDir. Nothing here authenticates anything; an
+    // online-mode=false server never asks. The option parser simply refuses to start without
+    // them present, so the values are placeholders. --username is pinned only so the player
+    // shows up under a recognisable name in the server log.
+    programArgs.addAll(
+        "--accessToken", "0",
+        "--version", "mightyarchitect-prod-test",
+        "--username", "ArchitectTest"
+    )
+
+    // Loom turns XVFB on by itself whenever CI is set on Linux, but with xvfb-run's default
+    // screen. Both client matrices instead run under one explicitly sized 24-bit display, so a
+    // screenshot assertion sees the same framebuffer in dev and in production and any difference
+    // is attributable to the runtime rather than the display. Leave the display to the caller
+    // unless it is asked for.
+    useXVFB = Boolean.parseBoolean((project.findProperty("prodClientTestXvfb") ?: "false").toString())
+
+    // javaLauncher is left on its convention, which is this project's own toolchain - the same
+    // JDK the dev run and the node's compile use.
 }
 
 if (unobf) {

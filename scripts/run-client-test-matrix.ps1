@@ -1,6 +1,8 @@
 param(
     [string[]]$Versions = @('1.19.4', '1.20.1', '1.20.2', '1.20.4', '1.20.6', '1.21.1', '1.21.4', '1.21.6', '1.21.8', '1.21.10', '1.21.11', '26.1', '26.2'),
     [string[]]$Loaders = @('fabric', 'neoforge', 'forge'),
+    [ValidateSet('dev', 'prod')]
+    [string]$Mode = 'dev',
     [int]$Port = 25565,
     [int]$ClientTimeoutSeconds = 600,
     [switch]$KeepOpen
@@ -15,10 +17,21 @@ Assert-TestMatrixPowerShell
 $Versions = Expand-TestListArgument -Value $Versions
 $Loaders = Expand-TestListArgument -Value $Loaders -Allowed @('fabric', 'neoforge', 'forge')
 
+# `prod` launches the packaged jars through Loom's ClientProductionRunTask, so it covers exactly
+# the loaders Loom builds: Fabric. ModDevGradle ships no production run task, so the Forge-family
+# nodes have no equivalent and are dropped rather than silently run in dev mode.
+if ($Mode -eq 'prod') {
+    $dropped = @($Loaders | Where-Object { $_ -ne 'fabric' })
+    if ($dropped) {
+        Write-Host "Mode prod covers Fabric only; ignoring $($dropped -join ', ')." -ForegroundColor Yellow
+    }
+    $Loaders = @('fabric')
+}
+
 $RepoRoot = Get-TestMatrixRepoRoot -ScriptRoot $PSScriptRoot
 $BuildRoot = Join-Path $RepoRoot 'build'
 $RuntimeRoot = Join-Path $BuildRoot 'client-test-runtime'
-$ResultsRoot = Join-Path $BuildRoot 'client-test-results'
+$ResultsRoot = Join-Path $BuildRoot $(if ($Mode -eq 'prod') { 'prod-client-test-results' } else { 'client-test-results' })
 $Gradle = Get-TestGradleCommand -RepoRoot $RepoRoot
 
 if ($KeepOpen -and ($Versions.Count -ne 1 -or (Select-TestVersionLoaders -Version $Versions[0] -Requested $Loaders).Count -ne 1)) {
@@ -76,8 +89,12 @@ function Invoke-ClientTest {
 
     $projectDirectory = Join-Path (Join-Path (Join-Path $RepoRoot $Loader) 'versions') $Version
     $projectBuildDirectory = Join-Path $projectDirectory 'build'
-    $clientTestDirectoryName = if ($KeepOpen) { "client-test-${ServerPort}" } else { 'client-test' }
-    $runDirectoryName = if ($KeepOpen) { "run-client-test-${ServerPort}" } else { 'run-client-test' }
+    # Dev and production runs must not share a result file or a game directory: the verdict is read
+    # back from disk, and a stale one from the other mode would be indistinguishable from this run's.
+    $prefix = if ($Mode -eq 'prod') { 'prod-client-test' } else { 'client-test' }
+    $clientTestDirectoryName = if ($KeepOpen) { "${prefix}-${ServerPort}" } else { $prefix }
+    $runDirectoryName = if ($KeepOpen) { "run-${prefix}-${ServerPort}" } else { "run-${prefix}" }
+    $gradleTask = if ($Mode -eq 'prod') { 'runProductionClientTest' } else { 'runAutomatedClientTest' }
     $clientTestBuildDirectory = Join-Path $projectBuildDirectory $clientTestDirectoryName
     $resultPath = Join-Path $clientTestBuildDirectory 'result.json'
     $runDirectory = Join-Path $projectDirectory $runDirectoryName
@@ -89,7 +106,7 @@ function Invoke-ClientTest {
     Write-TestClientOptions -MinecraftDirectory $runDirectory
     Remove-Item $gradleStdout, $gradleStderr -Force -ErrorAction SilentlyContinue
 
-    Write-Host "=== CLIENT TEST $Version / $Loader ==="
+    Write-Host "=== CLIENT TEST ($Mode) $Version / $Loader ==="
     $env:MIGHTYARCHITECT_CLIENT_TEST_SERVER = "127.0.0.1:$ServerPort"
     $env:MIGHTYARCHITECT_CLIENT_TEST_KEEP_OPEN = $KeepOpen.IsPresent.ToString().ToLowerInvariant()
     if ($KeepOpen) {
@@ -100,12 +117,13 @@ function Invoke-ClientTest {
     $artifactsCopied = $false
     try {
         $gradleArguments = [System.Collections.Generic.List[string]]::new()
-        $gradleArguments.Add(":${Loader}:${Version}:runAutomatedClientTest")
+        $gradleArguments.Add(":${Loader}:${Version}:${gradleTask}")
         $gradleArguments.Add('--console=plain')
         $gradleArguments.Add('--no-daemon')
         # Fabric runs the companion from its own source set; the Forge-family loaders load it as a
-        # local runtime mod jar instead.
-        if ($Loader -eq 'neoforge' -or $Loader -eq 'forge') {
+        # local runtime mod jar instead. The production run always consumes the packaged companion
+        # jar, so it needs no such flag.
+        if ($Mode -eq 'dev' -and ($Loader -eq 'neoforge' -or $Loader -eq 'forge')) {
             $gradleArguments.Add('-PenableClientTestMod=true')
         }
         $gradleArguments.Add('-Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64')
@@ -196,7 +214,7 @@ function Invoke-ClientTest {
             Copy-ResultArtifacts $Version $Loader $resultPath $runDirectory $ServerLog $gradleStdout $gradleStderr
             $artifactsCopied = $true
             $session = [pscustomobject]@{
-                mode = 'dev'
+                mode = $Mode
                 version = $Version
                 loader = $Loader
                 port = $ServerPort
@@ -206,7 +224,7 @@ function Invoke-ClientTest {
                 createdAt = (Get-Date).ToString('o')
             }
             $manifest = Write-TestSessionManifest -RepoRoot $RepoRoot `
-                -FileName "dev-$Version-$Loader-$ServerPort.json" -Session $session
+                -FileName "$Mode-$Version-$Loader-$ServerPort.json" -Session $session
             $leaveRunning = $true
             return [pscustomobject]@{
                 ManifestPath = $manifest
@@ -283,11 +301,11 @@ if ($failures.Count -gt 0) {
 if ($keptOpenSession) {
     $session = $keptOpenSession.Session
     $stopScript = Join-Path $PSScriptRoot 'stop-kept-open-clients.ps1'
-    Write-Host "KEEP OPEN dev $($session.version) / $($session.loader)"
+    Write-Host "KEEP OPEN $Mode $($session.version) / $($session.loader)"
     Write-Host "Server: 127.0.0.1:$Port (PID $($session.serverProcess.processId))"
     Write-Host "Manifest: $($keptOpenSession.ManifestPath)"
     Write-Host "Stop with: pwsh -File `"$stopScript`" -ManifestPath `"$($keptOpenSession.ManifestPath)`""
     return
 }
 
-Write-Host "All $nodeCount client-test nodes passed."
+Write-Host "All $nodeCount client-test nodes passed ($Mode)."
