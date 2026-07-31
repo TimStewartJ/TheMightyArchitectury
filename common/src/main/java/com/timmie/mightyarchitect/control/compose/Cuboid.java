@@ -109,6 +109,25 @@ public class Cuboid {
 		return obj instanceof Cuboid && ((Cuboid) obj).getOrigin().equals(getOrigin())
 				&& ((Cuboid) obj).getSize().equals(getSize());
 	}
+
+	/**
+	 * Matches {@link #equals(Object)}, which it has to: two equal objects with different hashes
+	 * break every hash-based collection they are put in.
+	 * <p>
+	 * Note that a Cuboid is mutable and moved in place by the planner tools, so its hash changes
+	 * with it. Anything keying a map on one is therefore keyed on identity - see
+	 * {@link com.timmie.mightyarchitect.control.design.DesignPicker}.
+	 */
+	@Override
+	public int hashCode() {
+		int hash = x;
+		hash = 31 * hash + y;
+		hash = 31 * hash + z;
+		hash = 31 * hash + width;
+		hash = 31 * hash + height;
+		hash = 31 * hash + length;
+		return hash;
+	}
 	
 	public BoundingBox toMBB() {
 		return BoundingBox.fromCorners(getOrigin(), getOrigin().offset(getSize()));

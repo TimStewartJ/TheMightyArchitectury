@@ -44,7 +44,13 @@ public class DesignResourceLoader {
 
 		});
 
-		designMap.putAll(loadExternalDesignsForTheme(theme)); // extensions
+		// Merged per design set, not per layer. putAll replaces whole layers, so as soon as a
+		// folder existed under themes/<builtin>/ - which exporting a single design creates - every
+		// built-in design in that layer disappeared behind the handful of exported ones.
+		loadExternalDesignsForTheme(theme).forEach((layer, typeMap) -> typeMap.forEach((type, designs) -> designMap
+			.computeIfAbsent(layer, missingLayer -> new HashMap<>())
+			.computeIfAbsent(type, missingType -> new HashSet<>())
+			.addAll(designs)));
 
 		return designMap;
 	}
@@ -75,24 +81,27 @@ public class DesignResourceLoader {
 	private static Map<DesignLayer, Map<DesignType, Set<CompoundTag>>> loadThemeFromThemeFile(DesignTheme theme) {
 		final Map<DesignLayer, Map<DesignType, Set<CompoundTag>>> compoundMap = new HashMap<>();
 
-		CompoundTag importedThemeFile = new CompoundTag();
+		CompoundTag importedThemeFile = null;
 
 		if (theme.getFilePath().endsWith(".theme")) {
-			try {
-				InputStream inputStream = Files.newInputStream(Paths.get("themes/" + theme.getFilePath()),
-						StandardOpenOption.READ);
+			try (InputStream inputStream = Files.newInputStream(Paths.get("themes/" + theme.getFilePath()),
+					StandardOpenOption.READ)) {
 				//? if >=1.20.3 {
 				importedThemeFile = NbtIo.readCompressed(inputStream, NbtAccounter.unlimitedHeap());
 				//?} else {
 				/*importedThemeFile = NbtIo.readCompressed(inputStream);
 				*///?}
-				inputStream.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				TheMightyArchitect.logger.error("Could not read theme " + theme.getFilePath(), e);
 			}
 		} else {
 			importedThemeFile = FilesHelper.loadJsonAsNBT("themes/" + theme.getFilePath());
 		}
+
+		// A missing or malformed theme file yields no designs rather than an NPE that takes the
+		// whole theme list down with it.
+		if (importedThemeFile == null)
+			return compoundMap;
 
 		final CompoundTag themeFile = importedThemeFile;
 
@@ -168,7 +177,8 @@ public class DesignResourceLoader {
 			if (TheMightyArchitect.class.getClassLoader().getResource(path) == null)
 				break;
 			final CompoundTag designTag = FilesHelper.loadJsonResourceAsNBT(path);
-			designs.add(type.getDesign().fromNBT(designTag));
+			if (designTag != null)
+				designs.add(type.getDesign().fromNBT(designTag));
 			index++;
 		}
 
@@ -182,15 +192,14 @@ public class DesignResourceLoader {
 		if (!Files.exists(Paths.get(folderPath)))
 			return designs;
 
-		try {
-			DirectoryStream<Path> newDirectoryStream = Files.newDirectoryStream(Paths.get(folderPath));
-			for (Path path : newDirectoryStream) {
+		try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(folderPath))) {
+			for (Path path : directoryStream) {
 				final CompoundTag designTag = FilesHelper.loadJsonAsNBT(path.toString());
-				designs.add(designTag);
+				if (designTag != null)
+					designs.add(designTag);
 			}
-			newDirectoryStream.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			TheMightyArchitect.logger.error("Could not list designs in " + folderPath, e);
 		}
 
 		return designs;
