@@ -1,11 +1,13 @@
 package com.timmie.mightyarchitect.control.design;
 
 import com.google.common.collect.ImmutableList;
+import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.design.partials.Design;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 
 import java.util.*;
 
@@ -186,15 +188,44 @@ public class DesignTheme {
 			*///?}
 
 		//? if >=1.21.6 {
-		compound.getList("Layers").orElse(new ListTag()).forEach(s -> theme.layers.add(DesignLayer.valueOf(((StringTag) s).value())));
-		compound.getList("Types").orElse(new ListTag()).forEach(s -> theme.types.add(DesignType.valueOf(((StringTag) s).value())));
+		ListTag layerTags = compound.getList("Layers").orElse(new ListTag());
+		ListTag typeTags = compound.getList("Types").orElse(new ListTag());
 		//?} else {
-		/*compound.getList("Layers", 8).forEach(s -> theme.layers.add(DesignLayer.valueOf(((StringTag) s).getAsString())));
-		compound.getList("Types", 8).forEach(s -> theme.types.add(DesignType.valueOf(((StringTag) s).getAsString())));
+		/*ListTag layerTags = compound.getList("Layers", 8);
+		ListTag typeTags = compound.getList("Types", 8);
 		*///?}
+
+		layerTags.forEach(s -> addIfKnown(theme.layers, DesignLayer.class, stringValue(s)));
+		typeTags.forEach(s -> addIfKnown(theme.types, DesignType.class, stringValue(s)));
 
 		theme.updateRoomLayers();
 		return theme;
+	}
+
+	//? if >=1.21.6 {
+	private static String stringValue(Tag tag) {
+		return tag instanceof StringTag string ? string.value() : "";
+	}
+	//?} else {
+	/*private static String stringValue(Tag tag) {
+		return tag instanceof StringTag string ? string.getAsString() : "";
+	}
+	*///?}
+
+	/**
+	 * Adds an enum constant by name, skipping it if no such constant exists.
+	 * <p>
+	 * A theme written by a newer version of the mod, or simply by hand, can name a layer or type
+	 * this build does not have. {@code valueOf} threw for it, and the throw escaped the single
+	 * try block around the whole theme directory scan - so one such file emptied the theme list
+	 * instead of costing that theme one layer.
+	 */
+	private static <E extends Enum<E>> void addIfKnown(List<E> target, Class<E> type, String name) {
+		try {
+			target.add(Enum.valueOf(type, name));
+		} catch (IllegalArgumentException unknown) {
+			TheMightyArchitect.logger.warn("Ignoring unknown {} '{}' in a theme", type.getSimpleName(), name);
+		}
 	}
 
 	public void setImported(boolean imported) {

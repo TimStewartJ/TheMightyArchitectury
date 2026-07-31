@@ -1,9 +1,9 @@
 package com.timmie.mightyarchitect.control.palette;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.HolderGetter;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.level.block.Block;
@@ -29,6 +29,13 @@ public class PaletteDefinition {
 	private BlockState clear;
 	private static PaletteDefinition defaultPalette;
 
+	/**
+	 * The palette every other one starts from.
+	 * <p>
+	 * This is a single shared instance and {@link PaletteDefinition} is mutable, so anything that
+	 * stores it, hands it to the palette editor or exports it must {@link #clone()} first -
+	 * otherwise editing one theme's palette silently rewrites the default for all of them.
+	 */
 	public static PaletteDefinition defaultPalette() {
 		if (defaultPalette == null) {
 			defaultPalette = new PaletteDefinition("Standard Palette");
@@ -130,7 +137,14 @@ public class PaletteDefinition {
 	public static PaletteDefinition fromNBT(CompoundTag compound) {
 		PaletteDefinition palette = defaultPalette().clone();
 
-		var holderGetter = Minecraft.getInstance().level.holderLookup(Registries.BLOCK);
+		// Blocks live in the built-in registry on both sides, so this deliberately does not go
+		// through Minecraft.getInstance().level: reading it there NPE'd whenever a palette was
+		// loaded outside a world, which is why palette loading had to be deferred until joining.
+		//? if >=1.21.4 {
+		HolderGetter<Block> holderGetter = BuiltInRegistries.BLOCK;
+		//?} else {
+		/*HolderGetter<Block> holderGetter = BuiltInRegistries.BLOCK.asLookup();
+		*///?}
 
 		if (compound != null) {
 			if (compound.contains("Palette")) {

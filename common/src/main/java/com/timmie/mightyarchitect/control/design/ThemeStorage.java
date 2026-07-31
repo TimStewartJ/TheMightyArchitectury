@@ -1,5 +1,6 @@
 package com.timmie.mightyarchitect.control.design;
 
+import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import net.minecraft.client.Minecraft;
@@ -81,10 +82,14 @@ public class ThemeStorage {
 			name = "My Theme";
 		DesignTheme theme = new DesignTheme(name, Minecraft.getInstance().player.getName()
 			.getString());
-		theme.setFilePath(FilesHelper.slug(name));
+		theme.setFilePath(FilesHelper.slugOr(name, "my_theme"));
 		theme.setImported(true);
-		theme.setDefaultPalette(PaletteDefinition.defaultPalette());
-		theme.setDefaultSecondaryPalette(PaletteDefinition.defaultPalette());
+		// Clones: storing defaultPalette() itself handed the palette editor the shared default, so
+		// recolouring one theme recoloured the starting palette of every theme made afterwards.
+		theme.setDefaultPalette(PaletteDefinition.defaultPalette()
+			.clone());
+		theme.setDefaultSecondaryPalette(PaletteDefinition.defaultPalette()
+			.clone());
 		return theme.withLayers(DesignLayer.Regular, DesignLayer.Roofing, DesignLayer.Foundation)
 			.withTypes(DesignType.WALL, DesignType.CORNER, DesignType.ROOF, DesignType.FACADE, DesignType.FLAT_ROOF);
 	}
@@ -162,6 +167,8 @@ public class ThemeStorage {
 		CompoundTag paletteCompound = FilesHelper.loadJsonResourceAsNBT("themes/" + themeFolder + "/palette.json");
 		CompoundTag palette2Compound = FilesHelper.loadJsonResourceAsNBT("themes/" + themeFolder + "/palette2.json");
 		DesignTheme theme = DesignTheme.fromNBT(themeCompound);
+		if (theme == null)
+			throw new IllegalStateException("Built-in theme " + themeFolder + " is missing from the mod jar");
 		theme.setFilePath(themeFolder);
 		theme.setImported(false);
 		theme.setDefaultPalette(PaletteDefinition.fromNBT(paletteCompound));
@@ -174,84 +181,94 @@ public class ThemeStorage {
 		createdThemes = new ArrayList<>();
 		String folderPath = "themes";
 
-		try {
-			if (!Files.isDirectory(Paths.get(folderPath)))
-				Files.createDirectory(Paths.get(folderPath));
+		FilesHelper.createFolderIfMissing(folderPath);
 
-			DirectoryStream<Path> newDirectoryStream = Files.newDirectoryStream(Paths.get(folderPath));
-			for (Path path : newDirectoryStream) {
+		try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(folderPath))) {
+			for (Path path : directoryStream) {
 				String themeFolder = path.getFileName()
 					.toString();
-
-				CompoundTag themeCompound;
-				CompoundTag paletteCompound;
-				CompoundTag secondaryPaletteCompound = null;
 
 				if (themeFolder.equals("export"))
 					continue;
 
-				if (themeFolder.endsWith(".theme") || themeFolder.endsWith(".json")) {
-					CompoundTag themeFile = new CompoundTag();
-
-					if (themeFolder.endsWith(".theme")) {
-						try {
-							InputStream inputStream = Files.newInputStream(Paths.get(folderPath + "/" + themeFolder),
-								StandardOpenOption.READ);
-							//? if >=1.20.3 {
-							themeFile = NbtIo.readCompressed(inputStream, NbtAccounter.unlimitedHeap());
-							//?} else {
-							/*themeFile = NbtIo.readCompressed(inputStream);
-							*///?}
-							inputStream.close();
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					} else {
-						themeFile = FilesHelper.loadJsonAsNBT("themes/" + themeFolder);
-					}
-
-					//? if >=1.21.6 {
-					themeCompound = themeFile.getCompound("Theme").orElse(new CompoundTag());
-					//?} else {
-					/*themeCompound = themeFile.getCompound("Theme");*///?}
-					//? if >=1.21.6 {
-					paletteCompound = themeFile.getCompound("Palette").orElse(new CompoundTag());
-					//?} else {
-					/*paletteCompound = themeFile.getCompound("Palette");*///?}
-					if (themeFile.contains("SecondaryPalette"))
-						//? if >=1.21.6 {
-						secondaryPaletteCompound = themeFile.getCompound("SecondaryPalette").orElse(new CompoundTag());
-						//?} else {
-						/*secondaryPaletteCompound = themeFile.getCompound("SecondaryPalette");*///?}
-
-				} else {
-					themeCompound = FilesHelper.loadJsonAsNBT(folderPath + "/" + themeFolder + "/theme.json");
-					paletteCompound = FilesHelper.loadJsonAsNBT(folderPath + "/" + themeFolder + "/palette.json");
-					secondaryPaletteCompound =
-						FilesHelper.loadJsonAsNBT(folderPath + "/" + themeFolder + "/palette2.json");
+				// Per theme, not per scan: an unknown layer name or a malformed file used to throw
+				// out of the loop and drop every theme after it from the list.
+				try {
+					importTheme(folderPath, themeFolder);
+				} catch (RuntimeException e) {
+					TheMightyArchitect.logger.error("Skipping unreadable theme " + themeFolder, e);
 				}
-
-				if (themeCompound == null)
-					continue;
-
-				DesignTheme theme = DesignTheme.fromNBT(themeCompound);
-				theme.setFilePath(themeFolder);
-				theme.setImported(true);
-				theme.setDefaultPalette(PaletteDefinition.fromNBT(paletteCompound));
-
-				if (secondaryPaletteCompound != null)
-					theme.setDefaultSecondaryPalette(PaletteDefinition.fromNBT(secondaryPaletteCompound));
-				else
-					theme.setDefaultSecondaryPalette(theme.getDefaultPalette());
-
-				importedThemes.add(theme);
-				if (!themeFolder.endsWith(".theme") && !themeFolder.endsWith(".json"))
-					createdThemes.add(theme);
 			}
-			newDirectoryStream.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			TheMightyArchitect.logger.error("Could not list themes in " + folderPath, e);
+		}
+	}
+
+	private static void importTheme(String folderPath, String themeFolder) {
+		CompoundTag themeCompound;
+		CompoundTag paletteCompound;
+		CompoundTag secondaryPaletteCompound = null;
+
+		boolean packedIntoOneFile = themeFolder.endsWith(".theme") || themeFolder.endsWith(".json");
+
+		if (packedIntoOneFile) {
+			CompoundTag themeFile = themeFolder.endsWith(".theme")
+				? readCompressedTheme(folderPath + "/" + themeFolder)
+				: FilesHelper.loadJsonAsNBT(folderPath + "/" + themeFolder);
+
+			if (themeFile == null)
+				return;
+
+			//? if >=1.21.6 {
+			themeCompound = themeFile.getCompound("Theme").orElse(new CompoundTag());
+			//?} else {
+			/*themeCompound = themeFile.getCompound("Theme");*///?}
+			//? if >=1.21.6 {
+			paletteCompound = themeFile.getCompound("Palette").orElse(new CompoundTag());
+			//?} else {
+			/*paletteCompound = themeFile.getCompound("Palette");*///?}
+			if (themeFile.contains("SecondaryPalette"))
+				//? if >=1.21.6 {
+				secondaryPaletteCompound = themeFile.getCompound("SecondaryPalette").orElse(new CompoundTag());
+				//?} else {
+				/*secondaryPaletteCompound = themeFile.getCompound("SecondaryPalette");*///?}
+
+		} else {
+			themeCompound = FilesHelper.loadJsonAsNBT(folderPath + "/" + themeFolder + "/theme.json");
+			paletteCompound = FilesHelper.loadJsonAsNBT(folderPath + "/" + themeFolder + "/palette.json");
+			secondaryPaletteCompound = FilesHelper.loadJsonAsNBT(folderPath + "/" + themeFolder + "/palette2.json");
 		}
 
+		if (themeCompound == null)
+			return;
+
+		DesignTheme theme = DesignTheme.fromNBT(themeCompound);
+		theme.setFilePath(themeFolder);
+		theme.setImported(true);
+		theme.setDefaultPalette(PaletteDefinition.fromNBT(paletteCompound));
+
+		if (secondaryPaletteCompound != null)
+			theme.setDefaultSecondaryPalette(PaletteDefinition.fromNBT(secondaryPaletteCompound));
+		else
+			// Cloned, so that editing the secondary palette does not also edit the primary one.
+			theme.setDefaultSecondaryPalette(theme.getDefaultPalette()
+				.clone());
+
+		importedThemes.add(theme);
+		if (!packedIntoOneFile)
+			createdThemes.add(theme);
+	}
+
+	private static CompoundTag readCompressedTheme(String path) {
+		try (InputStream inputStream = Files.newInputStream(Paths.get(path), StandardOpenOption.READ)) {
+			//? if >=1.20.3 {
+			return NbtIo.readCompressed(inputStream, NbtAccounter.unlimitedHeap());
+			//?} else {
+			/*return NbtIo.readCompressed(inputStream);
+			*///?}
+		} catch (IOException e) {
+			TheMightyArchitect.logger.error("Could not read theme " + path, e);
+			return null;
+		}
 	}
 }

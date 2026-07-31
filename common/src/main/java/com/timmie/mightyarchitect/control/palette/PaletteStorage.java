@@ -3,10 +3,6 @@ package com.timmie.mightyarchitect.control.palette;
 import com.google.gson.JsonElement;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
-//? if >=1.21.6 {
-//?} else {
-/*import com.mojang.brigadier.exceptions.CommandSyntaxException;
-*///?}
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import net.minecraft.nbt.CompoundTag;
@@ -18,6 +14,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class PaletteStorage {
 
@@ -63,18 +60,18 @@ public class PaletteStorage {
 	}
 
 	public static PaletteDefinition importPalette(Path path) {
-		try {
-			JsonReader reader = new JsonReader(Files.newBufferedReader(path));
+		try (JsonReader reader = new JsonReader(Files.newBufferedReader(path))) {
 			reader.setLenient(true);
 			JsonElement element = Streams.parse(reader);
 			//? if >=1.21.6 {
 			return PaletteDefinition.fromNBT(TagParser.create(net.minecraft.nbt.NbtOps.INSTANCE).parseCompoundFully(element.toString()));
-		} catch (Exception e) {
 			//?} else {
 			/*return PaletteDefinition.fromNBT(TagParser.parseTag(element.toString()));
-		} catch (IOException | CommandSyntaxException e) {
 			*///?}
-			e.printStackTrace();
+		} catch (Exception e) {
+			// Exception rather than the exact types: the parser throws a checked
+			// CommandSyntaxException before 1.21.6 and an unchecked parse error after it.
+			TheMightyArchitect.logger.error("Could not read palette " + path, e);
 		}
 		return null;
 	}
@@ -83,17 +80,20 @@ public class PaletteStorage {
 		palettes = new HashMap<>();
 		resourcePalettes = new HashMap<>();
 		loadResourcePalettes();
-		try {
-			Files.list(Paths.get("palettes/")).forEach(path -> loadPalette(path));
+		try (Stream<Path> files = Files.list(Paths.get("palettes/"))) {
+			files.forEach(PaletteStorage::loadPalette);
 		} catch (NoSuchFileException e) {
 			// No palettes created yet
 		} catch (IOException e) {
-			e.printStackTrace();
+			TheMightyArchitect.logger.error("Could not list palettes", e);
 		}
 	}
 
 	public static void loadPalette(Path path) {
 		PaletteDefinition palette = importPalette(path);
+		// One unreadable palette file used to NPE here and abort loading all the others.
+		if (palette == null)
+			return;
 		palettes.put(palette.getName(), palette);
 	}
 
@@ -104,8 +104,10 @@ public class PaletteStorage {
 			if (TheMightyArchitect.class.getClassLoader().getResource(path) == null)
 				break;
 			CompoundTag tag = FilesHelper.loadJsonResourceAsNBT(path);
-			PaletteDefinition paletteDefinition = PaletteDefinition.fromNBT(tag);
-			resourcePalettes.put(paletteDefinition.getName(), paletteDefinition);
+			if (tag != null) {
+				PaletteDefinition paletteDefinition = PaletteDefinition.fromNBT(tag);
+				resourcePalettes.put(paletteDefinition.getName(), paletteDefinition);
+			}
 			index++;
 		}
 	}

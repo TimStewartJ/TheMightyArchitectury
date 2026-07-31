@@ -5,10 +5,6 @@ import com.google.gson.JsonParser;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-//? if >=1.21.6 {
-//?} else {
-/*import com.mojang.brigadier.exceptions.CommandSyntaxException;
-*///?}
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
@@ -27,15 +23,25 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.Locale;
+import java.util.Set;
 
 public class FilesHelper {
+
+	/** Names Windows refuses as a file, with or without an extension. */
+	private static final Set<String> RESERVED_NAMES = Set.of("con", "prn", "aux", "nul", "com1", "com2", "com3",
+		"com4", "com5", "com6", "com7", "com8", "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7",
+		"lpt8", "lpt9");
 
 	public static void createFolderIfMissing(String name) {
 		if (!Files.isDirectory(Paths.get(name))) {
 			try {
-				Files.createDirectory(Paths.get(name));
+				// createDirectories, not createDirectory: every caller here passes a nested path
+				// like "themes/export", and createDirectory fails outright when the parent is
+				// missing - after which the write it was preparing for silently does nothing.
+				Files.createDirectories(Paths.get(name));
 			} catch (IOException e) {
-				TheMightyArchitect.logger.warn("Could not create Folder: " + name);
+				TheMightyArchitect.logger.warn("Could not create Folder: " + name, e);
 			}
 		}
 	}
@@ -88,20 +94,54 @@ public class FilesHelper {
 	}
 
 	public static String findFirstValidFilename(String name, String folderPath, String extension) {
+		String slug = slugOr(name, "unnamed");
 		int index = 0;
 		String filename;
 		String filepath;
 		do {
-			filename = slug(name) + ((index == 0) ? "" : "_" + index) + "." + extension;
+			filename = slug + ((index == 0) ? "" : "_" + index) + "." + extension;
 			index++;
 			filepath = folderPath + "/" + filename;
 		} while (Files.exists(Paths.get(filepath)));
 		return filename;
 	}
 
+	/**
+	 * Reduces a user-supplied name to something safe to use as a single path element.
+	 * <p>
+	 * These names come from sign text and text prompts and are pasted straight into a path, so
+	 * anything outside {@code [a-z0-9_]} is dropped rather than escaped - that removes directory
+	 * separators, {@code ..}, drive colons, wildcards and control characters in one pass instead of
+	 * trying to enumerate them. Windows also reserves a handful of device names, which get a
+	 * suffix rather than being rejected.
+	 *
+	 * @return the sanitized name, which is empty when nothing usable survived
+	 */
 	public static String slug(String name) {
-		return name.toLowerCase()
-			.replace(' ', '_');
+		StringBuilder builder = new StringBuilder(name.length());
+		for (char c : name.toLowerCase(Locale.ROOT)
+			.toCharArray()) {
+			if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_')
+				builder.append(c);
+			else if (c == ' ' || c == '-' || c == '.')
+				builder.append('_');
+		}
+
+		while (builder.length() > 0 && builder.charAt(0) == '_')
+			builder.deleteCharAt(0);
+		while (builder.length() > 0 && builder.charAt(builder.length() - 1) == '_')
+			builder.deleteCharAt(builder.length() - 1);
+
+		String slug = builder.toString();
+		if (slug.length() > 64)
+			slug = slug.substring(0, 64);
+		return RESERVED_NAMES.contains(slug) ? slug + "_" : slug;
+	}
+
+	/** {@link #slug(String)}, with a fallback for names that sanitize away to nothing. */
+	public static String slugOr(String name, String fallback) {
+		String slug = slug(name);
+		return slug.isEmpty() ? fallback : slug;
 	}
 
 	public static boolean saveTagCompoundAsJson(CompoundTag compound, String path) {
@@ -123,25 +163,24 @@ public class FilesHelper {
 	}
 
 	public static CompoundTag loadJsonNBT(InputStream inputStream) {
-		try {
-			JsonReader reader = new JsonReader(new BufferedReader(new InputStreamReader(inputStream)));
+		if (inputStream == null)
+			return null;
+
+		try (JsonReader reader =
+			new JsonReader(new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)))) {
 			reader.setLenient(true);
 			JsonElement element = Streams.parse(reader);
-			reader.close();
-			inputStream.close();
 			//? if >=1.21.6 {
 			return TagParser.create(net.minecraft.nbt.NbtOps.INSTANCE).parseCompoundFully(element.toString());
-		} catch (Exception e) {
 			//?} else {
 			/*return TagParser.parseTag(element.toString());
-		} catch (IOException e) {
 			*///?}
-			e.printStackTrace();
-		//? if >=1.21.6 {
-		//?} else {
-		/*} catch (CommandSyntaxException e) {
-			e.printStackTrace();
-		*///?}
+
+		} catch (Exception e) {
+			// Exception rather than the exact types: the parser throws a checked
+			// CommandSyntaxException before 1.21.6 and an unchecked parse error after it, and
+			// either way one malformed file must not abort the load of every other one.
+			TheMightyArchitect.logger.error("Could not read NBT from json", e);
 		}
 		return null;
 	}
@@ -151,11 +190,12 @@ public class FilesHelper {
 			.getResourceAsStream(filepath));
 	}
 
+	/** @return the file's contents, or null if it is missing or unreadable - callers must check. */
 	public static CompoundTag loadJsonAsNBT(String filepath) {
 		try {
 			return loadJsonNBT(Files.newInputStream(Paths.get(filepath), StandardOpenOption.READ));
 		} catch (IOException e) {
-			e.printStackTrace();
+			TheMightyArchitect.logger.error("Could not open " + filepath, e);
 		}
 		return null;
 	}

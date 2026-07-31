@@ -16,6 +16,7 @@ import com.mojang.blaze3d.vertex.MeshData;
 *///?}
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import com.timmie.mightyarchitect.TheMightyArchitect;
 import net.minecraft.client.Minecraft;
 //? if >=26 {
 import net.minecraft.client.renderer.block.BlockAndTintGetter;
@@ -86,8 +87,10 @@ public class SuperByteBufferCache {
 		try {
 			return compartmentCache.get(key, supplier::get);
 		} catch (ExecutionException e) {
-			e.printStackTrace();
-			return null;
+			// An empty buffer, not null: this feeds straight into the render path, where a null
+			// turns one failed block model into a crash for the whole frame.
+			TheMightyArchitect.logger.error("Could not build a buffer for " + key, e);
+			return SuperByteBuffer.empty();
 		}
 	}
 

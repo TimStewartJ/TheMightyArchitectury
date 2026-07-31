@@ -4,15 +4,16 @@ import com.timmie.mightyarchitect.control.compose.Room;
 import com.timmie.mightyarchitect.control.compose.Stack;
 import com.timmie.mightyarchitect.control.design.partials.Design;
 
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 public class RoomDesignCache {
 	
 	private Map<Room, Design> cachedDesigns;
-	
+
 	public RoomDesignCache() {
-		cachedDesigns = new HashMap<>();
+		// Identity, for the same reason as DesignPicker: Room is a mutable Cuboid.
+		cachedDesigns = new IdentityHashMap<>();
 	}
 
 	public void rerollAll() {

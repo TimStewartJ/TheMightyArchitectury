@@ -29,10 +29,15 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Locale;
 
 public class DesignExporter {
 
-	public static PaletteDefinition scanningPalette = PaletteDefinition.defaultPalette();
+	// A clone, not defaultPalette() itself: the scanning palette is edited in place by the theme
+	// editor, and handing out the shared default would let that edit rewrite the palette every
+	// other theme starts from.
+	public static PaletteDefinition scanningPalette = PaletteDefinition.defaultPalette()
+		.clone();
 
 	public static DesignTheme theme;
 	public static DesignType type;
@@ -199,16 +204,16 @@ public class DesignExporter {
 
 		BlockPos signPos = anchor.above();
 		if (worldIn.getBlockState(signPos)
-			.getBlock() == Blocks.SPRUCE_SIGN) {
-			SignBlockEntity sign = (SignBlockEntity) worldIn.getBlockEntity(signPos);
+			.getBlock() == Blocks.SPRUCE_SIGN && worldIn.getBlockEntity(signPos) instanceof SignBlockEntity sign) {
 			//? if >=1.20 {
-			filename = sign.getFrontText().toString();
+			String signedName = sign.getFrontText().getMessage(1, false).getString();
 			//?} else {
-			/*filename = sign.getMessage(1, false).getString();
+			/*String signedName = sign.getMessage(1, false).getString();
 			*///?}
-			designPath = typePath + "/" + filename;
+			filename = designFilename(signedName);
+		}
 
-		} else {
+		if (filename.isEmpty()) {
 			int index = 0;
 			while (index < 2048) {
 				filename = "design" + ((index == 0) ? "" : "_" + index) + ".json";
@@ -218,6 +223,8 @@ public class DesignExporter {
 					break;
 				index++;
 			}
+		} else {
+			designPath = typePath + "/" + filename;
 		}
 
 		AllPackets.sendToServer(new PlaceSignPacket(layer.getDisplayName()
@@ -226,6 +233,26 @@ public class DesignExporter {
 		return designPath;
 		//
 
+	}
+
+	/**
+	 * Turns the name written on line two of a design's sign into the file that design is saved as.
+	 * <p>
+	 * The name is echoed back onto the sign after every export, so this has to be idempotent: an
+	 * already-suffixed name keeps its single {@code .json} instead of growing another one, which is
+	 * what makes re-exporting overwrite the previous file rather than leaving an orphan behind that
+	 * keeps loading forever.
+	 *
+	 * @return the filename, or empty when the sign carries no usable name
+	 */
+	public static String designFilename(String signedName) {
+		String base = signedName.trim();
+		if (base.toLowerCase(Locale.ROOT)
+			.endsWith(".json"))
+			base = base.substring(0, base.length() - ".json".length());
+
+		String slug = FilesHelper.slug(base);
+		return slug.isEmpty() ? "" : slug + ".json";
 	}
 
 	public static void setTheme(DesignTheme theme) {

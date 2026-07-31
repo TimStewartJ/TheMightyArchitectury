@@ -8,7 +8,7 @@ import com.timmie.mightyarchitect.control.design.partials.Design;
 import com.timmie.mightyarchitect.control.design.partials.Design.DesignInstance;
 import com.timmie.mightyarchitect.foundation.utility.DesignHelper;
 
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,8 +19,13 @@ public class DesignPicker {
 	private Map<Stack, Design> roofDesigns;
 
 	public DesignPicker() {
-		roomDesigns = new HashMap<>();
-		roofDesigns = new HashMap<>();
+		// Identity maps. Rooms are Cuboids: mutable, and moved and resized in place by the planner
+		// tools, so a value-based hash would strand a room's cached design the moment it is
+		// dragged. The keys are the live objects from the ground plan, and identity is what these
+		// caches have always actually meant - it was only implicit before, in a Cuboid that
+		// overrode equals but not hashCode.
+		roomDesigns = new IdentityHashMap<>();
+		roofDesigns = new IdentityHashMap<>();
 	}
 
 	public void reset() {
