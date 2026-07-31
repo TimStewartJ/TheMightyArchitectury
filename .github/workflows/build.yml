@@ -53,6 +53,15 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # HeadlessMc installs a full Minecraft plus loader for the production client lane. Cached per
+      # Minecraft version so the assets are downloaded once rather than on every run.
+      - name: Cache HeadlessMc Minecraft
+        uses: actions/cache@v4
+        with:
+          path: build/headlessmc
+          key: hmc-${{ runner.os }}-${{ matrix.mc }}-${{ hashFiles(format('versions/{0}/gradle.properties', matrix.mc)) }}
+          restore-keys: hmc-${{ runner.os }}-${{ matrix.mc }}-
+
       - name: Build ${{ matrix.mc }}
         env:
           JDKS: JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64
@@ -122,6 +131,29 @@ jobs:
           xvfb-run -a -s "-screen 0 1280x720x24" \
             pwsh -NoProfile -File ./scripts/run-client-test-matrix.ps1 -Versions '${{ matrix.mc }}'
 
+      # The same 40-check harness, launched from the *packaged* jars instead of the dev classpath:
+      # remapped artifacts, intermediary or SRG names, mods discovered the way a launcher discovers
+      # them. Nothing above this step can see that layer, and its first runs found three real
+      # defects that only exist there.
+      #
+      # Fabric goes through Loom's ClientProductionRunTask. ModDevGradle ships no equivalent and
+      # NeoForge keeps its own production-test tasks inside an unpublished buildSrc plugin, so the
+      # Forge family goes through HeadlessMc, which installs a real Minecraft plus the pinned loader
+      # build and launches the jars out of a mods folder.
+      #
+      # The display is set up here rather than left to Loom's own getUseXVFB(), which would start
+      # xvfb-run at its default screen. One explicitly sized 24-bit display for every client lane is
+      # what makes a screenshot assertion comparable between dev and production - and HeadlessMc
+      # needs a real framebuffer too: offline accounts otherwise force its LWJGL stub, which renders
+      # nothing at all.
+      - name: Production client test
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          ALSOFT_DRIVERS: "null"
+        run: |
+          xvfb-run -a -s "-screen 0 1280x720x24" \
+            pwsh -NoProfile -File ./scripts/run-client-test-matrix.ps1 -Mode prod -Versions '${{ matrix.mc }}'
+
       - name: Upload runtime test evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -130,6 +162,7 @@ jobs:
           if-no-files-found: warn
           path: |
             build/client-test-results/${{ matrix.mc }}/
+            build/prod-client-test-results/${{ matrix.mc }}/
             build/server-test-results/${{ matrix.mc }}/
 
       - uses: actions/upload-artifact@v4
@@ -155,4 +188,4 @@ jobs:
             echo "One or more version builds failed."
             exit 1
           fi
-          echo "All 13 versions built green (25 jars: 13 Fabric + 12 Forge-family)."
+          echo "All 13 versions built green (25 jars: 13 Fabric + 12 Forge-family), with production-jar client coverage on all 13 Fabric nodes."

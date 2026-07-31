@@ -1,6 +1,7 @@
 package com.timmie.mightyarchitect.test;
 
 import com.timmie.mightyarchitect.foundation.compat.McCompat;
+import com.timmie.mightyarchitect.foundation.compat.ServerConnect;
 import com.timmie.mightyarchitect.foundation.compat.ScreenInput;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -32,7 +33,6 @@ import com.timmie.mightyarchitect.test.mixin.ArchitectManagerAccessor;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
-import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -275,57 +275,17 @@ public final class ClientTestController {
 
         String server = System.getProperty("mightyarchitect.clientTest.server", "127.0.0.1:25565");
         ServerAddress address = ServerAddress.parseString(server);
-        ServerData data = createServerData(server);
+        ServerData data = ServerConnect.serverData("Mighty Architect Client Test", server);
         TheMightyArchitect.logger.info("[CLIENT-TEST] Connecting to {}", server);
-        startConnecting(minecraft, address, data);
+        ServerConnect.connect(minecraft, McCompat.currentScreen(minecraft), address, data);
         advance(Stage.WAIT_FOR_WORLD);
     }
 
-    // This source set is shared verbatim by every Stonecutter node (it is not preprocessed), so
-    // the two multiplayer entry points whose signatures moved between 1.19.4 and 1.21 are bound
-    // reflectively instead of guarded: ServerData's third argument became a Type in 1.20.2, and
-    // ConnectScreen.startConnecting gained a quick-play flag in 1.20.1 and a transfer state in 1.20.5.
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static ServerData createServerData(String server) {
-        for (java.lang.reflect.Constructor<?> constructor : ServerData.class.getConstructors()) {
-            Class<?>[] parameters = constructor.getParameterTypes();
-            if (parameters.length != 3 || parameters[0] != String.class || parameters[1] != String.class)
-                continue;
-            Object third = parameters[2] == boolean.class
-                ? Boolean.FALSE
-                : Enum.valueOf((Class<Enum>) parameters[2], "OTHER");
-            try {
-                return (ServerData) constructor.newInstance("Mighty Architect Client Test", server, third);
-            } catch (ReflectiveOperationException exception) {
-                throw new IllegalStateException("Unable to build the client-test ServerData", exception);
-            }
-        }
-        throw new IllegalStateException("No usable ServerData constructor found");
-    }
-
-    private static void startConnecting(Minecraft minecraft, ServerAddress address, ServerData data) {
-        for (java.lang.reflect.Method method : ConnectScreen.class.getDeclaredMethods()) {
-            if (!method.getName().equals("startConnecting") || !java.lang.reflect.Modifier.isStatic(method.getModifiers()))
-                continue;
-            Class<?>[] parameters = method.getParameterTypes();
-            if (parameters.length < 4 || parameters[3] != ServerData.class)
-                continue;
-            Object[] arguments = new Object[parameters.length];
-            arguments[0] = McCompat.currentScreen(minecraft);
-            arguments[1] = minecraft;
-            arguments[2] = address;
-            arguments[3] = data;
-            for (int i = 4; i < parameters.length; i++)
-                arguments[i] = parameters[i] == boolean.class ? Boolean.FALSE : null;
-            try {
-                method.invoke(null, arguments);
-                return;
-            } catch (ReflectiveOperationException exception) {
-                throw new IllegalStateException("Unable to start the client-test connection", exception);
-            }
-        }
-        throw new IllegalStateException("No usable ConnectScreen.startConnecting overload found");
-    }
+    // This source set is shared verbatim by every Stonecutter node (it is not preprocessed), so the
+    // two multiplayer entry points whose signatures moved between 1.19.4 and 1.20.6 live in
+    // ServerConnect, on the mod side of the fence where guards work. They used to be bound
+    // reflectively by name here, which resolved only under Mojang mappings and so could never run
+    // against the packaged jars.
 
     private static void waitForWorld(Minecraft minecraft) {
         if (minecraft.level == null || minecraft.player == null)

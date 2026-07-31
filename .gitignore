@@ -3,6 +3,8 @@ build/
 run/
 run-client-test/
 run-client-test-*/
+run-prod-client-test/
+run-prod-client-test-*/
 run-server-test/
 *.iws
 out/
