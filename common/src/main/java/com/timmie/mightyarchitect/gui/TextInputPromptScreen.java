@@ -68,9 +68,12 @@ public class TextInputPromptScreen extends AbstractSimiScreen {
 			McCompat.setScreen(minecraft, null);
 		}).pos(topLeftX + 100, topLeftY + 50).size(100, 20).build();
 
-		widgets.add(confirm);
-		widgets.add(abort);
-		widgets.add(nameField);
+		addWidget(confirm);
+		addWidget(abort);
+		// Registered last, and focused explicitly, so vanilla routes typing here and its own
+		// tab-forward pass at the end of init finds nothing after it to steal focus with.
+		addWidget(nameField);
+		setFocused(nameField);
 	}
 
 	@Override
@@ -112,26 +115,17 @@ public class TextInputPromptScreen extends AbstractSimiScreen {
 	public boolean keyPressed(KeyEvent event) {
 		if (event.key() == GLFW.GLFW_KEY_ENTER) {
 			confirm.onPress(null);
+			return true;
+		}
+		return super.keyPressed(event);
 	//?} else {
 	/*public boolean keyPressed(int keyCode, int p_keyPressed_2_, int p_keyPressed_3_) {
 		if (keyCode == GLFW.GLFW_KEY_ENTER) {
 			confirm.onPress();
+			return true;
+		}
+		return super.keyPressed(keyCode, p_keyPressed_2_, p_keyPressed_3_);
 	*///?}
-			return true;
-		}
-		//? if >=1.21.10 {
-		if (event.key() == 256 && this.shouldCloseOnEsc()) {
-		//?} else {
-		/*if (keyCode == 256 && this.shouldCloseOnEsc()) {
-		*///?}
-			this.onClose();
-			return true;
-		}
-		//? if >=1.21.10 {
-		return nameField.keyPressed(event);
-		//?} else {
-		/*return nameField.keyPressed(keyCode, p_keyPressed_2_, p_keyPressed_3_);
-		*///?}
 	}
 
 }

@@ -32,6 +32,9 @@ public class Label extends AbstractSimiWidget {
 
 	public Label(int x, int y, Component text) {
 		super(x, y, Minecraft.getInstance().font.width(text), 10);
+		// Decoration only. Staying inactive keeps labels out of vanilla's getChildAt hit-testing,
+		// which matters because a label is usually drawn on top of the scroll input that writes it.
+		active = false;
 		font = Minecraft.getInstance().font;
 		this.text = Component.literal("Label");
 		color = 0xFFFFFF;
