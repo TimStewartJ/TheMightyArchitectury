@@ -158,6 +158,17 @@ tasks.named("runAutomatedServerTest") {
     dependsOn tasks.named("serverTestClasses")
 }
 
+// Names the generated refmap inside a processed mixin config. Rewritten as JSON rather than
+// patched as text so an added key cannot produce a malformed config.
+def writeMixinRefmap = { File config, String refmap ->
+    if (!config.exists()) {
+        throw new GradleException("Mixin config missing, cannot name its refmap: $config")
+    }
+    def json = new groovy.json.JsonSlurper().parse(config)
+    json.refmap = refmap
+    config.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(json)) + "\n"
+}
+
 processResources {
     def metaProps = [
         "version"          : project.version,
@@ -168,6 +179,9 @@ processResources {
         "meta_java_range"  : node.property('meta_java_range')
     ]
     inputs.properties(metaProps)
+    // The refmap name is written by the doLast below rather than being read from the source tree,
+    // so it has to be declared as an input or changing it would leave a stale output in place.
+    inputs.property("mixin_refmap", "mightyarchitect.refmap.json")
     filesMatching("META-INF/mods.toml") {
         expand(metaProps)
     }
@@ -180,6 +194,20 @@ processResources {
     // Fabric-only mixin config: harmless in the Forge jar, but leaving an unexpanded ${...}
     // placeholder in a shipped file is not, so drop it here.
     exclude "mightyarchitect.fabric.mixins.json"
+
+    // Legacy Forge is the only branch that runs SRG names, so it is the only one whose mixin
+    // configs have to name the refmap the annotation processor generates. Without it Mixin cannot
+    // translate `tick` to `m_91398_` and every injector fails at load with "No refMap loaded" -
+    // which is exactly what the production client did until this was added, while the dev run,
+    // which uses official names throughout, stayed green.
+    //
+    // Forge-only on purpose. The config is shared with the other two branches: Loom injects its
+    // own, differently named refmap on Fabric, and naming one here would send Fabric looking for a
+    // file that does not exist. NeoForge runs official names and needs none.
+    doLast {
+        writeMixinRefmap(new File(destinationDir, "mightyarchitect.mixins.json"),
+            "mightyarchitect.refmap.json")
+    }
 }
 
 // The test companions share one unprocessed resource tree across every node, so their mixin
@@ -191,11 +219,16 @@ def testMetaProps = [
 
 tasks.named("processClientTestResources") {
     inputs.properties(testMetaProps)
+    inputs.property("mixin_refmap", "mightyarchitect-test.refmap.json")
     filesMatching("mightyarchitect-test.mixins.json") {
         expand(testMetaProps)
     }
     filesMatching("META-INF/mods.toml") {
         expand(testMetaProps)
+    }
+    doLast {
+        writeMixinRefmap(new File(destinationDir, "mightyarchitect-test.mixins.json"),
+            "mightyarchitect-test.refmap.json")
     }
 }
 
