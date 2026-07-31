@@ -103,25 +103,31 @@ PowerShell 7 is required. The matrices cover every version and each version's lo
 pwsh -File scripts/run-server-test-matrix.ps1
 pwsh -File scripts/run-client-test-matrix.ps1
 
-# The same client harness against the packaged jars (Fabric, all versions)
+# The same client harness against the packaged jars, every version and loader
 pwsh -File scripts/run-client-test-matrix.ps1 -Mode prod
 ```
 
 `-Mode prod` runs the identical harness, but launched the way a launcher launches the game:
-remapped artifacts, intermediary names, mods discovered from jars. It needs no launcher and no
-account — Loom's `ClientProductionRunTask` resolves the client jar, Fabric Loader, intermediary and
-the runtime libraries itself — so it runs in CI alongside everything else, on all 13 versions.
+packaged artifacts, remapped or reobfuscated names, mods discovered from a jar rather than a
+classpath. It needs no account and no installed launcher, so it runs in CI alongside everything
+else, on all 25 targets.
 
-It is Fabric-only: ModDevGradle ships no production run task. NeoForge performs no remap at all
-(its `jar` *is* the shipped artifact), so the defect class this catches cannot arise there; legacy
-Forge on 1.19.4/1.20.1 reobfuscates to SRG and **is** exposed.
+Two launchers sit behind it, because no single one covers every loader:
 
-> **Known gap.** The Forge-family jars — 12 of the 25 shipped artifacts — currently have no
-> automated production coverage. A Prism-based runner used to claim it, but its loader branch wrote
-> a NeoForge component for every non-Fabric loader and the two Forge versions have no
-> `neoforge_version`, so it never worked for the only versions it was the sole cover for. It was
-> removed rather than left masquerading as coverage. The intended replacement is HeadlessMC, which
-> supports Forge/NeoForge headlessly and would drive this same companion mod.
+| loader | launcher | why |
+| --- | --- | --- |
+| Fabric | Loom's `ClientProductionRunTask` | part of the toolchain already; resolves the client jar, Fabric Loader, intermediary and the runtime libraries itself |
+| NeoForge, Forge | HeadlessMc (MIT) | ModDevGradle ships no production run task, and NeoForge keeps its own production-test tasks inside an unpublished `buildSrc` plugin |
+
+HeadlessMc is used purely as an installer and launcher — it installs a real Minecraft plus the
+**pinned** loader build the node targets (`--uid`, so an upstream release cannot change what the
+matrix means) and launches the jars out of a `mods` folder. Nothing it does reaches a shipped
+artifact. Its Minecraft lives in `build/headlessmc` and is cached in CI per version.
+
+> **Local caveat.** The Forge-family production lane needs a virtual framebuffer, so it runs on
+> Linux/CI only. HeadlessMc forces its LWJGL stub for offline accounts unless Xvfb is present, and a
+> stubbed renderer produces empty framebuffers that fail every screenshot assertion. The Fabric
+> production lane has no such constraint and runs anywhere, including `-KeepOpen`.
 
 The server matrix boots a real dedicated server per target and runs the print-to-world test in
 `server-test/`: a schematic is turned into `InstantPrintPacket`s, round-tripped through the

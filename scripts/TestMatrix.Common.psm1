@@ -353,6 +353,10 @@ function Write-TestClientOptions {
         'guiScale:1'
         'pauseOnLostFocus:false'
         'fov:1.0'
+        # A fresh profile otherwise opens the accessibility onboarding screen over the world. The
+        # Gradle-launched lanes reuse a warm profile and never see it; a HeadlessMc instance is
+        # fresh every run.
+        'onboardAccessibility:false'
     ) | Set-Content (Join-Path $MinecraftDirectory 'options.txt') -Encoding ascii
 }
 
@@ -420,6 +424,254 @@ function Select-TestVersionLoaders {
     return @(Get-TestVersionLoaders -Version $Version | Where-Object { $_ -in $Requested })
 }
 
+# --------------------------------------------------------------------------------------------
+# HeadlessMc: the production launcher for the Forge family.
+#
+# Fabric Loom ships ClientProductionRunTask, so `-Mode prod` on a Fabric node needs no launcher.
+# ModDevGradle ships no equivalent and NeoForge keeps its own production-test tasks inside an
+# unpublished buildSrc plugin, so the Forge-family nodes need one. HeadlessMc (MIT) installs a
+# real Minecraft plus loader and launches it from a mods folder, which is exactly the shape of
+# a launcher and exactly what these jars have never been loaded by.
+#
+# It is used only as an installer and a launcher. Nothing it does reaches a shipped artifact, and
+# the fallback if it ever goes away is the same one NeoForge uses on itself: run the installer with
+# --install-client and assemble the command line from the version profile it writes.
+# --------------------------------------------------------------------------------------------
+
+$script:HeadlessMcVersion = '2.10.0'
+
+function Get-TestHeadlessMcRoot {
+    param([Parameter(Mandatory = $true)][string]$RepoRoot)
+    return Join-Path (Join-Path $RepoRoot 'build') 'headlessmc'
+}
+
+function Get-TestHeadlessMcLauncher {
+    <#
+        Downloads the pinned HeadlessMc launcher once per checkout. Pinned deliberately: the
+        project releases in bursts and a floating "latest" would let an upstream release change
+        what this matrix means without a commit here.
+    #>
+    param([Parameter(Mandatory = $true)][string]$RepoRoot)
+
+    $root = Get-TestHeadlessMcRoot -RepoRoot $RepoRoot
+    New-Item -ItemType Directory -Force -Path $root | Out-Null
+    $jar = Join-Path $root "headlessmc-launcher-$($script:HeadlessMcVersion).jar"
+    if (Test-Path $jar) {
+        return $jar
+    }
+
+    $url = "https://github.com/headlesshq/headlessmc/releases/download/$($script:HeadlessMcVersion)/headlessmc-launcher-$($script:HeadlessMcVersion).jar"
+    Write-Host "Downloading HeadlessMc $($script:HeadlessMcVersion)"
+    $temporary = "$jar.tmp"
+    Invoke-WebRequest -Uri $url -OutFile $temporary
+    Move-Item $temporary $jar -Force
+    return $jar
+}
+
+function Invoke-TestHeadlessMc {
+    <#
+        Runs one HeadlessMc command. HeadlessMc reads HeadlessMC/config.properties relative to the
+        working directory, so every invocation has to run from the same root.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$Root,
+        [Parameter(Mandatory = $true)][string]$Launcher,
+        [Parameter(Mandatory = $true)][string]$Java,
+        [Parameter(Mandatory = $true)][string]$Command,
+        [switch]$Quiet
+    )
+
+    Push-Location $Root
+    try {
+        $output = & $Java '-jar' $Launcher '--command' $Command 2>&1
+        if (-not $Quiet) {
+            $output | Where-Object { $_ -notmatch 'Not running from the headlessmc-launcher-wrapper' } |
+                ForEach-Object { Write-Host "  hmc| $_" }
+        }
+        return $output
+    } finally {
+        Pop-Location
+    }
+}
+
+function Initialize-TestHeadlessMcInstance {
+    <#
+        Installs Minecraft and the requested loader into an isolated .minecraft, and returns the
+        launchable version name. Idempotent: both steps are skipped when the version is already
+        present, which is what makes the directory worth caching in CI.
+
+        The loader build is pinned with --uid to the version this node actually targets. Without
+        it HeadlessMc installs the newest build, and a fresh upstream release could turn the
+        matrix red with no change on our side.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$RepoRoot,
+        [Parameter(Mandatory = $true)][string]$MinecraftVersion,
+        [Parameter(Mandatory = $true)][ValidateSet('neoforge', 'forge')][string]$Loader,
+        [Parameter(Mandatory = $true)][string]$LoaderUid,
+        [Parameter(Mandatory = $true)][int]$JavaVersion,
+        [Parameter(Mandatory = $true)][string]$GameDirectory
+    )
+
+    $root = Get-TestHeadlessMcRoot -RepoRoot $RepoRoot
+    $launcher = Get-TestHeadlessMcLauncher -RepoRoot $RepoRoot
+    $java = Resolve-TestJava -Version $JavaVersion
+    $mcDir = Join-Path $root 'mc'
+    New-Item -ItemType Directory -Force -Path $mcDir, $GameDirectory, (Join-Path $root 'HeadlessMC') | Out-Null
+
+    # Forward slashes throughout: HeadlessMc splits --jvm on whitespace and drops backslashes on
+    # Windows, and the JVM accepts forward slashes on every platform.
+    $slash = { param($p) ($p -replace '\\', '/') }
+    @(
+        "hmc.java.versions=$(& $slash $java)"
+        "hmc.mcdir=$(& $slash $mcDir)"
+        "hmc.gamedir=$(& $slash $GameDirectory)"
+        'hmc.offline=true'
+        'hmc.offline.username=ArchitectTest'
+        'hmc.rethrow.launch.exceptions=true'
+        'hmc.exit.on.failed.command=true'
+        # Real textures: the palette-grid and HUD assertions count distinct colours, so the dummy
+        # assets HeadlessMc offers for smaller runs would fail them for the wrong reason.
+        'hmc.assets.dummy=false'
+        'hmc.jline.enabled=false'
+        # NeoForge can sit on a crash screen forever instead of exiting; this ends the process.
+        'hmc.crash.report.watcher=true'
+    ) | Set-Content (Join-Path $root 'HeadlessMC\config.properties') -Encoding ascii
+
+    $installed = Get-TestHeadlessMcVersions -Root $root -Launcher $launcher -Java $java
+    if (-not ($installed | Where-Object { $_.Name -eq $MinecraftVersion })) {
+        Write-Host "HeadlessMc: downloading Minecraft $MinecraftVersion"
+        Invoke-TestHeadlessMc -Root $root -Launcher $launcher -Java $java -Command "download $MinecraftVersion" | Out-Null
+    }
+
+    $existing = $installed | Where-Object { $_.Parent -eq $MinecraftVersion -and $_.Name -match $Loader }
+    if (-not $existing) {
+        Write-Host "HeadlessMc: installing $Loader $LoaderUid for $MinecraftVersion"
+        Invoke-TestHeadlessMc -Root $root -Launcher $launcher -Java $java `
+            -Command "$Loader $MinecraftVersion --uid $LoaderUid --java $JavaVersion" | Out-Null
+        $installed = Get-TestHeadlessMcVersions -Root $root -Launcher $launcher -Java $java
+        $existing = $installed | Where-Object { $_.Parent -eq $MinecraftVersion -and $_.Name -match $Loader }
+    }
+
+    if (-not $existing) {
+        throw "HeadlessMc did not install $Loader $LoaderUid for Minecraft $MinecraftVersion"
+    }
+
+    return @($existing)[0].Name
+}
+
+function Get-TestHeadlessMcVersions {
+    <#
+        Parses `versions` into objects. The launchable name is what `launch` wants; matching on it
+        is safer than a regex over the loader name, because one .minecraft holds every version and
+        `.*forge.*` would also match neoforge.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$Root,
+        [Parameter(Mandatory = $true)][string]$Launcher,
+        [Parameter(Mandatory = $true)][string]$Java
+    )
+
+    $output = Invoke-TestHeadlessMc -Root $Root -Launcher $Launcher -Java $Java -Command 'versions' -Quiet
+    $versions = [System.Collections.Generic.List[object]]::new()
+    foreach ($line in $output) {
+        $text = "$line".Trim()
+        if ($text -match '^(\d+)\s+(\S+)(?:\s+(\S+))?$') {
+            $versions.Add([pscustomobject]@{
+                Id = [int]$matches[1]
+                Name = $matches[2]
+                Parent = if ($matches[3]) { $matches[3] } else { '' }
+            })
+        }
+    }
+    return $versions
+}
+
+function Start-TestHeadlessMcClient {
+    <#
+        Stages the production jars into the game directory's mods folder and launches the client.
+        This is the whole point of the lane: the jars are discovered from a mods folder by a real
+        loader, exactly as a player's launcher would discover them.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$RepoRoot,
+        [Parameter(Mandatory = $true)][string]$LaunchVersion,
+        [Parameter(Mandatory = $true)][int]$JavaVersion,
+        [Parameter(Mandatory = $true)][string[]]$ModJars,
+        [Parameter(Mandatory = $true)][string]$GameDirectory,
+        [Parameter(Mandatory = $true)][string]$ResultPath,
+        [Parameter(Mandatory = $true)][int]$ServerPort,
+        [Parameter(Mandatory = $true)][string]$StandardOutput,
+        [Parameter(Mandatory = $true)][string]$StandardError,
+        [switch]$KeepOpen
+    )
+
+    $root = Get-TestHeadlessMcRoot -RepoRoot $RepoRoot
+    $launcher = Get-TestHeadlessMcLauncher -RepoRoot $RepoRoot
+    $java = Resolve-TestJava -Version $JavaVersion
+
+    $mods = Join-Path $GameDirectory 'mods'
+    New-Item -ItemType Directory -Force -Path $mods | Out-Null
+    Remove-Item (Join-Path $mods '*.jar') -Force -ErrorAction SilentlyContinue
+    foreach ($jar in $ModJars) {
+        Copy-Item $jar $mods
+        Write-Host "  staged $(Split-Path $jar -Leaf)"
+    }
+
+    $jvm = @(
+        '-Dmightyarchitect.clientTest.enabled=true'
+        "-Dmightyarchitect.clientTest.server=127.0.0.1:$ServerPort"
+        "-Dmightyarchitect.clientTest.result=$($ResultPath -replace '\\', '/')"
+        "-Dmightyarchitect.clientTest.keepOpen=$($KeepOpen.IsPresent.ToString().ToLowerInvariant())"
+    ) -join ' '
+
+    # Delivered through the config file rather than `--command "launch x --jvm "..."" `: that form
+    # needs quotes nested two deep, and Start-Process quotes its own arguments differently on
+    # Windows and Linux. A properties file has no quoting semantics at all. hmc.jvmargs is
+    # space-delimited, so none of these values may contain a space.
+    Add-Content -Path (Join-Path $root 'HeadlessMC\config.properties') -Value "hmc.jvmargs=$jvm" -Encoding ascii
+
+    # -Dhmc.check.xvfb=true is what makes an offline account usable with real rendering: HeadlessMc
+    # otherwise forces its LWJGL stub when offline, which produces empty framebuffers and would
+    # fail every screenshot assertion. Under a virtual framebuffer it leaves rendering alone.
+    $arguments = @(
+        '-Dhmc.check.xvfb=true'
+        '-jar', $launcher
+        '--command', "launch $LaunchVersion"
+    )
+
+    $hiddenWindow = Get-TestHiddenWindowOption
+    return Start-Process -FilePath $java `
+        -ArgumentList $arguments `
+        -WorkingDirectory $root `
+        -RedirectStandardOutput $StandardOutput `
+        -RedirectStandardError $StandardError `
+        @hiddenWindow `
+        -PassThru
+}
+
+function Get-TestLoaderUid {
+    <#
+        The loader build this node targets, in the form HeadlessMc's --uid wants. NeoForge records
+        it bare (21.8.54); Forge records it prefixed with the Minecraft version (1.20.1-47.3.0).
+    #>
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Properties,
+        [Parameter(Mandatory = $true)][ValidateSet('neoforge', 'forge')][string]$Loader
+    )
+
+    if ($Loader -eq 'neoforge') {
+        $uid = $Properties.neoforge_version
+    } else {
+        $uid = ($Properties.forge_version -replace "^$([regex]::Escape($Properties.minecraft_version))-", '')
+    }
+
+    if (-not $uid) {
+        throw "No $Loader version recorded for Minecraft $($Properties.minecraft_version)"
+    }
+    return $uid
+}
+
 <#
 .SYNOPSIS
 Decides whether a matrix failure is worth retrying.
@@ -480,5 +732,11 @@ Export-ModuleMember -Function @(
     'Expand-TestListArgument',
     'Get-TestVersionLoaders',
     'Select-TestVersionLoaders',
+    'Get-TestHeadlessMcRoot',
+    'Get-TestHeadlessMcLauncher',
+    'Get-TestHeadlessMcVersions',
+    'Initialize-TestHeadlessMcInstance',
+    'Start-TestHeadlessMcClient',
+    'Get-TestLoaderUid',
     'Test-TestRetryableFailure'
 )

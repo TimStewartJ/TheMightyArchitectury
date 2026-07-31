@@ -17,17 +17,9 @@ Assert-TestMatrixPowerShell
 $Versions = Expand-TestListArgument -Value $Versions
 $Loaders = Expand-TestListArgument -Value $Loaders -Allowed @('fabric', 'neoforge', 'forge')
 
-# `prod` launches the packaged jars through Loom's ClientProductionRunTask, so it covers exactly
-# the loaders Loom builds: Fabric. ModDevGradle ships no production run task, so the Forge-family
-# nodes have no equivalent and are dropped rather than silently run in dev mode.
-if ($Mode -eq 'prod') {
-    $dropped = @($Loaders | Where-Object { $_ -ne 'fabric' })
-    if ($dropped) {
-        Write-Host "Mode prod covers Fabric only; ignoring $($dropped -join ', ')." -ForegroundColor Yellow
-    }
-    $Loaders = @('fabric')
-}
-
+# `prod` launches the packaged jars. On Fabric that is Loom's ClientProductionRunTask; on the
+# Forge family, where ModDevGradle ships no equivalent, it is HeadlessMc installing a real
+# Minecraft plus loader and launching the jars out of a mods folder. Both drive the same harness.
 $RepoRoot = Get-TestMatrixRepoRoot -ScriptRoot $PSScriptRoot
 $BuildRoot = Join-Path $RepoRoot 'build'
 $RuntimeRoot = Join-Path $BuildRoot 'client-test-runtime'
@@ -77,6 +69,66 @@ function Copy-ResultArtifacts {
     }
 }
 
+function Start-ForgeFamilyProductionClient {
+    <#
+        Builds this node's production jars, makes sure HeadlessMc has a matching Minecraft and
+        loader installed, and launches the client with the jars in its mods folder.
+
+        The Gradle call only produces artifacts - it never launches anything - so a CI job that has
+        already built this node finds everything up to date.
+    #>
+    param(
+        [string]$Version,
+        [string]$Loader,
+        [int]$ServerPort,
+        [string]$ResultPath,
+        [string]$RunDirectory,
+        [string]$StandardOutput,
+        [string]$StandardError,
+        [switch]$KeepOpen
+    )
+
+    $properties = Get-TestNodeProperties -RepoRoot $RepoRoot -Version $Version
+    $javaVersion = [int]$properties.java_version
+
+    $buildLog = Join-Path (Split-Path $StandardOutput) 'artifacts.log'
+    # gradlew is invoked by absolute path, but Gradle still locates the project from the working
+    # directory, so this has to run from the repository root.
+    Push-Location $RepoRoot
+    try {
+        & $Gradle ":${Loader}:${Version}:build" ":${Loader}:${Version}:buildClientTestMod" `
+            '--console=plain' '--no-daemon' `
+            '-Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64' `
+            *> $buildLog
+        $buildExit = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($buildExit -ne 0) {
+        $tail = if (Test-Path $buildLog) { (Get-Content $buildLog -Tail 30) -join "`n" } else { '' }
+        throw "Gradle artifact build for $Version/$Loader exited $buildExit`n$tail"
+    }
+
+    $libraries = Join-Path (Join-Path (Join-Path (Join-Path $RepoRoot $Loader) 'versions') $Version) 'build/libs'
+    $modJar = Get-ChildItem $libraries -Filter "*-$Loader.jar" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch 'sources|dev|raw|client-test|server-test' } | Select-Object -First 1
+    $companionJar = Get-ChildItem $libraries -Filter "*-$Loader-client-test.jar" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch 'client-test-dev' } | Select-Object -First 1
+    if (-not $modJar) { throw "No production jar for $Version/$Loader in $libraries" }
+    if (-not $companionJar) { throw "No client-test companion jar for $Version/$Loader in $libraries" }
+
+    $launchVersion = Initialize-TestHeadlessMcInstance -RepoRoot $RepoRoot `
+        -MinecraftVersion $properties.minecraft_version -Loader $Loader `
+        -LoaderUid (Get-TestLoaderUid -Properties $properties -Loader $Loader) `
+        -JavaVersion $javaVersion -GameDirectory $RunDirectory
+
+    Write-Host "  launching $launchVersion"
+    return Start-TestHeadlessMcClient -RepoRoot $RepoRoot -LaunchVersion $launchVersion `
+        -JavaVersion $javaVersion -ModJars @($modJar.FullName, $companionJar.FullName) `
+        -GameDirectory $RunDirectory -ResultPath $ResultPath -ServerPort $ServerPort `
+        -StandardOutput $StandardOutput -StandardError $StandardError -KeepOpen:$KeepOpen
+}
+
 function Invoke-ClientTest {
     param(
         [string]$Version,
@@ -95,6 +147,9 @@ function Invoke-ClientTest {
     $clientTestDirectoryName = if ($KeepOpen) { "${prefix}-${ServerPort}" } else { $prefix }
     $runDirectoryName = if ($KeepOpen) { "run-${prefix}-${ServerPort}" } else { "run-${prefix}" }
     $gradleTask = if ($Mode -eq 'prod') { 'runProductionClientTest' } else { 'runAutomatedClientTest' }
+    # Loom launches the packaged Fabric jars itself; the Forge family has no such task and goes
+    # through HeadlessMc instead.
+    $useHeadlessMc = ($Mode -eq 'prod' -and $Loader -ne 'fabric')
     $clientTestBuildDirectory = Join-Path $projectBuildDirectory $clientTestDirectoryName
     $resultPath = Join-Path $clientTestBuildDirectory 'result.json'
     $runDirectory = Join-Path $projectDirectory $runDirectoryName
@@ -116,6 +171,11 @@ function Invoke-ClientTest {
     $leaveRunning = $false
     $artifactsCopied = $false
     try {
+        if ($useHeadlessMc) {
+            $gradleProcess = Start-ForgeFamilyProductionClient -Version $Version -Loader $Loader `
+                -ServerPort $ServerPort -ResultPath $resultPath -RunDirectory $runDirectory `
+                -StandardOutput $gradleStdout -StandardError $gradleStderr -KeepOpen:$KeepOpen
+        } else {
         $gradleArguments = [System.Collections.Generic.List[string]]::new()
         $gradleArguments.Add(":${Loader}:${Version}:${gradleTask}")
         $gradleArguments.Add('--console=plain')
@@ -135,6 +195,7 @@ function Invoke-ClientTest {
             -RedirectStandardError $gradleStderr `
             @hiddenWindow `
             -PassThru
+        }
 
         if ($KeepOpen) {
             $deadline = (Get-Date).AddSeconds($ClientTimeoutSeconds)
@@ -189,10 +250,11 @@ function Invoke-ClientTest {
                     $stderrTail = if (Test-Path $gradleStderr) { (Get-Content $gradleStderr -Tail 30) -join "`n" } else { '' }
                     if ($stdoutTail) { Write-Host $stdoutTail }
                     if ($stderrTail) { Write-Host $stderrTail -ForegroundColor Red }
-                    # The tail travels in the message so infrastructure failures inside Gradle itself
+                    # The tail travels in the message so infrastructure failures inside the launcher
                     # (asset downloads and the like) can be classified as retryable, the way the
                     # server matrix already does.
-                    throw "Gradle client test exited $gradleExit`n$stdoutTail`n$stderrTail"
+                    $launcher = if ($useHeadlessMc) { 'HeadlessMc' } else { 'Gradle' }
+                    throw "$launcher client test exited $gradleExit`n$stdoutTail`n$stderrTail"
                 }
             }
         }
