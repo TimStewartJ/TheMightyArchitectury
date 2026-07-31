@@ -232,11 +232,19 @@ def clientTestJarTask = tasks.register("clientTestJar", Jar) {
 
 // The companion mod is also written against official names, so it needs the same SRG pass the
 // main jar gets before a production client will load it. Reobfuscation is driven off the main
-// source set's classpath (as upstream's shadowJar example does) because that is what carries the
-// inherited Minecraft members; clientTest has no consumable runtime elements of its own.
+// source set (as upstream's shadowJar example does) because `reobfuscate` reads that source set's
+// runtimeElements configuration, and clientTest has none of its own.
+//
+// But `reobfuscate` derives the remap libraries from that source set's *compileClasspath*, which
+// carries Minecraft and not the mod. A remapper only renames an override when it can see the
+// hierarchy declaring it, so without the mod's own classes it cannot tell that WrappedWorld
+// extends Level: the companion kept calling `getBlockState` while the main jar reobfuscated the
+// same method to `m_8055_`, and the two jars first disagreed at runtime. Same defect the Fabric
+// companion had, and invisible for the same reason - nothing loads these jars automatically.
 obfuscation {
     reobfuscate(clientTestJarTask, sourceSets.main) {
         archiveClassifier.set("forge-client-test")
+        libraries.from sourceSets.main.output
     }
 }
 
