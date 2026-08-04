@@ -119,9 +119,9 @@ public final class ServerPrintTest {
     }
 
     /**
-     * More entries than {@code BunchOfBlocks.MAX_SIZE} so the payload has to split, and one
-     * non-default blockstate property so the NBT round-trip is genuinely exercised rather than
-     * every block decoding to its default state.
+     * More entries than {@link InstantPrintPacket#MAX_BLOCKS_PER_PACKET} so the payload has to
+     * split, and one non-default blockstate property so the NBT round-trip is genuinely exercised
+     * rather than every block decoding to its default state.
      */
     private static Map<BlockPos, BlockState> buildSchematic() {
         BlockState[] palette = {

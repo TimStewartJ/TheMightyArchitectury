@@ -78,10 +78,21 @@ public class ThemeStorage {
 	}
 
 	public static DesignTheme createTheme(String name) {
+		return createTheme(name, Minecraft.getInstance().player.getName()
+			.getString());
+	}
+
+	/**
+	 * Builds a new empty theme with its own palettes.
+	 * <p>
+	 * The designer is a parameter rather than read from the client here so that the part of this
+	 * that is pure - the name fallback, the file-path slug and the palette cloning - can be
+	 * asserted without a running game. {@link #createTheme(String)} supplies the local player.
+	 */
+	public static DesignTheme createTheme(String name, String designer) {
 		if (name.isEmpty())
 			name = "My Theme";
-		DesignTheme theme = new DesignTheme(name, Minecraft.getInstance().player.getName()
-			.getString());
+		DesignTheme theme = new DesignTheme(name, designer);
 		theme.setFilePath(FilesHelper.slugOr(name, "my_theme"));
 		theme.setImported(true);
 		// Clones: storing defaultPalette() itself handed the palette editor the shared default, so

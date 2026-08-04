@@ -28,6 +28,15 @@ import java.util.function.Predicate;
 
 public class InstantPrintPacket implements MightyPacket {
 
+	/**
+	 * Largest number of blocks one packet may carry.
+	 * <p>
+	 * Both a chunking bound on the way out and a decode-time bound on the way in: the block count
+	 * is read straight off the wire and drives an allocating loop, so a packet declaring more than
+	 * {@link #sendSchematic} could ever produce is refused rather than trusted.
+	 */
+	public static final int MAX_BLOCKS_PER_PACKET = 32;
+
 	private BunchOfBlocks blocks;
 
 	public InstantPrintPacket(BunchOfBlocks blocks) {
@@ -41,11 +50,11 @@ public class InstantPrintPacket implements MightyPacket {
 	*///?}
 		// Store raw NBT data to decode on server side with proper registry
 		int size = buf.readInt();
-		// sendSchematic never emits more than MAX_SIZE per packet, so anything larger is either
-		// corrupt or hostile - and this loop allocates per iteration.
-		if (size < 0 || size > BunchOfBlocks.MAX_SIZE)
+		// sendSchematic never emits more than MAX_BLOCKS_PER_PACKET per packet, so anything larger
+		// is either corrupt or hostile - and this loop allocates per iteration.
+		if (size < 0 || size > MAX_BLOCKS_PER_PACKET)
 			throw new DecoderException(
-				"InstantPrintPacket declared " + size + " blocks; the limit is " + BunchOfBlocks.MAX_SIZE);
+				"InstantPrintPacket declared " + size + " blocks; the limit is " + MAX_BLOCKS_PER_PACKET);
 		this.blocks = new BunchOfBlocks(new HashMap<>());
 		this.blocks.rawData = new ArrayList<>();
 		this.blocks.size = size;
@@ -133,13 +142,13 @@ public class InstantPrintPacket implements MightyPacket {
 	public static List<InstantPrintPacket> sendSchematic(Map<BlockPos, BlockState> blockMap, BlockPos anchor) {
 		List<InstantPrintPacket> packets = new LinkedList<>();
 
-		Map<BlockPos, BlockState> currentMap = new HashMap<>(BunchOfBlocks.MAX_SIZE);
+		Map<BlockPos, BlockState> currentMap = new HashMap<>(MAX_BLOCKS_PER_PACKET);
 		List<BlockPos> posList = new ArrayList<>(blockMap.keySet());
 
 		for (int i = 0; i < blockMap.size(); i++) {
-			if (currentMap.size() >= BunchOfBlocks.MAX_SIZE) {
+			if (currentMap.size() >= MAX_BLOCKS_PER_PACKET) {
 				packets.add(new InstantPrintPacket(new BunchOfBlocks(currentMap)));
-				currentMap = new HashMap<>(BunchOfBlocks.MAX_SIZE);
+				currentMap = new HashMap<>(MAX_BLOCKS_PER_PACKET);
 			}
 			currentMap.put(posList.get(i).offset(anchor), blockMap.get(posList.get(i)));
 		}
@@ -148,10 +157,25 @@ public class InstantPrintPacket implements MightyPacket {
 		return packets;
 	}
 
+	/**
+	 * The blocks this packet is carrying, at their final world positions.
+	 * <p>
+	 * Populated on the sending side by {@link #sendSchematic}. A packet that came off the wire
+	 * carries undecoded NBT instead and returns an empty map here - {@link #apply} is what reads
+	 * that side.
+	 */
+	public Map<BlockPos, BlockState> blocks() {
+		return Collections.unmodifiableMap(blocks.blocks);
+	}
+
+	/** How many blocks this packet declares, which is what the decoder bounds-checks. */
+	public int size() {
+		return blocks.size;
+	}
+
 	record BlockData(CompoundTag tag, BlockPos pos) {}
 
 	static class BunchOfBlocks {
-		static final int MAX_SIZE = 32;
 		Map<BlockPos, BlockState> blocks;
 		List<BlockData> rawData;
 		int size;

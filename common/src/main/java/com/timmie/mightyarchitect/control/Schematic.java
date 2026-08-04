@@ -163,6 +163,22 @@ public class Schematic {
 	}
 
 	private void checkBounds(BlockPos pos) {
+		bounds = growToInclude(bounds, pos);
+	}
+
+	/**
+	 * Grows a bounding box to include one position, creating it when there is none yet.
+	 * <p>
+	 * Pure integer arithmetic, and the only part of {@link #materializeSketch()} that is: the rest
+	 * of it ends in a {@code TemplateBlockAccess}, which reads the client's level and so cannot be
+	 * built outside a running game. Kept static and public for that reason - it is what the unit
+	 * suite asserts, one block at a time, instead of paying a game boot to check addition.
+	 *
+	 * @param bounds the box so far, or null before the first position
+	 * @param pos    a position that must end up inside the box
+	 * @return the grown box, which is {@code bounds} itself when one was supplied
+	 */
+	public static Cuboid growToInclude(Cuboid bounds, BlockPos pos) {
 		if (bounds == null)
 			bounds = new Room(pos, BlockPos.ZERO);
 
@@ -191,6 +207,8 @@ public class Schematic {
 			bounds.height = y - bounds.y + 1;
 		if (z >= maxPos.getZ())
 			bounds.length = z - bounds.z + 1;
+
+		return bounds;
 	}
 
 	public StructureTemplate writeToTemplate() {

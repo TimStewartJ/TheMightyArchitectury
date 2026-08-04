@@ -38,3 +38,16 @@ tasks.register("compileAll") {
     dependsOn loaderNodePaths("compileClientTestJava")
     dependsOn loaderNodePaths("compileServerTestJava")
 }
+
+// The JUnit suite for the mod's pure logic, on every version at once. It lives on the Fabric
+// branch (fabric-loader-junit is what runs it), and the code it covers is loader-agnostic, so this
+// is the whole suite rather than a third of it. Seconds per node, and the only gate in the project
+// that does not launch a game - `:fabric:<mc>:test` alone is the inner loop.
+tasks.register("unitTestAll") {
+    group = "verification"
+    description = "Runs the JUnit suite against every Minecraft version's classpath."
+    dependsOn stonecutter.versions
+        .collect { v -> rootProject.findProject(":fabric:${v.project}") }
+        .findAll { it != null }
+        .collect { "${it.path}:test" }
+}
