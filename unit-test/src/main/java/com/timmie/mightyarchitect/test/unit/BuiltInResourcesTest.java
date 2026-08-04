@@ -135,4 +135,27 @@ class BuiltInResourcesTest {
 		assertEquals(0, ArchitectResources.compareNaturally("palettes/p7.json", "palettes/p7.json"));
 		assertTrue(ArchitectResources.compareNaturally("design.json", "design_1.json") < 0);
 	}
+
+	/**
+	 * An imported theme's folder is named whatever the user called it on disk, and a resource
+	 * location only accepts {@code [a-z0-9/._-]}. Asking whether such a path has a built-in file
+	 * has to answer "no" rather than throw: the design exporter asks exactly that before choosing
+	 * a filename, on the client thread, inside a right-click - so an exception there is a crash
+	 * report on the first export into any theme somebody downloaded.
+	 */
+	@Test
+	@DisplayName("a theme folder a resource location cannot name is answered, not thrown at")
+	void unaddressablePathsAreAnswered() {
+		assertTrue(ArchitectResources.isAddressable("themes/medieval/regular/wall/design.json"));
+		assertFalse(ArchitectResources.isAddressable("themes/Nordic Village/regular/wall/design.json"),
+			"a folder name with a space and capitals was treated as a valid resource path");
+		assertFalse(ArchitectResources.isAddressable("themes/Gothic/regular/wall/design.json"));
+
+		for (String hostile : new String[] { "themes/Nordic Village/regular/wall/design.json",
+			"themes/Gothic/regular/wall/design.json", "themes/thème/regular/wall/design.json" }) {
+			assertFalse(ArchitectResources.exists(hostile), hostile + " reported a built-in file");
+			assertFalse(ArchitectResources.open(hostile)
+				.isPresent(), hostile + " opened something");
+		}
+	}
 }

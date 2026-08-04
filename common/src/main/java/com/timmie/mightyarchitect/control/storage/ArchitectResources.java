@@ -50,6 +50,28 @@ public final class ArchitectResources {
 	}
 
 	/**
+	 * Whether a path can even name a built-in resource.
+	 * <p>
+	 * A resource location only accepts {@code [a-z0-9/._-]}, and an imported theme's folder is
+	 * named whatever the user called it on disk - so {@code themes/Nordic Village/...} cannot be
+	 * one. That is not an error: it means no built-in file can exist there, which is exactly what
+	 * the classloader lookup this replaced reported by returning null. Letting the exception
+	 * escape instead would crash the client on the first design export into a hand-installed
+	 * theme.
+	 * <p>
+	 * Checked up front rather than around the manager call so the answer is the same with and
+	 * without a client.
+	 */
+	public static boolean isAddressable(String path) {
+		try {
+			TheMightyArchitect.id(path);
+			return true;
+		} catch (RuntimeException notAResourcePath) {
+			return false;
+		}
+	}
+
+	/**
 	 * Opens a built-in file.
 	 *
 	 * @param path relative to {@code assets/mightyarchitect/}, e.g.
@@ -57,6 +79,9 @@ public final class ArchitectResources {
 	 * @return the stream, which the caller closes, or empty when nothing provides that path
 	 */
 	public static Optional<InputStream> open(String path) {
+		if (!isAddressable(path))
+			return Optional.empty();
+
 		ResourceManager manager = manager();
 		if (manager != null) {
 			Optional<Resource> resource = manager.getResource(TheMightyArchitect.id(path));
@@ -79,6 +104,9 @@ public final class ArchitectResources {
 
 	/** @return whether anything provides that built-in path */
 	public static boolean exists(String path) {
+		if (!isAddressable(path))
+			return false;
+
 		ResourceManager manager = manager();
 		if (manager != null)
 			return manager.getResource(TheMightyArchitect.id(path))

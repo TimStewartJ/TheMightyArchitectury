@@ -38,13 +38,6 @@ public class DesignResourceLoader {
 		return designMap;
 	}
 
-	public static Map<DesignLayer, Map<DesignType, Set<Design>>> loadExternalDesignsForTheme(DesignTheme theme) {
-		final Map<DesignLayer, Map<DesignType, Set<Design>>> designMap = new HashMap<>();
-		loadExternalDesignData(theme).forEach((layer, byType) -> byType
-			.forEach((type, data) -> add(designMap, layer, type, instantiate(type, data))));
-		return designMap;
-	}
-
 	/**
 	 * Every design the user has, whether the theme is a folder or a single packed file.
 	 * <p>

@@ -43,8 +43,11 @@ public final class ArchitectPaths {
 	/** Written into the new root once the copy has run, so it runs once rather than every load. */
 	private static final String MIGRATION_MARKER = ".migrated-v1";
 
+	/** The folders this mod owns, and therefore the only ones it moves. */
+	private static final String[] OWNED_FOLDERS = { THEMES, PALETTES };
+
 	private static Path rootOverride;
-	private static Path legacyRootOverride;
+	private static Path instanceRootOverride;
 	private static boolean migrationAttempted;
 
 	private ArchitectPaths() {
@@ -56,9 +59,9 @@ public final class ArchitectPaths {
 	 * Exists so the path and migration logic can be asserted without a game: passing null restores
 	 * the real, client-derived locations.
 	 */
-	public static synchronized void setRootsForTesting(Path root, Path legacyRoot) {
+	public static synchronized void setRootsForTesting(Path root, Path instanceRoot) {
 		rootOverride = root;
-		legacyRootOverride = legacyRoot;
+		instanceRootOverride = instanceRoot;
 		migrationAttempted = false;
 	}
 
@@ -80,10 +83,15 @@ public final class ArchitectPaths {
 		return gameDirectory().resolve(FOLDER);
 	}
 
-	/** Where the mod's folders used to be: loose in the instance root. */
-	public static synchronized Path legacyRoot() {
-		if (legacyRootOverride != null)
-			return legacyRootOverride;
+	/**
+	 * The instance folder, which is also where the mod's folders used to sit loose.
+	 * <p>
+	 * Override-aware, unlike {@link #gameDirectory()}, so a test can stand a scratch directory in
+	 * for it.
+	 */
+	public static synchronized Path instanceRoot() {
+		if (instanceRootOverride != null)
+			return instanceRootOverride;
 		return gameDirectory();
 	}
 
@@ -95,8 +103,18 @@ public final class ArchitectPaths {
 		return resolve(PALETTES);
 	}
 
+	/**
+	 * Where saved builds go, which is <b>not</b> under the mod folder.
+	 * <p>
+	 * This one is a handoff rather than storage: the mod writes a vanilla structure template here
+	 * and Create's schematic table reads it back out of {@code <instance>/schematics}. Moving it
+	 * under the mod folder would take the file out of the only place the other end looks, and the
+	 * "Deploy Schematic at ..." message printed straight afterwards would stop meaning anything.
+	 * It is still anchored to the game directory rather than to the working directory, which is
+	 * the part that was actually wrong.
+	 */
 	public static Path schematics() {
-		return resolve(SCHEMATICS);
+		return instanceRoot().resolve(SCHEMATICS);
 	}
 
 	public static Path themeExports() {
@@ -122,7 +140,7 @@ public final class ArchitectPaths {
 		List<Path> roots = new ArrayList<>(2);
 		roots.add(resolveIn(root(), relative));
 
-		Path legacy = resolveIn(legacyRoot(), relative);
+		Path legacy = resolveIn(instanceRoot(), relative);
 		if (!legacy.equals(roots.get(0)) && Files.isDirectory(legacy))
 			roots.add(legacy);
 
@@ -176,6 +194,11 @@ public final class ArchitectPaths {
 	 * Copy, not move, and never over an existing file: if this goes wrong the user's themes are
 	 * still exactly where they were. The marker means a later launch does not resurrect a theme
 	 * somebody has since deleted from the new folder.
+	 * <p>
+	 * Only {@link #OWNED_FOLDERS} are touched. {@code schematics/} is deliberately not among them:
+	 * it is shared with Create and holds every schematic the user has from any source, so copying
+	 * it would duplicate a library this mod does not own - on the client thread, at the first touch
+	 * of any storage path.
 	 */
 	public static synchronized void migrateLegacyData() {
 		if (migrationAttempted)
@@ -183,7 +206,7 @@ public final class ArchitectPaths {
 		migrationAttempted = true;
 
 		Path root = root();
-		Path legacy = legacyRoot();
+		Path legacy = instanceRoot();
 		if (root.equals(legacy))
 			return;
 
@@ -192,7 +215,7 @@ public final class ArchitectPaths {
 				return;
 
 			int copied = 0;
-			for (String folder : new String[] { THEMES, PALETTES, SCHEMATICS })
+			for (String folder : OWNED_FOLDERS)
 				copied += copyTree(legacy.resolve(folder), root.resolve(folder));
 
 			Files.createDirectories(root);
@@ -203,9 +226,9 @@ public final class ArchitectPaths {
 					"Copied {} file(s) from {} into {}. The originals were left untouched.", copied, legacy, root);
 
 		} catch (IOException e) {
-			// Deliberately not fatal, and deliberately not retried: the old folders are still
-			// intact and readable through readRoots, so the worst case is that the mod keeps
-			// loading from where it always did.
+			// Deliberately not fatal, and deliberately not retried within this launch: the old
+			// folders are still intact and readable through readRoots, so the worst case is that
+			// the mod keeps loading from where it always did.
 			TheMightyArchitect.logger.error("Could not copy the previous data folders into " + root, e);
 		}
 	}

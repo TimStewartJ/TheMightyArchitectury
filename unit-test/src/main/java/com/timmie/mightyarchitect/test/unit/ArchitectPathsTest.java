@@ -44,14 +44,13 @@ class ArchitectPathsTest {
 	class Layout {
 
 		@Test
-		@DisplayName("every folder sits below one mod folder")
-		void everyFolderSitsBelowTheModFolder(@TempDir Path root, @TempDir Path legacy) {
-			ArchitectPaths.setRootsForTesting(root, legacy);
+		@DisplayName("the mod's own folders sit below one mod folder")
+		void everyFolderSitsBelowTheModFolder(@TempDir Path root, @TempDir Path instance) {
+			ArchitectPaths.setRootsForTesting(root, instance);
 
 			assertEquals(root, ArchitectPaths.root());
 			assertEquals(root.resolve("themes"), ArchitectPaths.themes());
 			assertEquals(root.resolve("palettes"), ArchitectPaths.palettes());
-			assertEquals(root.resolve("schematics"), ArchitectPaths.schematics());
 			assertEquals(root.resolve("themes")
 				.resolve("export"), ArchitectPaths.themeExports());
 		}
@@ -66,6 +65,22 @@ class ArchitectPathsTest {
 				.resolve(ArchitectPaths.FOLDER), ArchitectPaths.root());
 			assertEquals("mightyarchitect", ArchitectPaths.FOLDER);
 		}
+
+		/**
+		 * The saved build is a handoff, not storage: Create's schematic table reads
+		 * {@code <instance>/schematics}, and the mod prints "Deploy Schematic at ..." immediately
+		 * after writing one. Filing it under the mod folder would put it in the only place the
+		 * other end does not look.
+		 */
+		@Test
+		@DisplayName("schematics stay in the shared folder, not under the mod folder")
+		void schematicsStayInTheSharedFolder(@TempDir Path root, @TempDir Path instance) {
+			ArchitectPaths.setRootsForTesting(root, instance);
+
+			assertEquals(instance.resolve("schematics"), ArchitectPaths.schematics());
+			assertFalse(ArchitectPaths.schematics()
+				.startsWith(root), "saved builds were moved out of the folder Create reads");
+		}
 	}
 
 	@Nested
@@ -78,7 +93,6 @@ class ArchitectPathsTest {
 			write(legacy.resolve("themes/castle/theme.json"), "{\"Name\":\"Castle\"}");
 			write(legacy.resolve("themes/castle/regular/wall/design.json"), "{}");
 			write(legacy.resolve("palettes/mine.json"), "{}");
-			write(legacy.resolve("schematics/keep.nbt"), "x");
 
 			ArchitectPaths.setRootsForTesting(root, legacy);
 			ArchitectPaths.migrateLegacyData();
@@ -87,12 +101,28 @@ class ArchitectPathsTest {
 			assertTrue(Files.exists(root.resolve("themes/castle/regular/wall/design.json")),
 				"the copy did not recurse into a theme's design folders");
 			assertTrue(Files.exists(root.resolve("palettes/mine.json")));
-			assertTrue(Files.exists(root.resolve("schematics/keep.nbt")));
 
 			assertTrue(Files.exists(legacy.resolve("themes/castle/theme.json")),
 				"the migration deleted the original, which is the failure it exists to prevent");
 			assertTrue(Files.exists(legacy.resolve("palettes/mine.json")));
-			assertTrue(Files.exists(legacy.resolve("schematics/keep.nbt")));
+		}
+
+		/**
+		 * {@code schematics/} is shared with Create and holds everything the user has from any
+		 * source. Copying it would duplicate a library this mod does not own, on the client thread,
+		 * at the first touch of any storage path.
+		 */
+		@Test
+		@DisplayName("leaves the shared schematics folder alone")
+		void doesNotTouchSchematics(@TempDir Path root, @TempDir Path legacy) throws IOException {
+			write(legacy.resolve("schematics/someone_elses_castle.nbt"), "x");
+
+			ArchitectPaths.setRootsForTesting(root, legacy);
+			ArchitectPaths.migrateLegacyData();
+
+			assertFalse(Files.exists(root.resolve("schematics")),
+				"the migration copied the shared Create schematics library into the mod folder");
+			assertTrue(Files.exists(legacy.resolve("schematics/someone_elses_castle.nbt")));
 		}
 
 		@Test
