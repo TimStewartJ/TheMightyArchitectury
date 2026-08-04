@@ -3,21 +3,20 @@ package com.timmie.mightyarchitect.control.design.partials;
 import com.google.common.collect.ImmutableSet;
 import com.timmie.mightyarchitect.control.design.DesignSlice;
 import com.timmie.mightyarchitect.control.design.DesignSlice.DesignSliceTrait;
+import com.timmie.mightyarchitect.control.design.DesignSlice.SliceData;
 import com.timmie.mightyarchitect.control.palette.PaletteBlockInfo;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-//? if >=26 {
-//?} else {
-/*import net.minecraft.nbt.NbtUtils;
-*///?}
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public abstract class Design {
+
+	/** Printed when a file declares more layers in {@code Size} than it actually carries. */
+	private static final SliceData EMPTY_SLICE = new SliceData(DesignSliceTrait.Standard, "", Optional.empty());
 
 	protected BlockPos size;
 	protected DesignSlice[] slices;
@@ -26,52 +25,24 @@ public abstract class Design {
 	protected int defaultWidth;
 	protected int yShift;
 
-	public abstract Design fromNBT(CompoundTag compound);
+	public abstract Design fromData(DesignData data);
 
-	protected void applyNBT(CompoundTag compound) {
-		// Handle both old format (CompoundTag with X,Y,Z) and new format (IntArrayTag)
-		//? if >=1.21.6 {
-		if (compound.get("Size") instanceof net.minecraft.nbt.IntArrayTag intArrayTag) { // IntArrayTag (new format)
-			int[] arr = intArrayTag.getAsIntArray();
-			size = arr.length >= 3 ? new BlockPos(arr[0], arr[1], arr[2]) : BlockPos.ZERO;
-		} else if (compound.get("Size") instanceof CompoundTag) { // CompoundTag (old format)
-			CompoundTag sizeTag = compound.getCompound("Size").orElse(new CompoundTag());
-			size = new BlockPos(sizeTag.getInt("X").orElse(0), sizeTag.getInt("Y").orElse(0), sizeTag.getInt("Z").orElse(0));
-		//?} else if >=1.20.5 {
-		/*if (compound.contains("Size", 11)) { // 11 = IntArrayTag (new format)
-			size = NbtUtils.readBlockPos(compound, "Size").orElse(BlockPos.ZERO);
-		} else if (compound.contains("Size", 10)) { // 10 = CompoundTag (old format)
-			CompoundTag sizeTag = compound.getCompound("Size");
-			size = new BlockPos(sizeTag.getInt("X"), sizeTag.getInt("Y"), sizeTag.getInt("Z"));
-		*///?} else {
-		/*if (compound.contains("Size", 11)) { // 11 = IntArrayTag (new format)
-			int[] arr = compound.getIntArray("Size");
-			size = arr.length >= 3 ? new BlockPos(arr[0], arr[1], arr[2]) : BlockPos.ZERO;
-		} else if (compound.contains("Size", 10)) { // 10 = CompoundTag (old format)
-			CompoundTag sizeTag = compound.getCompound("Size");
-			size = new BlockPos(sizeTag.getInt("X"), sizeTag.getInt("Y"), sizeTag.getInt("Z"));
-		*///?}
-		} else {
-			size = BlockPos.ZERO;
-		}
+	protected void applyData(DesignData data) {
+		size = data.size();
 		defaultWidth = size.getX();
 		slices = new DesignSlice[size.getY()];
 
 		defaultHeight = 0;
 		yShift = 0;
 		heights = ImmutableSet.of(0);
-		//? if >=1.21.6 {
-		ListTag sliceTagList = compound.getList("Layers").orElse(new ListTag());
-		//?} else {
-		/*ListTag sliceTagList = compound.getList("Layers", 10);
-		*///?}
+		List<SliceData> sliceData = data.layers();
 
 		for (int sliceIndex = 0; sliceIndex < slices.length; sliceIndex++) {
-			//? if >=1.21.6 {
-			DesignSlice slice = DesignSlice.fromNBT(sliceTagList.getCompound(sliceIndex).orElse(new CompoundTag()));
-			//?} else {
-			/*DesignSlice slice = DesignSlice.fromNBT(sliceTagList.getCompound(sliceIndex));
-			*///?}
+			// Size and Layers are independent fields, so a truncated file can declare more layers
+			// than it carries. An empty slice prints nothing, which beats an index out of bounds
+			// escaping into the theme scan.
+			DesignSlice slice = DesignSlice
+				.fromData(sliceIndex < sliceData.size() ? sliceData.get(sliceIndex) : EMPTY_SLICE);
 			defaultHeight = slice.adjustDefaultHeight(defaultHeight);
 			heights = slice.adjustHeigthsList(heights);
 			slices[sliceIndex] = slice;

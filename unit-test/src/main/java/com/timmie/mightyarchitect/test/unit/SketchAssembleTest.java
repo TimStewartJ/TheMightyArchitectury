@@ -4,12 +4,12 @@ import com.timmie.mightyarchitect.control.compose.Room;
 import com.timmie.mightyarchitect.control.design.DesignLayer;
 import com.timmie.mightyarchitect.control.design.Sketch;
 import com.timmie.mightyarchitect.control.design.partials.Design;
+import com.timmie.mightyarchitect.control.design.partials.DesignData;
 import com.timmie.mightyarchitect.control.palette.BlockOrientation;
 import com.timmie.mightyarchitect.control.palette.Palette;
 import com.timmie.mightyarchitect.control.palette.PaletteBlockInfo;
 import com.timmie.mightyarchitect.test.unit.MinecraftBootstrap.Bootstrapped;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -41,12 +41,12 @@ class SketchAssembleTest {
 
 	/**
 	 * A design that contributes exactly the blocks it was handed. The real subclasses read their
-	 * geometry out of NBT slices; none of that is what {@code assemble} does with the result.
+	 * geometry out of a design file; none of that is what {@code assemble} does with the result.
 	 */
 	private static Design fixedDesign(Map<BlockPos, PaletteBlockInfo> fixed) {
 		return new Design() {
 			@Override
-			public Design fromNBT(CompoundTag compound) {
+			public Design fromData(DesignData data) {
 				return this;
 			}
 

@@ -11,6 +11,7 @@ import com.timmie.mightyarchitect.control.design.DesignExporter;
 import com.timmie.mightyarchitect.control.palette.Palette;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import com.timmie.mightyarchitect.control.palette.PaletteStorage;
+import com.timmie.mightyarchitect.control.storage.ArchitectPaths;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import com.timmie.mightyarchitect.gui.widgets.IconButton;
 import net.minecraft.ChatFormatting;
@@ -42,7 +43,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 
 public class PalettePickerScreen extends AbstractSimiScreen {
@@ -140,8 +141,8 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 			//?} else {
 			/*minecraft.player.displayClientMessage(Component.literal("Updated Default Palette"), true);
 			*///?}
-			DesignExporter.theme.setDefaultPalette(primary.palette);
-			DesignExporter.theme.setDefaultSecondaryPalette(secondary.palette);
+			DesignExporter.getTheme().setDefaultPalette(primary.palette);
+			DesignExporter.getTheme().setDefaultSecondaryPalette(secondary.palette);
 		}
 	}
 
@@ -152,9 +153,9 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 			removeWidget(secondary);
 
 		if (scanPicker) {
-			primary = new PaletteButton(DesignExporter.scanningPalette, this, 0, topLeftX + 135, topLeftY + 8);
+			primary = new PaletteButton(DesignExporter.getScanningPalette(), this, 0, topLeftX + 135, topLeftY + 8);
 			primary.active = false;
-			secondary = new PaletteButton(DesignExporter.theme.getDefaultSecondaryPalette(), this, 1, topLeftX + 192,
+			secondary = new PaletteButton(DesignExporter.getTheme().getDefaultSecondaryPalette(), this, 1, topLeftX + 192,
 				topLeftY + 8);
 			secondary.active = false;
 			addWidget(primary);
@@ -245,10 +246,10 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 
 	protected void buttonClicked(AbstractWidget button) {
 		if (button == buttonOpenFolder) {
-			FilesHelper.createFolderIfMissing("palettes");
+			Path folder = ArchitectPaths.palettes();
+			FilesHelper.createFolderIfMissing(folder);
 			Util.getPlatform()
-				.openFile(Paths.get("palettes/")
-					.toFile());
+				.openFile(folder.toFile());
 		}
 
 		if (button == buttonRefresh) {
@@ -258,7 +259,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 
 		if (scanPicker) {
 			if (button instanceof PaletteButton)
-				DesignExporter.scanningPalette = ((PaletteButton) button).palette;
+				DesignExporter.setScanningPalette(((PaletteButton) button).palette);
 			updateSelected();
 			return;
 		}
@@ -279,7 +280,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 	protected void buttonRightClicked(AbstractWidget button) {
 		if (scanPicker) {
 			if (button instanceof PaletteButton)
-				DesignExporter.theme.setDefaultSecondaryPalette(((PaletteButton) button).palette);
+				DesignExporter.getTheme().setDefaultSecondaryPalette(((PaletteButton) button).palette);
 			updateSelected();
 			return;
 		}

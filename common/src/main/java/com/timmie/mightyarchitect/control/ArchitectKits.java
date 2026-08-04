@@ -86,7 +86,7 @@ public class ArchitectKits {
 	}
 
 	private static void setHotbarBlock(int slot, Palette palette) {
-		BlockState state = DesignExporter.theme.getDefaultPalette().get(palette);
+		BlockState state = DesignExporter.getTheme().getDefaultPalette().get(palette);
 		ItemStack stack = new ItemStack(state.getBlock().asItem());
 		//? if >=1.20.5 {
 		stack.set(DataComponents.CUSTOM_NAME, Component.literal(ChatFormatting.RESET + "" + ChatFormatting.GOLD

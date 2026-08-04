@@ -14,6 +14,7 @@ import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
 import com.timmie.mightyarchitect.control.phase.IArchitectPhase;
 import com.timmie.mightyarchitect.control.phase.IDrawBlockHighlights;
 import com.timmie.mightyarchitect.control.phase.IRenderGameOverlay;
+import com.timmie.mightyarchitect.control.storage.ArchitectPaths;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import com.timmie.mightyarchitect.gui.*;
@@ -37,7 +38,7 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 
 public class ArchitectManager {
 
@@ -74,7 +75,7 @@ public class ArchitectManager {
 
 		if (testRun) {
 			testRun = false;
-			editTheme(DesignExporter.theme);
+			editTheme(DesignExporter.getTheme());
 			return;
 		}
 
@@ -145,15 +146,15 @@ public class ArchitectManager {
 		if (name.isEmpty())
 			name = "My Build";
 
-		String folderPath = "schematics";
+		Path folder = ArchitectPaths.schematics();
 
-		FilesHelper.createFolderIfMissing(folderPath);
-		String filename = FilesHelper.findFirstValidFilename(name, folderPath, "nbt");
-		String filepath = folderPath + "/" + filename;
+		FilesHelper.createFolderIfMissing(folder);
+		String filename = FilesHelper.findFirstValidFilename(name, folder, "nbt");
+		Path filepath = folder.resolve(filename);
 
 		CompoundTag nbttagcompound = getModel().writeToTemplate()
 			.save(new CompoundTag());
-		if (!FilesHelper.writeAtomically(Paths.get(filepath), out -> NbtIo.writeCompressed(nbttagcompound, out))) {
+		if (!FilesHelper.writeAtomically(filepath, out -> NbtIo.writeCompressed(nbttagcompound, out))) {
 			status("Could not save " + filepath);
 			return;
 		}

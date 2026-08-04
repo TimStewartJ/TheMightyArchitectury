@@ -1,16 +1,19 @@
 package com.timmie.mightyarchitect.control.design;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.palette.BlockOrientation;
 import com.timmie.mightyarchitect.control.palette.Palette;
 import com.timmie.mightyarchitect.control.palette.PaletteBlockInfo;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.StringRepresentable;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class DesignSlice {
@@ -48,26 +51,55 @@ public class DesignSlice {
 	private Palette[][] blocks;
 	private BlockOrientation[][] orientations;
 
-	public static DesignSlice fromNBT(CompoundTag sliceTag) {
-		DesignSlice slice = new DesignSlice();
-		//? if >=1.21.6 {
-		slice.trait = DesignSliceTrait.valueOf(sliceTag.getString("Trait").orElse("Standard"));
-		//?} else {
-		/*slice.trait = DesignSliceTrait.valueOf(sliceTag.getString("Trait"));
-		*///?}
+	/**
+	 * A trait name, tolerating one this build does not have.
+	 * <p>
+	 * {@code valueOf} threw, and the throw escaped the single try block around the whole theme
+	 * scan, so a design written by a newer build emptied the theme list rather than costing itself
+	 * one layer.
+	 */
+	private static final Codec<DesignSliceTrait> TRAIT_CODEC = Codec.STRING.xmap(name -> {
+		try {
+			return DesignSliceTrait.valueOf(name);
+		} catch (IllegalArgumentException unknown) {
+			TheMightyArchitect.logger.warn("Ignoring unknown design slice trait '{}'", name);
+			return DesignSliceTrait.Standard;
+		}
+	}, DesignSliceTrait::name);
 
-		//? if >=1.21.6 {
-		String[] strips = sliceTag.getString("Blocks").orElse("").split(",");
-		//?} else {
-		/*String[] strips = sliceTag.getString("Blocks").split(",");
-		*///?}
+	/**
+	 * One layer of a design, exactly as the file carries it.
+	 * <p>
+	 * The two grids are strings on disk - one character per block, rows separated by commas - so
+	 * the schema is three fields rather than anything structural. Keeping the decoded form separate
+	 * from {@link DesignSlice} is what lets the codec be the only thing that knows the file layout;
+	 * the slice itself only ever sees a parsed record.
+	 */
+	public record SliceData(DesignSliceTrait trait, String blocks, Optional<String> facing) {
+
+		public static final Codec<SliceData> CODEC = RecordCodecBuilder.create(instance -> instance
+			.group(TRAIT_CODEC.optionalFieldOf("Trait", DesignSliceTrait.Standard)
+				.forGetter(SliceData::trait),
+				Codec.STRING.optionalFieldOf("Blocks", "")
+					.forGetter(SliceData::blocks),
+				Codec.STRING.optionalFieldOf("Facing")
+					.forGetter(SliceData::facing))
+			.apply(instance, SliceData::new));
+	}
+
+	public static DesignSlice fromData(SliceData data) {
+		DesignSlice slice = new DesignSlice();
+		slice.trait = data.trait();
+
+		String[] strips = data.blocks()
+			.split(",");
 		int width = strips[0].length();
 		int length = strips.length;
 		slice.blocks = new Palette[length][width];
 
 		for (int z = 0; z < length; z++) {
 			String strip = strips[z];
-			for (int x = 0; x < width; x++) {
+			for (int x = 0; x < width && x < strip.length(); x++) {
 				char charAt = strip.charAt(x);
 				if (charAt != ' ')
 					slice.blocks[z][x] = Palette.getByChar(charAt);
@@ -75,24 +107,21 @@ public class DesignSlice {
 		}
 
 		slice.orientations = new BlockOrientation[length][width];
-		if (sliceTag.contains("Facing")) {
-			//? if >=1.21.6 {
-			strips = sliceTag.getString("Facing").orElse("").split(",");
-			//?} else {
-			/*strips = sliceTag.getString("Facing").split(",");
-			*///?}
+		for (int z = 0; z < length; z++)
+			Arrays.fill(slice.orientations[z], BlockOrientation.NONE);
 
-			for (int z = 0; z < length; z++) {
-				String strip = strips[z];
-				for (int x = 0; x < width; x++) {
-					char charAt = strip.charAt(x);
-					slice.orientations[z][x] = BlockOrientation.valueOf(charAt);
-				}
-			}
+		if (data.facing()
+			.isPresent()) {
+			String[] facingStrips = data.facing()
+				.get()
+				.split(",");
 
-		} else {
-			for (int z = 0; z < length; z++) {
-				Arrays.fill(slice.orientations[z], BlockOrientation.NONE);
+			for (int z = 0; z < length && z < facingStrips.length; z++) {
+				String strip = facingStrips[z];
+				// Bounded by the strip too: a hand-edited design whose Facing row is shorter than
+				// its Blocks row used to throw out of the whole theme scan.
+				for (int x = 0; x < width && x < strip.length(); x++)
+					slice.orientations[z][x] = BlockOrientation.valueOf(strip.charAt(x));
 			}
 		}
 

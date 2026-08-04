@@ -1,21 +1,37 @@
 package com.timmie.mightyarchitect.control.design;
 
 import com.timmie.mightyarchitect.TheMightyArchitect;
+import com.timmie.mightyarchitect.control.design.partials.DesignData;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
+import com.timmie.mightyarchitect.control.storage.ArchitectPaths;
+import com.timmie.mightyarchitect.control.storage.ArchitectStorage;
+import com.timmie.mightyarchitect.control.storage.JsonStorage;
+import com.timmie.mightyarchitect.control.storage.PackedTheme;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtAccounter;
-import net.minecraft.nbt.NbtIo;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+/**
+ * The themes available to the composer: the ones inside the mod, and the ones on disk.
+ * <p>
+ * This used to be entirely static, and {@link IncludedThemes} cached each built-in theme by
+ * <i>writing it back into its own enum constant</i> - state with no owner and no way to drop it, so
+ * nothing was reloadable and nothing was testable off-game. The state now lives on an instance that
+ * {@link ArchitectStorage} owns and can discard, which is what makes F3+T reload the built-in
+ * themes; the static methods are kept so the screens and phases that call them do not all have to
+ * change in the same commit.
+ */
 public class ThemeStorage {
 
+	/** The built-in themes, and the floor heights each was designed around. */
 	public enum IncludedThemes {
 
 		Medieval("medieval", 3, 5),
@@ -24,9 +40,8 @@ public class ThemeStorage {
 		TownHouse("town_house", 4, 5),
 		Cattingham("cattingham_palace", 7, 2, 6);
 
-		public DesignTheme theme;
-		public String themeFolder;
-		public List<Integer> heights;
+		public final String themeFolder;
+		public final List<Integer> heights;
 
 		private IncludedThemes(String themeFolder, Integer... floorHeights) {
 			this.themeFolder = themeFolder;
@@ -34,47 +49,50 @@ public class ThemeStorage {
 		}
 	}
 
-	private static List<DesignTheme> importedThemes;
-	private static List<DesignTheme> createdThemes;
+	private final Map<IncludedThemes, DesignTheme> included = new EnumMap<>(IncludedThemes.class);
+	private List<DesignTheme> importedThemes;
+	private List<DesignTheme> createdThemes;
+
+	// ---------------------------------------------------------------- static facade
 
 	public static List<DesignTheme> getAllThemes() {
-		List<DesignTheme> themes = new ArrayList<>(getIncluded());
-		themes.addAll(getImported());
-		return themes;
+		return ArchitectStorage.themes()
+			.allThemes();
 	}
 
 	public static List<DesignTheme> getIncluded() {
-		List<DesignTheme> included = new ArrayList<>();
-		for (IncludedThemes theme : IncludedThemes.values()) {
-
-			if (theme.theme == null)
-				theme.theme = loadInternalTheme(theme.themeFolder).withHeightSequence(theme.heights);
-
-			if (theme == IncludedThemes.Fallback)
-				continue;
-
-			included.add(theme.theme);
-		}
-		return included;
+		return ArchitectStorage.themes()
+			.includedThemes();
 	}
 
 	public static List<DesignTheme> getImported() {
-		if (importedThemes == null)
-			importThemes();
-
-		return importedThemes;
+		return ArchitectStorage.themes()
+			.imported();
 	}
 
 	public static List<DesignTheme> getCreated() {
-		if (createdThemes == null)
-			importThemes();
+		return ArchitectStorage.themes()
+			.created();
+	}
 
-		return createdThemes;
+	public static DesignTheme getIncludedTheme(IncludedThemes which) {
+		return ArchitectStorage.themes()
+			.builtIn(which);
 	}
 
 	public static void reloadExternal() {
-		importedThemes = null;
-		createdThemes = null;
+		ArchitectStorage.themes()
+			.invalidateExternal();
+	}
+
+	public static void exportTheme(DesignTheme theme) {
+		ArchitectStorage.themes()
+			.save(theme);
+	}
+
+	public static String exportThemeFullyAsFile(DesignTheme theme, boolean compressed) {
+		return ArchitectStorage.themes()
+			.saveAsSingleFile(theme, compressed);
 	}
 
 	public static DesignTheme createTheme(String name) {
@@ -105,181 +123,179 @@ public class ThemeStorage {
 			.withTypes(DesignType.WALL, DesignType.CORNER, DesignType.ROOF, DesignType.FACADE, DesignType.FLAT_ROOF);
 	}
 
-	public static void exportTheme(DesignTheme theme) {
-		String folderPath = "themes";
-		FilesHelper.createFolderIfMissing(folderPath);
+	// ---------------------------------------------------------------- instance
 
-		String foldername = theme.getFilePath();
-		FilesHelper.createFolderIfMissing(folderPath + "/" + foldername);
-
-		String filepath = folderPath + "/" + foldername + "/theme.json";
-		FilesHelper.saveTagCompoundAsJson(theme.asTagCompound(), filepath);
-
-		String palettePath = folderPath + "/" + foldername + "/palette.json";
-		FilesHelper.saveTagCompoundAsJson(theme.getDefaultPalette()
-			.writeToNBT(new CompoundTag()), palettePath);
-
-		String palette2Path = folderPath + "/" + foldername + "/palette2.json";
-		FilesHelper.saveTagCompoundAsJson(theme.getDefaultSecondaryPalette()
-			.writeToNBT(new CompoundTag()), palette2Path);
+	public List<DesignTheme> allThemes() {
+		List<DesignTheme> themes = new ArrayList<>(includedThemes());
+		themes.addAll(imported());
+		return themes;
 	}
 
-	public static String exportThemeFullyAsFile(DesignTheme theme, boolean compressed) {
-		String folderPath = "themes/export";
-		FilesHelper.createFolderIfMissing(folderPath);
-		CompoundTag massiveThemeTag = new CompoundTag();
+	public List<DesignTheme> includedThemes() {
+		List<DesignTheme> themes = new ArrayList<>();
+		for (IncludedThemes which : IncludedThemes.values()) {
+			DesignTheme theme = builtIn(which);
+			// The fallback exists to be picked from when a real theme has no matching design; it
+			// is deliberately not offered as a theme of its own.
+			if (which != IncludedThemes.Fallback)
+				themes.add(theme);
+		}
+		return themes;
+	}
 
-		massiveThemeTag.put("Theme", theme.asTagCompound());
-		massiveThemeTag.put("Palette", theme.getDefaultPalette()
-			.writeToNBT(new CompoundTag()));
-		massiveThemeTag.put("SecondaryPalette", theme.getDefaultSecondaryPalette()
-			.writeToNBT(new CompoundTag()));
+	public DesignTheme builtIn(IncludedThemes which) {
+		return included.computeIfAbsent(which,
+			missing -> loadInternalTheme(missing.themeFolder).withHeightSequence(missing.heights));
+	}
 
-		Map<DesignLayer, Map<DesignType, Set<CompoundTag>>> designFiles =
+	public List<DesignTheme> imported() {
+		if (importedThemes == null)
+			importThemes();
+		return importedThemes;
+	}
+
+	public List<DesignTheme> created() {
+		if (createdThemes == null)
+			importThemes();
+		return createdThemes;
+	}
+
+	/** Drops the themes read from disk, so the next request rescans. */
+	public void invalidateExternal() {
+		importedThemes = null;
+		createdThemes = null;
+	}
+
+	/** Drops everything, including the built-in themes - what a resource reload has to do. */
+	public void invalidate() {
+		invalidateExternal();
+		included.clear();
+	}
+
+	/** Writes a theme as a folder: its metadata and its two palettes. */
+	public void save(DesignTheme theme) {
+		Path folder = ArchitectPaths.themes()
+			.resolve(theme.getFilePath());
+		FilesHelper.createFolderIfMissing(folder);
+
+		JsonStorage.write(folder.resolve("theme.json"), DesignTheme.CODEC, theme);
+		JsonStorage.write(folder.resolve("palette.json"), PaletteDefinition.CODEC, theme.getDefaultPalette());
+		JsonStorage.write(folder.resolve("palette2.json"), PaletteDefinition.CODEC,
+			theme.getDefaultSecondaryPalette());
+	}
+
+	/**
+	 * Writes a theme and every design in it as one shareable file.
+	 *
+	 * @return the filename written, so the caller can tell the user where it went
+	 */
+	public String saveAsSingleFile(DesignTheme theme, boolean compressed) {
+		Path folder = ArchitectPaths.themeExports();
+		FilesHelper.createFolderIfMissing(folder);
+
+		Map<DesignLayer, Map<DesignType, List<DesignData>>> designs =
 			DesignResourceLoader.loadThemeFromFolder(theme);
+		PackedTheme packed = new PackedTheme(theme, theme.getDefaultPalette(),
+			Optional.ofNullable(theme.getDefaultSecondaryPalette()), PackedTheme.group(theme, designs));
 
-		CompoundTag layers = new CompoundTag();
-		for (DesignLayer layer : theme.getLayers()) {
-			if (!designFiles.containsKey(layer))
-				continue;
+		String filename = theme.getFilePath()
+			+ (compressed ? PackedTheme.COMPRESSED_EXTENSION : PackedTheme.JSON_EXTENSION);
+		Path target = folder.resolve(filename);
 
-			CompoundTag types = new CompoundTag();
-			for (DesignType type : theme.getTypes()) {
-				if (!designFiles.get(layer)
-					.containsKey(type))
-					continue;
+		if (compressed)
+			JsonStorage.toNbt(PackedTheme.CODEC, packed)
+				.ifPresent(tag -> JsonStorage.writeCompressed(target, tag));
+		else
+			JsonStorage.writeCompact(target, PackedTheme.CODEC, packed);
 
-				ListTag designs = new ListTag();
-				for (CompoundTag tag : designFiles.get(layer)
-					.get(type))
-					designs.add(tag);
-				types.put(type.name(), designs);
-			}
-			layers.put(layer.name(), types);
-		}
-		massiveThemeTag.put("Designs", layers);
-
-		if (compressed) {
-			Path path = Paths.get(folderPath + "/" + theme.getFilePath() + ".theme");
-			FilesHelper.writeAtomically(path, out -> NbtIo.writeCompressed(massiveThemeTag, out));
-		} else {
-			FilesHelper.saveTagCompoundAsJsonCompact(massiveThemeTag, folderPath + "/" + theme.getFilePath() + ".json");
-		}
-
-		return theme.getFilePath() + (compressed ? ".theme" : ".json");
+		return filename;
 	}
 
-	public static DesignTheme importThemeFullyFromFile(String path) {
-		return null;
-	}
+	private DesignTheme loadInternalTheme(String themeFolder) {
+		String base = ArchitectPaths.THEMES + "/" + themeFolder + "/";
+		DesignTheme theme = JsonStorage.readBuiltIn(base + "theme.json", DesignTheme.CODEC)
+			.orElseThrow(() -> new IllegalStateException(
+				"Built-in theme " + themeFolder + " is missing from the mod jar"));
 
-	private static DesignTheme loadInternalTheme(String themeFolder) {
-		CompoundTag themeCompound = FilesHelper.loadJsonResourceAsNBT("themes/" + themeFolder + "/theme.json");
-		CompoundTag paletteCompound = FilesHelper.loadJsonResourceAsNBT("themes/" + themeFolder + "/palette.json");
-		CompoundTag palette2Compound = FilesHelper.loadJsonResourceAsNBT("themes/" + themeFolder + "/palette2.json");
-		DesignTheme theme = DesignTheme.fromNBT(themeCompound);
-		if (theme == null)
-			throw new IllegalStateException("Built-in theme " + themeFolder + " is missing from the mod jar");
 		theme.setFilePath(themeFolder);
 		theme.setImported(false);
-		theme.setDefaultPalette(PaletteDefinition.fromNBT(paletteCompound));
-		theme.setDefaultSecondaryPalette(PaletteDefinition.fromNBT(palette2Compound));
+		theme.setDefaultPalette(builtInPalette(base + "palette.json"));
+		theme.setDefaultSecondaryPalette(builtInPalette(base + "palette2.json"));
 		return theme;
 	}
 
-	private static void importThemes() {
+	private static PaletteDefinition builtInPalette(String resourcePath) {
+		return JsonStorage.readBuiltIn(resourcePath, PaletteDefinition.CODEC)
+			.orElseGet(() -> PaletteDefinition.defaultPalette()
+				.clone());
+	}
+
+	private void importThemes() {
 		importedThemes = new ArrayList<>();
 		createdThemes = new ArrayList<>();
-		String folderPath = "themes";
 
-		FilesHelper.createFolderIfMissing(folderPath);
+		for (Path entry : ArchitectPaths.listAcrossRoots(ArchitectPaths.THEMES)) {
+			String name = entry.getFileName()
+				.toString();
 
-		try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(folderPath))) {
-			for (Path path : directoryStream) {
-				String themeFolder = path.getFileName()
-					.toString();
+			if (name.equals("export"))
+				continue;
 
-				if (themeFolder.equals("export"))
-					continue;
-
-				// Per theme, not per scan: an unknown layer name or a malformed file used to throw
-				// out of the loop and drop every theme after it from the list.
-				try {
-					importTheme(folderPath, themeFolder);
-				} catch (RuntimeException e) {
-					TheMightyArchitect.logger.error("Skipping unreadable theme " + themeFolder, e);
-				}
+			// Per theme, not per scan: an unknown layer name or a malformed file used to throw
+			// out of the loop and drop every theme after it from the list.
+			try {
+				importTheme(entry, name);
+			} catch (RuntimeException e) {
+				TheMightyArchitect.logger.error("Skipping unreadable theme " + name, e);
 			}
-		} catch (IOException e) {
-			TheMightyArchitect.logger.error("Could not list themes in " + folderPath, e);
 		}
 	}
 
-	private static void importTheme(String folderPath, String themeFolder) {
-		CompoundTag themeCompound;
-		CompoundTag paletteCompound;
-		CompoundTag secondaryPaletteCompound = null;
+	private void importTheme(Path entry, String name) {
+		DesignTheme theme;
+		PaletteDefinition palette;
+		PaletteDefinition secondaryPalette = null;
 
-		boolean packedIntoOneFile = themeFolder.endsWith(".theme") || themeFolder.endsWith(".json");
+		boolean packedIntoOneFile = PackedTheme.isPackedName(name);
 
 		if (packedIntoOneFile) {
-			CompoundTag themeFile = themeFolder.endsWith(".theme")
-				? readCompressedTheme(folderPath + "/" + themeFolder)
-				: FilesHelper.loadJsonAsNBT(folderPath + "/" + themeFolder);
-
-			if (themeFile == null)
+			Optional<PackedTheme> packed = PackedTheme.read(entry);
+			if (!packed.isPresent())
 				return;
-
-			//? if >=1.21.6 {
-			themeCompound = themeFile.getCompound("Theme").orElse(new CompoundTag());
-			//?} else {
-			/*themeCompound = themeFile.getCompound("Theme");*///?}
-			//? if >=1.21.6 {
-			paletteCompound = themeFile.getCompound("Palette").orElse(new CompoundTag());
-			//?} else {
-			/*paletteCompound = themeFile.getCompound("Palette");*///?}
-			if (themeFile.contains("SecondaryPalette"))
-				//? if >=1.21.6 {
-				secondaryPaletteCompound = themeFile.getCompound("SecondaryPalette").orElse(new CompoundTag());
-				//?} else {
-				/*secondaryPaletteCompound = themeFile.getCompound("SecondaryPalette");*///?}
+			theme = packed.get()
+				.theme();
+			palette = packed.get()
+				.palette();
+			secondaryPalette = packed.get()
+				.secondaryPalette()
+				.orElse(null);
 
 		} else {
-			themeCompound = FilesHelper.loadJsonAsNBT(folderPath + "/" + themeFolder + "/theme.json");
-			paletteCompound = FilesHelper.loadJsonAsNBT(folderPath + "/" + themeFolder + "/palette.json");
-			secondaryPaletteCompound = FilesHelper.loadJsonAsNBT(folderPath + "/" + themeFolder + "/palette2.json");
+			if (!Files.isDirectory(entry))
+				return;
+			Optional<DesignTheme> read = JsonStorage.read(entry.resolve("theme.json"), DesignTheme.CODEC);
+			if (!read.isPresent())
+				return;
+			theme = read.get();
+			palette = JsonStorage.read(entry.resolve("palette.json"), PaletteDefinition.CODEC)
+				.orElseGet(() -> PaletteDefinition.defaultPalette()
+					.clone());
+			secondaryPalette = JsonStorage.read(entry.resolve("palette2.json"), PaletteDefinition.CODEC)
+				.orElse(null);
 		}
 
-		if (themeCompound == null)
-			return;
-
-		DesignTheme theme = DesignTheme.fromNBT(themeCompound);
-		theme.setFilePath(themeFolder);
+		theme.setFilePath(name);
 		theme.setImported(true);
-		theme.setDefaultPalette(PaletteDefinition.fromNBT(paletteCompound));
+		theme.setDefaultPalette(palette);
 
-		if (secondaryPaletteCompound != null)
-			theme.setDefaultSecondaryPalette(PaletteDefinition.fromNBT(secondaryPaletteCompound));
+		if (secondaryPalette != null)
+			theme.setDefaultSecondaryPalette(secondaryPalette);
 		else
 			// Cloned, so that editing the secondary palette does not also edit the primary one.
-			theme.setDefaultSecondaryPalette(theme.getDefaultPalette()
-				.clone());
+			theme.setDefaultSecondaryPalette(palette.clone());
 
 		importedThemes.add(theme);
 		if (!packedIntoOneFile)
 			createdThemes.add(theme);
-	}
-
-	private static CompoundTag readCompressedTheme(String path) {
-		try (InputStream inputStream = Files.newInputStream(Paths.get(path), StandardOpenOption.READ)) {
-			//? if >=1.20.3 {
-			return NbtIo.readCompressed(inputStream, NbtAccounter.unlimitedHeap());
-			//?} else {
-			/*return NbtIo.readCompressed(inputStream);
-			*///?}
-		} catch (IOException e) {
-			TheMightyArchitect.logger.error("Could not read theme " + path, e);
-			return null;
-		}
 	}
 }

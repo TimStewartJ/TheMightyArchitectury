@@ -2,21 +2,16 @@ package com.timmie.mightyarchitect.control.design.partials;
 
 import com.timmie.mightyarchitect.control.palette.PaletteBlockInfo;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 
 import java.util.Map;
 
 public class TowerRoof extends Tower {
 
 	@Override
-	public Design fromNBT(CompoundTag compound) {
+	public Design fromData(DesignData data) {
 		TowerRoof towerRoof = new TowerRoof();
-		towerRoof.applyNBT(compound);
-		//? if >=1.21.6 {
-		towerRoof.radius = compound.getInt("Radius").orElse(0);
-		//?} else {
-		/*towerRoof.radius = compound.getInt("Radius");
-		*///?}
+		towerRoof.applyData(data);
+		towerRoof.radius = data.radius();
 		towerRoof.defaultWidth = towerRoof.radius * 2 + 1;
 		return towerRoof;
 	}

@@ -1,11 +1,15 @@
 package com.timmie.mightyarchitect.control.palette;
 
+import com.google.gson.JsonPrimitive;
+import com.mojang.datafixers.util.Either;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.Dynamic;
+import com.mojang.serialization.JsonOps;
+import com.timmie.mightyarchitect.TheMightyArchitect;
+import com.timmie.mightyarchitect.control.storage.JsonStorage;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
-import net.minecraft.core.HolderGetter;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
@@ -20,9 +24,35 @@ import net.minecraft.world.level.block.state.properties.Property;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class PaletteDefinition {
+
+	/** The object a palette file wraps its entries in. */
+	public static final String PALETTE_KEY = "Palette";
+	/** The one key inside that object which is not a palette slot. */
+	private static final String NAME_KEY = "Name";
+
+	/**
+	 * One value inside a palette object: a block state, or anything else.
+	 * <p>
+	 * The "anything else" arm is what makes this total, and it has to be. A palette file mixes its
+	 * own {@code Name} string in among the slots, and a palette written while some other mod was
+	 * installed still names that mod's blocks afterwards - so a strict codec would reject a whole
+	 * file over one entry. The old reader resolved an unknown block to air and carried on; dropping
+	 * the user's entire palette instead would be a regression, not a fix.
+	 */
+	private static final Codec<Either<BlockState, Dynamic<?>>> ENTRY =
+		Codec.either(BlockState.CODEC, Codec.PASSTHROUGH);
+
+	/** The inside of the {@code Palette} object: the name, alongside one entry per slot. */
+	public static final Codec<PaletteDefinition> ENTRIES_CODEC = Codec.unboundedMap(Codec.STRING, ENTRY)
+		.xmap(PaletteDefinition::fromEntries, PaletteDefinition::toEntries);
+
+	/** A whole palette file, {@code {"Palette": {...}}}. */
+	public static final Codec<PaletteDefinition> CODEC = ENTRIES_CODEC.fieldOf(PALETTE_KEY)
+		.codec();
 
 	private Map<Palette, BlockState> definition;
 	private String name;
@@ -119,56 +149,87 @@ public class PaletteDefinition {
 		return name;
 	}
 
+	/**
+	 * Writes the palette into the {@code Palette} object of the given compound.
+	 * <p>
+	 * The same codec drives this and the JSON files, so the packed {@code .theme} archive and a
+	 * loose {@code palette.json} cannot describe the same palette differently.
+	 */
 	public CompoundTag writeToNBT(CompoundTag compound) {
 		compound = (compound == null) ? new CompoundTag() : compound;
-		CompoundTag palette = new CompoundTag();
-		palette.putString("Name", getName());
-		Palette[] values = Palette.values();
-
-		for (int i = 0; i < values.length; i++) {
-			CompoundTag state = NbtUtils.writeBlockState(get(values[i]));
-			palette.put(values[i].name(), state);
-		}
-
-		compound.put("Palette", palette);
+		CompoundTag target = compound;
+		JsonStorage.toNbt(ENTRIES_CODEC, this)
+			.ifPresent(entries -> target.put(PALETTE_KEY, entries));
 		return compound;
 	}
 
+	/**
+	 * @return the palette the compound describes, falling back to a fresh default rather than null
+	 */
 	public static PaletteDefinition fromNBT(CompoundTag compound) {
+		if (compound == null)
+			return defaultPalette().clone();
+		return JsonStorage.fromNbt(CODEC, compound, "a palette")
+			.orElseGet(() -> defaultPalette().clone());
+	}
+
+	/**
+	 * Rebuilds a palette from the decoded entries of a palette object.
+	 * <p>
+	 * Starts from a clone of the default so that a slot the file does not mention keeps the
+	 * standard block rather than becoming air, and finishes by forcing {@code CLEAR}: it is the
+	 * marker the composer clears with, not something a file gets to choose.
+	 */
+	private static PaletteDefinition fromEntries(Map<String, Either<BlockState, Dynamic<?>>> entries) {
 		PaletteDefinition palette = defaultPalette().clone();
 
-		// Blocks live in the built-in registry on both sides, so this deliberately does not go
-		// through Minecraft.getInstance().level: reading it there NPE'd whenever a palette was
-		// loaded outside a world, which is why palette loading had to be deferred until joining.
-		//? if >=1.21.4 {
-		HolderGetter<Block> holderGetter = BuiltInRegistries.BLOCK;
-		//?} else {
-		/*HolderGetter<Block> holderGetter = BuiltInRegistries.BLOCK.asLookup();
-		*///?}
-
-		if (compound != null) {
-			if (compound.contains("Palette")) {
-				//? if >=1.21.6 {
-			CompoundTag paletteTag = compound.getCompound("Palette").orElse(new CompoundTag());
-			//?} else {
-			/*CompoundTag paletteTag = compound.getCompound("Palette");*///?}
-				//? if >=1.21.6 {
-		palette.name = paletteTag.getString("Name").orElse("");
-		//?} else {
-		/*palette.name = paletteTag.getString("Name");*///?}
-				for (Palette key : Palette.values()) {
-					if (paletteTag.contains(key.name())) {
-						//? if >=1.21.6 {
-				palette.put(key, NbtUtils.readBlockState(holderGetter, paletteTag.getCompound(key.name()).orElse(new CompoundTag())));
-				//?} else {
-				/*palette.put(key, NbtUtils.readBlockState(holderGetter, paletteTag.getCompound(key.name())));*///?}
-					}
-				}
+		entries.forEach((key, value) -> {
+			if (NAME_KEY.equals(key)) {
+				value.right()
+					.flatMap(dynamic -> dynamic.asString()
+						.result())
+					.ifPresent(palette::setName);
+				return;
 			}
-		}
-		
+
+			Palette slot = slotOrNull(key);
+			if (slot == null)
+				return;
+
+			if (value.left()
+				.isPresent())
+				palette.put(slot, value.left()
+					.get());
+			else
+				TheMightyArchitect.logger.warn("Ignoring unreadable block for palette slot {}", key);
+		});
+
 		palette.put(Palette.CLEAR, Blocks.BARRIER.defaultBlockState());
 		return palette;
+	}
+
+	/** Insertion-ordered so a rewritten palette file is a readable diff of the previous one. */
+	private Map<String, Either<BlockState, Dynamic<?>>> toEntries() {
+		Map<String, Either<BlockState, Dynamic<?>>> entries = new LinkedHashMap<>();
+		entries.put(NAME_KEY,
+			Either.right(new Dynamic<>(JsonOps.INSTANCE, new JsonPrimitive(getName()))));
+		for (Palette key : Palette.values())
+			entries.put(key.name(), Either.left(get(key)));
+		return entries;
+	}
+
+	/**
+	 * @return the slot that name refers to, or null after warning - a file written by a newer build
+	 *         can name a slot this one does not have, and that costs it one entry rather than all
+	 *         of them
+	 */
+	private static Palette slotOrNull(String name) {
+		try {
+			return Palette.valueOf(name);
+		} catch (IllegalArgumentException unknown) {
+			TheMightyArchitect.logger.warn("Ignoring unknown palette slot '{}'", name);
+			return null;
+		}
 	}
 
 	public BlockState get(PaletteBlockInfo paletteInfo) {

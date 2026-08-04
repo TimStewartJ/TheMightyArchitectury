@@ -48,7 +48,7 @@ public class PhaseEditTheme extends PhaseBase {
 	@Override
 	public void update() {
 		tickOutlines();
-		if (lastType == DesignExporter.type)
+		if (lastType == DesignExporter.getType())
 			return;
 
 		frontText = null;
@@ -56,7 +56,7 @@ public class PhaseEditTheme extends PhaseBase {
 		leftText = null;
 		backText = null;
 
-		lastType = DesignExporter.type;
+		lastType = DesignExporter.getType();
 
 		switch (lastType) {
 		case CORNER:
@@ -143,7 +143,7 @@ public class PhaseEditTheme extends PhaseBase {
 			return;
 
 		Function<Cuboid, Outline> outlineFunc = c -> new AABBOutline(c.toAABB());
-		switch (DesignExporter.type) {
+		switch (DesignExporter.getType()) {
 		case CORNER:
 			effectiveSelectedDesign = outlineFunc.apply(new Cuboid(selectedDesign.getOrigin(), 1, effectiveHeight, 1));
 			break;
@@ -153,14 +153,14 @@ public class PhaseEditTheme extends PhaseBase {
 				outlineFunc.apply(new Cuboid(selectedDesign.getOrigin(), selectedDesign.width, effectiveHeight, 1));
 			break;
 		case FLAT_ROOF:
-			int margin = DesignExporter.designParameter;
+			int margin = DesignExporter.getDesignParameter();
 			effectiveSelectedDesign = outlineFunc.apply(new Cuboid(selectedDesign.getOrigin()
 				.east(margin),
 				selectedDesign.getSize()
 					.offset(-margin, 0, -margin)));
 			break;
 		case ROOF:
-			int span = DesignExporter.designParameter;
+			int span = DesignExporter.getDesignParameter();
 			margin = (selectedDesign.width - span) / 2;
 			effectiveSelectedDesign = outlineFunc.apply(new Cuboid(selectedDesign.getOrigin()
 				.offset(margin, 0, 0), selectedDesign.width - 2 * margin, selectedDesign.height, 3));
@@ -168,7 +168,7 @@ public class PhaseEditTheme extends PhaseBase {
 		case TOWER:
 		case TOWER_FLAT_ROOF:
 		case TOWER_ROOF:
-			int radius = DesignExporter.designParameter;
+			int radius = DesignExporter.getDesignParameter();
 			margin = (selectedDesign.width - (radius * 2 + 1)) / 2;
 			BlockPos center = selectedDesign.getCenter()
 				.below(selectedDesign.height / 2);
