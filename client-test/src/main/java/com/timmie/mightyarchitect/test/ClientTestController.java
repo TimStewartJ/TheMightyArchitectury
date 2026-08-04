@@ -11,7 +11,6 @@ import com.timmie.mightyarchitect.AllItems;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.ArchitectManager;
-import com.timmie.mightyarchitect.control.compose.Cuboid;
 import com.timmie.mightyarchitect.control.design.DesignTheme;
 import com.timmie.mightyarchitect.control.design.DesignExporter;
 import com.timmie.mightyarchitect.control.design.Sketch;
@@ -41,11 +40,7 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -309,14 +304,7 @@ public final class ClientTestController {
         check(!PaletteStorage.getResourcePaletteNames().isEmpty(), "resource palettes loaded");
         check(!ThemeStorage.getIncluded().isEmpty(), "included themes loaded");
 
-        PaletteDefinition palette = PaletteDefinition.defaultPalette().clone();
-        palette.setName("Client Test Palette");
-        PaletteDefinition roundTrip = PaletteDefinition.fromNBT(palette.writeToNBT(new CompoundTag()));
-        check("Client Test Palette".equals(roundTrip.getName()), "palette NBT name round-tripped");
-        check(palette.get(Palette.ROOF_PRIMARY).equals(roundTrip.get(Palette.ROOF_PRIMARY)),
-            "palette NBT block state round-tripped");
-
-        checkDataIntegrityFixes();
+        checkPaletteRoundTrip();
 
         // WrappedWorld overrides methods NeoForge adds to Level that vanilla does not have. Those
         // resolve when the class is verified, so a wrong override is an AbstractMethodError the
@@ -331,51 +319,22 @@ public final class ClientTestController {
     }
 
     /**
-     * Guards the correctness fixes whose only symptom was lost user work: a design filename that
-     * was a Java object dump, a theme whose palette was the shared global default, a theme file
-     * whose one unknown layer name emptied the whole theme list.
+     * The one data-integrity assertion that is not pure logic: serializing a palette goes through
+     * the block registry, so it is worth asserting against a real, fully loaded game.
      * <p>
-     * This is pure logic that wants a unit test, but the mod has no JUnit suite yet, and an
-     * assertion that runs on all 25 targets beats one that runs nowhere.
+     * The nine assertions that used to sit here were pure version-agnostic Java - filename
+     * derivation and idempotence, {@code slug} traversal safety, palette independence, lenient
+     * enum parsing, the {@code hashCode}/{@code equals} contract. They now live in the JUnit
+     * suite under {@code unit-test/}, where they run in milliseconds instead of costing a full
+     * game boot on 25 targets to check arithmetic.
      */
-    private static void checkDataIntegrityFixes() {
-        check("my_design.json".equals(DesignExporter.designFilename("My Design")),
-            "design filename derived from sign text");
-        check("my_design.json".equals(DesignExporter.designFilename("my_design.json")),
-            "design filename is stable when the sign already carries it");
-        check(DesignExporter.designFilename("   ").isEmpty(),
-            "blank sign text falls back to an indexed design filename");
-        check(!DesignExporter.designFilename("../../evil name").contains("/")
-            && !DesignExporter.designFilename("../../evil name").contains(".."),
-            "design filename cannot escape its folder");
-
-        PaletteDefinition sharedDefault = PaletteDefinition.defaultPalette();
-        BlockState before = sharedDefault.get(Palette.ROOF_PRIMARY);
-        DesignTheme created = ThemeStorage.createTheme("Client Test Theme");
-        check(created.getDefaultPalette() != sharedDefault
-            && created.getDefaultPalette() != created.getDefaultSecondaryPalette(),
-            "new themes get their own palettes");
-        created.getDefaultPalette().put(Palette.ROOF_PRIMARY, Blocks.GOLD_BLOCK);
-        check(sharedDefault.get(Palette.ROOF_PRIMARY).equals(before),
-            "editing a theme palette leaves the default palette alone");
-        check(!created.getFilePath().isEmpty() && !created.getFilePath().contains("/"),
-            "theme file path is a single sanitized folder name");
-
-        ListTag layers = new ListTag();
-        layers.add(StringTag.valueOf("Regular"));
-        layers.add(StringTag.valueOf("NotALayerThisBuildKnows"));
-        CompoundTag themeTag = new CompoundTag();
-        themeTag.putString("Name", "Client Test Theme");
-        themeTag.putString("Designer", "client-test");
-        themeTag.put("Layers", layers);
-        themeTag.put("Types", new ListTag());
-        DesignTheme lenient = DesignTheme.fromNBT(themeTag);
-        check(lenient != null && lenient.getLayers().size() == 1,
-            "an unknown layer name is skipped instead of throwing");
-
-        BlockPos origin = new BlockPos(4, 5, 6);
-        check(new Cuboid(origin, 1, 2, 3).hashCode() == new Cuboid(origin, 1, 2, 3).hashCode(),
-            "equal cuboids hash equally");
+    private static void checkPaletteRoundTrip() {
+        PaletteDefinition palette = PaletteDefinition.defaultPalette().clone();
+        palette.setName("Client Test Palette");
+        PaletteDefinition roundTrip = PaletteDefinition.fromNBT(palette.writeToNBT(new CompoundTag()));
+        check("Client Test Palette".equals(roundTrip.getName()), "palette NBT name round-tripped");
+        check(palette.get(Palette.ROOF_PRIMARY).equals(roundTrip.get(Palette.ROOF_PRIMARY)),
+            "palette NBT block state round-tripped");
     }
 
     private static void captureBaseline(Minecraft minecraft) {

@@ -71,6 +71,13 @@ sourceSets {
         compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
         runtimeClasspath += output + compileClasspath + sourceSets.main.runtimeClasspath
     }
+    // JUnit suite for the mod's pure, version-agnostic logic. Like the other two companions it is
+    // NOT Stonecutter-processed, so everything in it has to compile unchanged on every node - which
+    // is exactly the property that makes running it on all thirteen of them meaningful.
+    test {
+        java.srcDirs = [rootProject.file("unit-test/src/main/java")]
+        resources.srcDirs = []
+    }
 }
 
 // The generated common sources are task output, so the dependency has to be declared explicitly -
@@ -126,6 +133,11 @@ dependencies {
         modImplementation "net.fabricmc.fabric-api:fabric-api:${fapiVersion}"
     }
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
+    // Runs the JUnit suite inside a real Fabric Loader (Knot) classloader, the way the game loads
+    // the mod, rather than off a plain classpath. Published in lockstep with the loader, so it
+    // follows this node's pinned loader version. It brings junit-jupiter-engine and
+    // junit-platform-launcher with it; no separate JUnit coordinates are needed.
+    testImplementation "net.fabricmc:fabric-loader-junit:${floaderVersion}"
     // The production run loads real mod jars, so Fabric API has to be there as one. This is a
     // plain configuration on purpose: the published artifact is already in the runtime namespace,
     // and routing it through modImplementation would hand the run a dev-mapped jar instead.
@@ -142,6 +154,29 @@ tasks.named("runAutomatedClientTest") {
 
 tasks.named("runAutomatedServerTest") {
     dependsOn tasks.named("serverTestClasses")
+}
+
+// The unit suite runs on this node's own toolchain and mappings. `test` is already wired into
+// `check` -> `build`, so every node's CI job runs it without a workflow change, and locally a
+// single node's suite is the seconds-long inner loop the CI matrix cannot be.
+def unitTestRunDir = layout.buildDirectory.dir("unit-test-run")
+
+tasks.named("test", Test) {
+    useJUnitPlatform()
+    dependsOn commonGenerate
+    // Fabric Loader's JUnit launcher builds Knot for this side and installs its classloader as the
+    // context loader for the whole session. CLIENT is the default and the wider of the two: the
+    // mod's shared classes are compiled against the client-inclusive merged jar.
+    systemProperty "fabric.side", "client"
+    // Booting Minecraft's registries starts its log4j appenders, which write `logs/latest.log`
+    // relative to the working directory - and the mod's own storage paths are relative too. Left
+    // on the default that is the project directory, so the suite would litter the source tree.
+    doFirst { unitTestRunDir.get().asFile.mkdirs() }
+    workingDir = unitTestRunDir.get().asFile
+    testLogging {
+        events "failed"
+        exceptionFormat "full"
+    }
 }
 
 processResources {
