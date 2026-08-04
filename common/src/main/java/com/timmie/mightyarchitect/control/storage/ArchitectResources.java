@@ -5,9 +5,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
@@ -39,14 +41,39 @@ public final class ArchitectResources {
 	/** Bounds the off-game probe; the largest built-in set is two orders of magnitude below it. */
 	private static final int PROBE_LIMIT = 2048;
 
-	private static ResourceManager managerOverride;
+	/**
+	 * A stand-in for the resource stack, deliberately free of Minecraft types.
+	 * <p>
+	 * The companion test modules are not Stonecutter-processed, so anything they name has to
+	 * compile unchanged on every version in the matrix - and {@code ResourceManager} is not that:
+	 * its signatures moved from {@code ResourceLocation} to {@code Identifier} at 1.21.11. A seam
+	 * with no Minecraft in it lets the discovery rules be asserted off-game; the wiring to the real
+	 * manager is what the client matrix covers, on a real client.
+	 */
+	public interface ResourceIndex {
+
+		/** @return the file's contents, or empty when this index does not provide that path */
+		Optional<byte[]> read(String path);
+
+		/**
+		 * @return every path below the folder, or empty when this index cannot enumerate - which
+		 *         is the honest answer for a plain classloader
+		 */
+		Optional<List<String>> listAll(String folder);
+	}
+
+	private static ResourceIndex indexOverride;
 
 	private ArchitectResources() {
 	}
 
-	/** Supplies a resource manager to code with no client, or restores the client's with null. */
-	public static synchronized void setManagerForTesting(ResourceManager manager) {
-		managerOverride = manager;
+	/** Stands an in-memory resource stack in for the real one, or restores it with null. */
+	public static synchronized void setIndexForTesting(ResourceIndex index) {
+		indexOverride = index;
+	}
+
+	private static synchronized ResourceIndex indexOrNull() {
+		return indexOverride;
 	}
 
 	/**
@@ -82,6 +109,11 @@ public final class ArchitectResources {
 		if (!isAddressable(path))
 			return Optional.empty();
 
+		ResourceIndex index = indexOrNull();
+		if (index != null)
+			return index.read(path)
+				.map(ByteArrayInputStream::new);
+
 		ResourceManager manager = manager();
 		if (manager != null) {
 			Optional<Resource> resource = manager.getResource(TheMightyArchitect.id(path));
@@ -107,6 +139,11 @@ public final class ArchitectResources {
 		if (!isAddressable(path))
 			return false;
 
+		ResourceIndex index = indexOrNull();
+		if (index != null)
+			return index.read(path)
+				.isPresent();
+
 		ResourceManager manager = manager();
 		if (manager != null)
 			return manager.getResource(TheMightyArchitect.id(path))
@@ -128,9 +165,18 @@ public final class ArchitectResources {
 	 * @return paths relative to {@code assets/mightyarchitect/}
 	 */
 	public static List<String> list(String folder, IntFunction<String> offlineName) {
-		ResourceManager manager = manager();
-		if (manager != null)
-			return listThroughManager(manager, folder);
+		Optional<List<String>> enumerated = enumerate(folder);
+		if (enumerated.isPresent()) {
+			String prefix = folder + "/";
+			TreeSet<String> paths = new TreeSet<>(ArchitectResources::compareNaturally);
+			for (String path : enumerated.get())
+				// The enumeration recurses; every caller here wants one folder, and a theme folder
+				// sits directly above layer folders whose designs it must not absorb.
+				if (path.startsWith(prefix) && path.endsWith(".json")
+					&& path.indexOf('/', prefix.length()) < 0)
+					paths.add(path);
+			return new ArrayList<>(paths);
+		}
 
 		List<String> found = new ArrayList<>();
 		for (int index = 0; index < PROBE_LIMIT; index++) {
@@ -142,23 +188,65 @@ public final class ArchitectResources {
 		return found;
 	}
 
-	private static List<String> listThroughManager(ResourceManager manager, String folder) {
-		String prefix = folder + "/";
-		TreeSet<String> paths = new TreeSet<>(ArchitectResources::compareNaturally);
+	/**
+	 * Names the folders directly inside {@code parent} that contain a given file.
+	 * <p>
+	 * This is what lets a resource pack ship a whole new theme rather than only override one of
+	 * the five the mod happens to have: the theme list is discovered from the resource stack
+	 * instead of read off a hardcoded enum.
+	 * <p>
+	 * A plain classloader cannot enumerate a directory, so with no client this falls back to
+	 * checking the names it was given - which still validates that each one is really there, and
+	 * is only ever reached off-game, where there are no resource packs to discover anyway.
+	 *
+	 * @param parent   relative to {@code assets/mightyarchitect/}, without a trailing slash
+	 * @param marker   the file a folder must contain to count, e.g. {@code theme.json}
+	 * @param fallback the folder names to check when the stack cannot be enumerated
+	 * @return the folder names, sorted naturally
+	 */
+	public static List<String> listFoldersContaining(String parent, String marker, Collection<String> fallback) {
+		String prefix = parent + "/";
+		String suffix = "/" + marker;
+		TreeSet<String> folders = new TreeSet<>(ArchitectResources::compareNaturally);
 
-		manager.listResources(folder, location -> TheMightyArchitect.ID.equals(location.getNamespace())
-			&& location.getPath()
-				.endsWith(".json"))
+		Optional<List<String>> enumerated = enumerate(parent);
+		if (enumerated.isPresent()) {
+			for (String path : enumerated.get()) {
+				if (!path.startsWith(prefix) || !path.endsWith(suffix))
+					continue;
+				String rest = path.substring(prefix.length(), path.length() - suffix.length());
+				// Exactly one level down: themes/medieval/theme.json counts, and a stray
+				// themes/medieval/regular/theme.json does not become a theme of its own.
+				if (!rest.isEmpty() && rest.indexOf('/') < 0)
+					folders.add(rest);
+			}
+			return new ArrayList<>(folders);
+		}
+
+		for (String name : fallback)
+			if (exists(parent + "/" + name + "/" + marker))
+				folders.add(name);
+		return new ArrayList<>(folders);
+	}
+
+	/**
+	 * @return every path below the folder, or empty when the stack cannot be enumerated - which is
+	 *         the case off-game, where a plain classloader cannot list a directory inside a jar
+	 */
+	private static Optional<List<String>> enumerate(String folder) {
+		ResourceIndex index = indexOrNull();
+		if (index != null)
+			return index.listAll(folder);
+
+		ResourceManager manager = manager();
+		if (manager == null)
+			return Optional.empty();
+
+		List<String> paths = new ArrayList<>();
+		manager.listResources(folder, location -> TheMightyArchitect.ID.equals(location.getNamespace()))
 			.keySet()
-			.forEach(location -> {
-				String path = location.getPath();
-				// listResources recurses; every caller here wants one folder, and a theme folder
-				// sits directly above layer folders whose designs it must not absorb.
-				if (path.startsWith(prefix) && path.indexOf('/', prefix.length()) < 0)
-					paths.add(path);
-			});
-
-		return new ArrayList<>(paths);
+			.forEach(location -> paths.add(location.getPath()));
+		return Optional.of(paths);
 	}
 
 	/** Compares two paths treating each run of digits as one number. */
@@ -205,10 +293,7 @@ public final class ArchitectResources {
 	/**
 	 * @return the resource manager to read through, or null when running without a client
 	 */
-	private static synchronized ResourceManager manager() {
-		if (managerOverride != null)
-			return managerOverride;
-
+	private static ResourceManager manager() {
 		Minecraft client = ArchitectPaths.clientOrNull();
 		if (client == null)
 			return null;

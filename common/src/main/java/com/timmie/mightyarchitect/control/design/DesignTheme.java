@@ -21,6 +21,12 @@ public class DesignTheme {
 	 * The field names are the ones the format has always used, spaces and all, so a theme.json
 	 * written by any previous build reads unchanged - the schema was always expressible, it just
 	 * was not written down anywhere a reader could check it against.
+	 * <p>
+	 * {@code HeightSequence} is the one addition. It is optional, because the five themes that
+	 * ship with the mod do not carry it - their floor heights come from a hardcoded table. A theme
+	 * supplied by a resource pack has no entry in that table, so it needs a way to say what its
+	 * floors are, and reading it here means a theme is self-describing rather than needing the mod
+	 * to already know about it.
 	 */
 	public static final Codec<DesignTheme> CODEC = RecordCodecBuilder.create(instance -> instance
 		.group(Codec.STRING.optionalFieldOf("Name", "")
@@ -32,7 +38,12 @@ public class DesignTheme {
 			enumNames(DesignType.class).optionalFieldOf("Types", List.of())
 				.forGetter(theme -> orEmpty(theme.types)),
 			Codec.INT.optionalFieldOf("Maximum Room Height", 10)
-				.forGetter(DesignTheme::getMaxFloorHeight))
+				.forGetter(DesignTheme::getMaxFloorHeight),
+			// Always written, optionally read: anything the mod saves says what its floors are,
+			// while the shipped files that predate the field still fall back to the table.
+			Codec.list(Codec.INT)
+				.optionalFieldOf("HeightSequence")
+				.forGetter(theme -> Optional.of(theme.getHeightSequence())))
 		.apply(instance, DesignTheme::fromParts));
 
 	private String filePath;
@@ -40,6 +51,8 @@ public class DesignTheme {
 	private String designer;
 	private DesignPicker designPicker;
 	private boolean imported;
+	/** Whether the file said what its floors are, rather than the mod's own table saying it. */
+	private boolean declaresHeightSequence;
 	private PaletteDefinition defaultPalette;
 	private PaletteDefinition defaultSecondaryPalette;
 	private ThemeStatistics statistics;
@@ -70,6 +83,19 @@ public class DesignTheme {
 	public DesignTheme withHeightSequence(List<Integer> seq) {
 		this.heightSequence = seq;
 		return this;
+	}
+
+	public List<Integer> getHeightSequence() {
+		return heightSequence;
+	}
+
+	/**
+	 * @return whether the theme's own file declared its floor heights, in which case nothing
+	 *         should override them - a resource pack saying what its floors are outranks the
+	 *         mod's table of what it remembers about the themes it ships
+	 */
+	public boolean declaresHeightSequence() {
+		return declaresHeightSequence;
 	}
 
 	protected void updateRoomLayers() {
@@ -183,11 +209,13 @@ public class DesignTheme {
 	}
 
 	private static DesignTheme fromParts(String name, String designer, List<DesignLayer> layers,
-		List<DesignType> types, int maxFloorHeight) {
+		List<DesignType> types, int maxFloorHeight, Optional<List<Integer>> heightSequence) {
 		DesignTheme theme = new DesignTheme(name, designer);
 		theme.layers = new ArrayList<>(layers);
 		theme.types = new ArrayList<>(types);
 		theme.maxFloorHeight = maxFloorHeight;
+		heightSequence.ifPresent(theme::withHeightSequence);
+		theme.declaresHeightSequence = heightSequence.isPresent();
 		theme.updateRoomLayers();
 		return theme;
 	}

@@ -140,10 +140,7 @@ public class ArchitectMenu {
 				ArchitectManager.enterPhase(ArchitectPhases.ListForEdit);
 				return false;
 			case 'o':
-				Path themes = ArchitectPaths.themes();
-				FilesHelper.createFolderIfMissing(themes);
-				Util.getPlatform()
-					.openFile(themes.toFile());
+				openThemeFolder();
 				return false;
 			case 'c':
 				ArchitectManager.unload();
@@ -211,12 +208,16 @@ public class ArchitectMenu {
 
 			case 'e':
 				String file = ThemeStorage.exportThemeFullyAsFile(DesignExporter.getTheme(), true);
-				ArchitectManager.status("Exported Theme as " + file);
+				ArchitectManager.status("Exported Theme to " + file);
 				return false;
 
 			case 'j':
 				file = ThemeStorage.exportThemeFullyAsFile(DesignExporter.getTheme(), false);
-				ArchitectManager.status("Exported Theme as " + file);
+				ArchitectManager.status("Exported Theme to " + file);
+				return false;
+
+			case 'o':
+				openThemeFolder();
 				return false;
 
 			case 'r':
@@ -327,6 +328,7 @@ public class ArchitectMenu {
 			keybinds.put("R", "Run a Test");
 			keybinds.put("E", "Export Theme compressed");
 			keybinds.put("J", "Export Theme as Json");
+			keybinds.put("O", "Open Theme Folder");
 			keybinds.put("F", "Finish editing");
 			break;
 		default:
@@ -334,6 +336,20 @@ public class ArchitectMenu {
 		}
 
 		return keybinds;
+	}
+
+	/**
+	 * Opens the folder themes are read from and written to.
+	 * <p>
+	 * Reachable from the theme editor as well as from Manage Themes, because the editor is where
+	 * the export keys are and being told a file was written is not much use without a way to reach
+	 * it.
+	 */
+	private static void openThemeFolder() {
+		Path themes = ArchitectPaths.themes();
+		FilesHelper.createFolderIfMissing(themes);
+		Util.getPlatform()
+			.openFile(themes.toFile());
 	}
 
 	public static class KeyBindList {

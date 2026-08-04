@@ -4,6 +4,7 @@ import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.design.partials.DesignData;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import com.timmie.mightyarchitect.control.storage.ArchitectPaths;
+import com.timmie.mightyarchitect.control.storage.ArchitectResources;
 import com.timmie.mightyarchitect.control.storage.ArchitectStorage;
 import com.timmie.mightyarchitect.control.storage.JsonStorage;
 import com.timmie.mightyarchitect.control.storage.PackedTheme;
@@ -14,7 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,7 +32,14 @@ import java.util.Optional;
  */
 public class ThemeStorage {
 
-	/** The built-in themes, and the floor heights each was designed around. */
+	/**
+	 * The themes that ship inside the mod, and the floor heights each was designed around.
+	 * <p>
+	 * This is no longer the list of built-in themes - {@link #builtInFolders()} discovers those
+	 * from the resource stack, so a pack can add one. What is left here is the heights table for
+	 * the five the mod ships, whose files predate {@code HeightSequence} and so cannot state their
+	 * own, plus the name of the fallback, which is referred to by identity elsewhere.
+	 */
 	public enum IncludedThemes {
 
 		Medieval("medieval", 3, 5),
@@ -47,9 +55,20 @@ public class ThemeStorage {
 			this.themeFolder = themeFolder;
 			this.heights = Arrays.asList(floorHeights);
 		}
+
+		/** @return the entry for that folder, or empty for a theme the mod does not ship */
+		static Optional<IncludedThemes> byFolder(String folder) {
+			for (IncludedThemes which : values())
+				if (which.themeFolder.equals(folder))
+					return Optional.of(which);
+			return Optional.empty();
+		}
 	}
 
-	private final Map<IncludedThemes, DesignTheme> included = new EnumMap<>(IncludedThemes.class);
+	/** The marker that makes a folder under {@code themes/} a theme. */
+	private static final String THEME_FILE = "theme.json";
+
+	private final Map<String, DesignTheme> included = new LinkedHashMap<>();
 	private List<DesignTheme> importedThemes;
 	private List<DesignTheme> createdThemes;
 
@@ -95,6 +114,11 @@ public class ThemeStorage {
 			.saveAsSingleFile(theme, compressed);
 	}
 
+	/** @return where the theme folder for editing lives, for the "open folder" affordances */
+	public static Path themeFolder() {
+		return ArchitectPaths.themes();
+	}
+
 	public static DesignTheme createTheme(String name) {
 		return createTheme(name, Minecraft.getInstance().player.getName()
 			.getString());
@@ -131,21 +155,60 @@ public class ThemeStorage {
 		return themes;
 	}
 
+	/**
+	 * Every theme available without the user installing anything.
+	 * <p>
+	 * Discovered from the resource stack rather than read off {@link IncludedThemes}, so a
+	 * resource pack that ships {@code assets/mightyarchitect/themes/<name>/theme.json} appears
+	 * here alongside the five in the jar. One unreadable theme costs itself rather than the list.
+	 */
 	public List<DesignTheme> includedThemes() {
 		List<DesignTheme> themes = new ArrayList<>();
-		for (IncludedThemes which : IncludedThemes.values()) {
-			DesignTheme theme = builtIn(which);
+		for (String folder : builtInFolders()) {
 			// The fallback exists to be picked from when a real theme has no matching design; it
 			// is deliberately not offered as a theme of its own.
-			if (which != IncludedThemes.Fallback)
-				themes.add(theme);
+			if (IncludedThemes.Fallback.themeFolder.equals(folder))
+				continue;
+			try {
+				themes.add(builtIn(folder));
+			} catch (RuntimeException e) {
+				TheMightyArchitect.logger.error("Skipping unreadable built-in theme " + folder, e);
+			}
 		}
 		return themes;
 	}
 
+	/**
+	 * The theme folders the resource stack provides, best order first.
+	 * <p>
+	 * The ones the mod ships keep their existing order, because the composer menu binds them to
+	 * number keys by list position and a pack adding a theme should not renumber the five people
+	 * already know. Anything a pack adds is appended.
+	 */
+	private List<String> builtInFolders() {
+		List<String> shipped = new ArrayList<>();
+		for (IncludedThemes which : IncludedThemes.values())
+			shipped.add(which.themeFolder);
+
+		List<String> discovered = ArchitectResources.listFoldersContaining(ArchitectPaths.THEMES, THEME_FILE, shipped);
+
+		List<String> ordered = new ArrayList<>();
+		for (String folder : shipped)
+			if (discovered.contains(folder))
+				ordered.add(folder);
+		for (String folder : discovered)
+			if (!shipped.contains(folder))
+				ordered.add(folder);
+
+		return ordered;
+	}
+
 	public DesignTheme builtIn(IncludedThemes which) {
-		return included.computeIfAbsent(which,
-			missing -> loadInternalTheme(missing.themeFolder).withHeightSequence(missing.heights));
+		return builtIn(which.themeFolder);
+	}
+
+	public DesignTheme builtIn(String folder) {
+		return included.computeIfAbsent(folder, ThemeStorage::loadInternalTheme);
 	}
 
 	public List<DesignTheme> imported() {
@@ -186,8 +249,13 @@ public class ThemeStorage {
 
 	/**
 	 * Writes a theme and every design in it as one shareable file.
+	 * <p>
+	 * This goes to {@code themes/export/} rather than alongside the theme folders on purpose: the
+	 * packed file is a copy for handing to someone else, and the theme scanner skips that folder
+	 * so your own theme does not appear twice in the list - once live and editable, once as a
+	 * frozen snapshot under an identical name.
 	 *
-	 * @return the filename written, so the caller can tell the user where it went
+	 * @return where the file went, so the caller can tell the user somewhere they can act on
 	 */
 	public String saveAsSingleFile(DesignTheme theme, boolean compressed) {
 		Path folder = ArchitectPaths.themeExports();
@@ -208,14 +276,21 @@ public class ThemeStorage {
 		else
 			JsonStorage.writeCompact(target, PackedTheme.CODEC, packed);
 
-		return filename;
+		return ArchitectPaths.describe(target);
 	}
 
-	private DesignTheme loadInternalTheme(String themeFolder) {
+	private static DesignTheme loadInternalTheme(String themeFolder) {
 		String base = ArchitectPaths.THEMES + "/" + themeFolder + "/";
-		DesignTheme theme = JsonStorage.readBuiltIn(base + "theme.json", DesignTheme.CODEC)
+		DesignTheme theme = JsonStorage.readBuiltIn(base + THEME_FILE, DesignTheme.CODEC)
 			.orElseThrow(() -> new IllegalStateException(
 				"Built-in theme " + themeFolder + " is missing from the mod jar"));
+
+		// The table only speaks for a theme that did not speak for itself: the five shipped files
+		// predate HeightSequence, but a pack overriding one of them and declaring its own floors
+		// has to win.
+		if (!theme.declaresHeightSequence())
+			IncludedThemes.byFolder(themeFolder)
+				.ifPresent(which -> theme.withHeightSequence(which.heights));
 
 		theme.setFilePath(themeFolder);
 		theme.setImported(false);

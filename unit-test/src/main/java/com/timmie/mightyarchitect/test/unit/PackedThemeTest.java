@@ -8,6 +8,8 @@ import com.timmie.mightyarchitect.control.design.partials.DesignData;
 import com.timmie.mightyarchitect.control.design.partials.Wall.ExpandBehaviour;
 import com.timmie.mightyarchitect.control.palette.Palette;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
+import com.timmie.mightyarchitect.control.storage.ArchitectPaths;
+import com.timmie.mightyarchitect.control.storage.ArchitectStorage;
 import com.timmie.mightyarchitect.control.storage.JsonStorage;
 import com.timmie.mightyarchitect.control.storage.PackedTheme;
 import com.timmie.mightyarchitect.test.unit.MinecraftBootstrap.Bootstrapped;
@@ -16,9 +18,12 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -166,6 +171,73 @@ class PackedThemeTest {
 		assertTrue(PackedTheme.isPackedName("castle.theme"));
 		assertTrue(PackedTheme.isPackedName("castle.json"));
 		assertFalse(PackedTheme.isPackedName("castle"), "a theme folder was mistaken for a packed file");
+	}
+
+	/**
+	 * The export used to report a bare filename - "Exported Theme as my_theme.theme" - which does
+	 * not say where to look. It reports the path relative to the game directory now, which is both
+	 * actionable and short enough for the composer's status line.
+	 */
+	@Test
+	@DisplayName("exporting reports where the file went, not just its name")
+	void exportReportsThePath(@TempDir Path root) {
+		ArchitectPaths.setRootsForTesting(root, root.resolve("instance"));
+		try {
+			DesignTheme theme = ThemeStorage.createTheme("Packed Theme", "unit-test");
+			theme.setDefaultPalette(PaletteDefinition.defaultPalette()
+				.clone());
+			theme.setDefaultSecondaryPalette(PaletteDefinition.defaultPalette()
+				.clone());
+
+			String reported = ArchitectStorage.themes()
+				.saveAsSingleFile(theme, true);
+
+			assertTrue(reported.contains("packed_theme.theme"), "the filename went missing: " + reported);
+			assertTrue(reported.contains("export"),
+				"the report does not say which folder the file went to: " + reported);
+			assertTrue(Files.exists(root.resolve("themes")
+				.resolve("export")
+				.resolve("packed_theme.theme")), "the export did not land where it said it did");
+		} finally {
+			ArchitectPaths.setRootsForTesting(null, null);
+			ArchitectStorage.reset();
+		}
+	}
+
+	/**
+	 * A theme's live folder and its packed copy carry the same display name, so scanning the
+	 * export folder would list every exported theme twice - once editable, once as a frozen
+	 * snapshot under an identical label.
+	 */
+	@Test
+	@DisplayName("an exported copy does not become a second theme in the list")
+	void exportedCopiesAreNotRescanned(@TempDir Path root) {
+		ArchitectPaths.setRootsForTesting(root, root.resolve("instance"));
+		try {
+			DesignTheme theme = ThemeStorage.createTheme("Packed Theme", "unit-test");
+			theme.setDefaultPalette(PaletteDefinition.defaultPalette()
+				.clone());
+			theme.setDefaultSecondaryPalette(PaletteDefinition.defaultPalette()
+				.clone());
+
+			ArchitectStorage.themes()
+				.save(theme);
+			ArchitectStorage.themes()
+				.saveAsSingleFile(theme, true);
+			ArchitectStorage.themes()
+				.invalidateExternal();
+
+			long matching = ArchitectStorage.themes()
+				.imported()
+				.stream()
+				.filter(found -> "Packed Theme".equals(found.getDisplayName()))
+				.count();
+
+			assertEquals(1, matching, "the exported copy was listed as a second theme with the same name");
+		} finally {
+			ArchitectPaths.setRootsForTesting(null, null);
+			ArchitectStorage.reset();
+		}
 	}
 
 	@Test

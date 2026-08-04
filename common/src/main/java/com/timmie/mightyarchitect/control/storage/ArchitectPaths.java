@@ -121,6 +121,26 @@ public final class ArchitectPaths {
 		return resolve(THEME_EXPORTS);
 	}
 
+	/**
+	 * Renders a path for the user.
+	 * <p>
+	 * Relative to the game directory when it sits under it, because an absolute path on a modern
+	 * launcher is long enough to overflow the composer's status line - and the part the user needs
+	 * in order to find the file is the tail, not the machine-specific head.
+	 */
+	public static String describe(Path path) {
+		Path absolute = path.toAbsolutePath();
+		Path game = gameDirectory().toAbsolutePath();
+		try {
+			if (absolute.startsWith(game))
+				return game.relativize(absolute)
+					.toString();
+		} catch (IllegalArgumentException differentRoots) {
+			// A game directory and a data folder on different Windows drives cannot be relativized.
+		}
+		return absolute.toString();
+	}
+
 	/** Resolves a slash-separated path below the mod folder, migrating the old data first. */
 	public static Path resolve(String relative) {
 		migrateLegacyData();
