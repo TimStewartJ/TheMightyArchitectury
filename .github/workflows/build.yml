@@ -7,6 +7,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Cheap structural gate, in parallel with the 13 build jobs. Guards the bug class PR #34 vs #32
+  # demonstrated: a guard that wraps a whole file gives every version its own copy of the shared
+  # logic, so a fix applied to one copy silently misses the others. Marker counts hide it - one
+  # guard can wrap hundreds of duplicated lines - so this looks for the repeated `package`
+  # declaration a duplicated compilation unit necessarily carries.
+  source-shape:
+    name: Source shape
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No whole-file guarded duplicates
+        shell: pwsh
+        run: ./scripts/check-source-shape.ps1 -Detail
+
   build:
     name: MC ${{ matrix.mc }}
     runs-on: ubuntu-latest
@@ -178,12 +192,16 @@ jobs:
   # a PR only passes when every version builds green and its metadata verifies.
   all-green:
     name: All versions green
-    needs: build
+    needs: [build, source-shape]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Fail if any matrix job failed
         run: |
+          if [ "${{ needs.source-shape.result }}" != "success" ]; then
+            echo "The source-shape gate failed."
+            exit 1
+          fi
           if [ "${{ needs.build.result }}" != "success" ]; then
             echo "One or more version builds failed."
             exit 1

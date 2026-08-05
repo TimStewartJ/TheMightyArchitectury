@@ -1,29 +1,26 @@
-//? if >=26 {
 package com.timmie.mightyarchitect.control.phase;
 
+//? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-
-public interface IRenderGameOverlay {
-
-	void renderGameOverlay(GuiGraphicsExtractor ms, float partialTicks);
-	
-}
 //?} else if >=1.20 {
-/*package com.timmie.mightyarchitect.control.phase;
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?} else {
+/*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
+*///?}
 
-import net.minecraft.client.gui.GuiGraphics;
-
+/**
+ * Implemented by an {@link IArchitectPhase} that draws onto the vanilla HUD.
+ * <p>
+ * Only the graphics parameter varies: 1.20 replaced the mod's own {@code GuiGraphics} shim with
+ * vanilla's, and 26 renamed vanilla's to {@code GuiGraphicsExtractor}. The declaration itself is the
+ * same on every version, so only the import and the signature are guarded.
+ */
 public interface IRenderGameOverlay {
 
-	void renderGameOverlay(GuiGraphics ms, float partialTicks);
-	
-}*///?} else {
-/*package com.timmie.mightyarchitect.control.phase;
+	//? if >=26 {
+	void renderGameOverlay(GuiGraphicsExtractor ms, float partialTicks);
+	//?} else {
+	/*void renderGameOverlay(GuiGraphics ms, float partialTicks);
+	*///?}
 
-import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
-
-public interface IRenderGameOverlay {
-
-	void renderGameOverlay(GuiGraphics ms, float partialTicks);
-	
-}*///?}
+}
