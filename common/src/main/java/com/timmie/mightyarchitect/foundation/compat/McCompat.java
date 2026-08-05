@@ -139,4 +139,32 @@ public final class McCompat {
 	//?} else {
 	/*
 	*///?}
+
+	/**
+	 * A value that changes whenever block models are rebaked, and is otherwise stable.
+	 * <p>
+	 * Nothing tells a mod that F3+T happened without going through a loader's reload-listener API,
+	 * which is three different APIs across thirteen versions. Sprite coordinates are baked into
+	 * geometry, so anything holding baked geometry has to notice a rebake or keep drawing pixels
+	 * from wherever the sprite used to sit in the atlas. Comparing this against the last value seen
+	 * costs one map lookup per tick and needs no loader API at all.
+	 * <p>
+	 * Verified with javap across the matrix: {@code ModelManager.blockModelShaper} is final on
+	 * every version that has it, so the shaper itself is not the token - the baked model behind it
+	 * is, because the cache holding those is rebuilt from scratch on every reload. 26 has no
+	 * {@code BlockModelShaper} at all, and its {@code blockStateModelSet} field is not final, so
+	 * there the set is the token directly.
+	 *
+	 * @return an opaque token to compare by identity, or null before the first bake
+	 */
+	public static Object modelGeneration(Minecraft mc) {
+		//? if >=26 {
+		return mc.getModelManager()
+			.getBlockStateModelSet();
+		//?} else {
+		/*return mc.getModelManager()
+			.getBlockModelShaper()
+			.getBlockModel(net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+		*///?}
+	}
 }

@@ -25,7 +25,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.minecraft.world.level.material.Fluid;
-//? if >=1.21.6 {
+//? if >=1.21.4 {
 //?} else {
 /*import net.minecraft.world.level.redstone.NeighborUpdater;
 *///?}
@@ -42,6 +42,22 @@ public class TemplateBlockAccess extends WrappedWorld {
 	private Cuboid bounds;
 	private BlockPos anchor;
 	private boolean localMode;
+
+	/**
+	 * One source for the whole template rather than one per query.
+	 * <p>
+	 * {@code getRandom()} is called six times per block per pass by the neighbour-shape update, so
+	 * a fresh {@code RandomSource} per call was twelve allocations per block and made materializing
+	 * the same sketch twice give different results. Seeded, because a template that renders
+	 * differently every time it is rebuilt cannot be compared against itself - and vanilla does the
+	 * same thing, {@code Level} owns exactly one {@code RandomSource}.
+	 */
+	private final RandomSource random = RandomSource.create(SHAPE_UPDATE_SEED);
+
+	private static final long SHAPE_UPDATE_SEED = 0x4D49474854594100L;
+
+	/** Resolved once: the lookup behind it is a registry query, and the answer never changes. */
+	private Holder<Biome> biome;
 
 	public TemplateBlockAccess(Map<BlockPos, BlockState> blocks, Cuboid bounds, BlockPos anchor) {
 		super(Minecraft.getInstance().level);
@@ -63,18 +79,7 @@ public class TemplateBlockAccess extends WrappedWorld {
 	private void updateBlockstates() {
 		//? if >=1.21.4 {
 		Direction[] directions = Direction.values();
-		//?} else {
-		/*Set<BlockPos> keySet = new HashSet<>(blocks.keySet());
-		keySet.forEach(pos -> {
-			BlockState blockState = blocks.get(pos);
-			if (blockState == null)
-				return;
-			blockState.updateNeighbourShapes(this, pos.offset(anchor), 16);
-		});
-	}
-		*///?}
 
-		//? if >=26 {
 		// Multiple passes - blocks may depend on neighbors that haven't been updated yet
 		for (int pass = 0; pass < 2; pass++) {
 			Map<BlockPos, BlockState> updates = new HashMap<>();
@@ -106,45 +111,25 @@ public class TemplateBlockAccess extends WrappedWorld {
 			// Apply all updates at once (batch)
 			blocks.putAll(updates);
 		}
-		//?} else if >=1.21.4 {
-		/*// Multiple passes - blocks may depend on neighbors that haven't been updated yet
-		for (int pass = 0; pass < 2; pass++) {
-			Map<BlockPos, BlockState> updates = new HashMap<>();
+		//?} else {
+		/*Set<BlockPos> keySet = new HashSet<>(blocks.keySet());
+		keySet.forEach(pos -> {
+			BlockState blockState = blocks.get(pos);
+			if (blockState == null)
+				return;
+			blockState.updateNeighbourShapes(this, pos.offset(anchor), 16);
+		});
+		*///?}
+	}
 
-			for (BlockPos pos : blocks.keySet()) {
-				BlockState state = blocks.get(pos);
-				if (state == null || state.isAir())
-					continue;
-
-				BlockPos worldPos = pos.offset(anchor);
-				BlockState newState = state;
-
-				// For each direction, compute what this block should look like based on its neighbor
-				for (Direction direction : directions) {
-					BlockPos neighborWorldPos = worldPos.relative(direction);
-					BlockState neighborState = getBlockState(neighborWorldPos);
-
-					// updateShape returns the potentially modified state based on the neighbor
-					// This does NOT trigger cascading notifications
-					// 1.21.4 signature: (LevelReader, ScheduledTickAccess, BlockPos, Direction, BlockPos, BlockState, RandomSource)
-					newState = newState.updateShape(this, this, worldPos, direction, neighborWorldPos, neighborState, this.getRandom());
-				}
-
-				if (newState != state) {
-					updates.put(pos, newState);
-				}
-			}
-
-			// Apply all updates at once (batch)
-			blocks.putAll(updates);
-		}
-		*///?} else {
-		/*@Override
+	//? if >=1.21.4 {
+	//?} else {
+	/*@Override
 	// revert to original neighbor shape behavior
 	public void neighborShapeChanged(Direction direction, BlockState blockState, BlockPos blockPos, BlockPos blockPos2, int i, int j) {
 		NeighborUpdater.executeShapeUpdate(this, direction, blockState, blockPos, blockPos2, i, j - 1);
-		*///?}
 	}
+	*///?}
 
 	public Set<BlockPos> getAllPositions() {
 		return blocks.keySet();
@@ -171,11 +156,14 @@ public class TemplateBlockAccess extends WrappedWorld {
 
 	@Override
 	public Holder<Biome> getBiome(BlockPos pos) {
-		//? if >=1.21.4 {
-		return Holder.direct(registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.THE_VOID).value());
-		//?} else {
-		/*return Holder.direct(registryAccess().registryOrThrow(Registries.BIOME).get(Biomes.THE_VOID));
-		*///?}
+		if (biome == null) {
+			//? if >=1.21.4 {
+			biome = Holder.direct(registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.THE_VOID).value());
+			//?} else {
+			/*biome = Holder.direct(registryAccess().registryOrThrow(Registries.BIOME).get(Biomes.THE_VOID));
+			*///?}
+		}
+		return biome;
 	}
 
 	@Override
@@ -252,7 +240,7 @@ public class TemplateBlockAccess extends WrappedWorld {
 
 	@Override
 	public RandomSource getRandom() {
-		return RandomSource.create();
+		return random;
 	}
 
 	@Override

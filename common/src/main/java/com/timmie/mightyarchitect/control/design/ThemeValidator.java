@@ -182,8 +182,15 @@ public class ThemeValidator {
 
 	}
 
+	/**
+	 * One source for the whole validation run rather than one per query: {@code exists} is called
+	 * from every branch of the loop below, several times per layer/type pair, and only ever asks
+	 * whether *any* design matched.
+	 */
+	private static final Random PICKER = new Random();
+
 	private static boolean exists(DesignQuery query) {
-		return DesignHelper.pickRandom(query.withoutFallback(), new Random()) != null;
+		return DesignHelper.pickRandom(query.withoutFallback(), PICKER) != null;
 	}
 
 	private static void alert(String message) {
