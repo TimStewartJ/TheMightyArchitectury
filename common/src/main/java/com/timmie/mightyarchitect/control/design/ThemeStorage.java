@@ -164,7 +164,7 @@ public class ThemeStorage {
 	 */
 	public List<DesignTheme> includedThemes() {
 		List<DesignTheme> themes = new ArrayList<>();
-		for (String folder : builtInFolders()) {
+		for (String folder : discoverBuiltInFolders()) {
 			// The fallback exists to be picked from when a real theme has no matching design; it
 			// is deliberately not offered as a theme of its own.
 			if (IncludedThemes.Fallback.themeFolder.equals(folder))
@@ -179,6 +179,20 @@ public class ThemeStorage {
 	}
 
 	/**
+	 * @return the theme folders to offer, falling back to the ones in the jar if discovery itself
+	 *         fails - this list feeds the composer menu, so failing here would mean the menu
+	 *         cannot be opened at all, which is a far worse outcome than ignoring a bad pack
+	 */
+	private List<String> discoverBuiltInFolders() {
+		try {
+			return builtInFolders();
+		} catch (RuntimeException e) {
+			TheMightyArchitect.logger.error("Could not discover themes; using the ones in the mod jar", e);
+			return shippedFolders();
+		}
+	}
+
+	/**
 	 * The theme folders the resource stack provides, best order first.
 	 * <p>
 	 * The ones the mod ships keep their existing order, because the composer menu binds them to
@@ -186,10 +200,7 @@ public class ThemeStorage {
 	 * already know. Anything a pack adds is appended.
 	 */
 	private List<String> builtInFolders() {
-		List<String> shipped = new ArrayList<>();
-		for (IncludedThemes which : IncludedThemes.values())
-			shipped.add(which.themeFolder);
-
+		List<String> shipped = shippedFolders();
 		List<String> discovered = ArchitectResources.listFoldersContaining(ArchitectPaths.THEMES, THEME_FILE, shipped);
 
 		List<String> ordered = new ArrayList<>();
@@ -201,6 +212,14 @@ public class ThemeStorage {
 				ordered.add(folder);
 
 		return ordered;
+	}
+
+	/** The theme folders the mod itself ships, in the order the menu has always listed them. */
+	private static List<String> shippedFolders() {
+		List<String> shipped = new ArrayList<>();
+		for (IncludedThemes which : IncludedThemes.values())
+			shipped.add(which.themeFolder);
+		return shipped;
 	}
 
 	public DesignTheme builtIn(IncludedThemes which) {

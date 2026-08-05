@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -189,6 +190,59 @@ class PackThemeDiscoveryTest {
 
 		assertFalse(ArchitectResources.listFoldersContaining("themes", "theme.json", SHIPPED)
 			.contains("notatheme"), "a folder with no theme.json was listed as a theme");
+	}
+
+	/**
+	 * A pack author's most likely first mistake is putting {@code theme.json} one directory too
+	 * high. The prefix {@code themes/} and the suffix {@code /theme.json} share their slash, so
+	 * {@code themes/theme.json} satisfies both and used to slice a substring backwards - which
+	 * threw out of discovery, and discovery feeds the composer menu.
+	 */
+	@Test
+	@DisplayName("a theme.json directly in themes/ is ignored rather than throwing")
+	void aThemeFileOneLevelTooHighIsIgnored() {
+		Map<String, String> pack = new LinkedHashMap<>();
+		pack.put("themes/theme.json", themeJson("Too High", null));
+		pack.put("themes/zeppelin/theme.json", themeJson("Zeppelin Yard", null));
+		installPackWith(pack);
+
+		List<String> discovered =
+			assertDoesNotThrow(() -> ArchitectResources.listFoldersContaining("themes", "theme.json", SHIPPED),
+				"a theme.json one level too high threw out of discovery");
+
+		assertTrue(discovered.contains("zeppelin"), "the misplaced file also lost the valid theme beside it");
+		for (String folder : discovered)
+			assertFalse(folder.isEmpty(), "the misplaced file was listed as a theme with no name");
+	}
+
+	/**
+	 * Discovery feeds {@code getAllThemes()}, which the composer menu builds its keybind list
+	 * from. A throw there does not cost a theme, it costs the menu - so it degrades to the themes
+	 * in the jar instead.
+	 */
+	@Test
+	@DisplayName("if discovery fails outright, the shipped themes still load")
+	void discoveryFailureDegradesToShipped() {
+		ArchitectResources.setIndexForTesting(new ArchitectResources.ResourceIndex() {
+
+			@Override
+			public Optional<byte[]> read(String path) {
+				return new OverlayIndex(Map.of()).read(path);
+			}
+
+			@Override
+			public Optional<List<String>> listAll(String folder) {
+				throw new IllegalStateException("a pack broke enumeration");
+			}
+		});
+
+		List<DesignTheme> themes = assertDoesNotThrow(() -> ArchitectStorage.themes()
+			.includedThemes(), "a broken resource stack took the whole composer menu down");
+
+		assertFalse(themes.isEmpty(), "discovery failed closed instead of falling back to the jar");
+		assertTrue(themes.stream()
+			.anyMatch(theme -> "medieval".equals(theme.getFilePath())),
+			"the fallback did not produce the shipped themes");
 	}
 
 	@Test

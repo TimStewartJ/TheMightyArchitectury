@@ -214,10 +214,20 @@ public final class ArchitectResources {
 			for (String path : enumerated.get()) {
 				if (!path.startsWith(prefix) || !path.endsWith(suffix))
 					continue;
-				String rest = path.substring(prefix.length(), path.length() - suffix.length());
+
+				int begin = prefix.length();
+				int end = path.length() - suffix.length();
+				// The prefix and the suffix share the separator, so "themes/theme.json" satisfies
+				// both and would slice backwards. That file is one directory level too high to be
+				// a theme - the most likely first mistake a pack author makes - and it must cost
+				// itself rather than throwing out of the whole theme list.
+				if (end <= begin)
+					continue;
+
+				String rest = path.substring(begin, end);
 				// Exactly one level down: themes/medieval/theme.json counts, and a stray
 				// themes/medieval/regular/theme.json does not become a theme of its own.
-				if (!rest.isEmpty() && rest.indexOf('/') < 0)
+				if (rest.indexOf('/') < 0)
 					folders.add(rest);
 			}
 			return new ArrayList<>(folders);
