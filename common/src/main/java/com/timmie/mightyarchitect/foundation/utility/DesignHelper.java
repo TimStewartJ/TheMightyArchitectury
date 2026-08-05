@@ -22,7 +22,7 @@ public class DesignHelper {
 		Design design = pickRandomNoFallback(query, rand);
 
 		if (design == null && query.fallback) {
-			return pickRandomNoFallback(query.withTheme(ThemeStorage.IncludedThemes.Fallback.theme), rand);
+			return pickRandomNoFallback(query.withTheme(ThemeStorage.getIncludedTheme(ThemeStorage.IncludedThemes.Fallback)), rand);
 		}
 
 		return design;

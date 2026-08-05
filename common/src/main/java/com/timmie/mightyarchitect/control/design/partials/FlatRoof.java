@@ -3,7 +3,6 @@ package com.timmie.mightyarchitect.control.design.partials;
 import com.timmie.mightyarchitect.control.design.DesignSlice;
 import com.timmie.mightyarchitect.control.palette.PaletteBlockInfo;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 
 import java.util.List;
 import java.util.Map;
@@ -13,17 +12,11 @@ public class FlatRoof extends Design {
 	protected int margin;
 
 	@Override
-	public Design fromNBT(CompoundTag compound) {
+	public Design fromData(DesignData data) {
 		FlatRoof flatRoof = new FlatRoof();
-		flatRoof.applyNBT(compound);
-
-		//? if >=1.21.6 {
-		flatRoof.margin = compound.getInt("Margin").orElse(0);
-		//?} else {
-		/*flatRoof.margin = compound.getInt("Margin");
-		*///?}
+		flatRoof.applyData(data);
+		flatRoof.margin = data.margin();
 		flatRoof.defaultWidth = (flatRoof.defaultWidth - flatRoof.margin) * 2 - 1;
-
 		return flatRoof;
 	}
 

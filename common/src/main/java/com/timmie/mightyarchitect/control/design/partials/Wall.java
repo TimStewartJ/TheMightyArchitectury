@@ -2,7 +2,6 @@ package com.timmie.mightyarchitect.control.design.partials;
 
 import com.timmie.mightyarchitect.control.palette.PaletteBlockInfo;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 
 import java.util.Map;
 
@@ -15,14 +14,10 @@ public class Wall extends Design {
 	public ExpandBehaviour expandBehaviour;
 
 	@Override
-	public Design fromNBT(CompoundTag compound) {
+	public Design fromData(DesignData data) {
 		Wall wall = new Wall();
-		wall.applyNBT(compound);
-		//? if >=1.21.6 {
-		wall.expandBehaviour = ExpandBehaviour.valueOf(compound.getString("ExpandBehaviour").orElse("None"));
-		//?} else {
-		/*wall.expandBehaviour = ExpandBehaviour.valueOf(compound.getString("ExpandBehaviour"));
-		*///?}
+		wall.applyData(data);
+		wall.expandBehaviour = data.expandBehaviour();
 		return wall;
 	}
 

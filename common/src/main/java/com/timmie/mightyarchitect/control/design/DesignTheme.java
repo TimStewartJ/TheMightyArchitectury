@@ -1,13 +1,13 @@
 package com.timmie.mightyarchitect.control.design;
 
 import com.google.common.collect.ImmutableList;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.design.partials.Design;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
+import com.timmie.mightyarchitect.control.storage.JsonStorage;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
 
 import java.util.*;
 
@@ -15,11 +15,44 @@ public class DesignTheme {
 
 	private static final List<Integer> defaultHeightSequence = ImmutableList.of(2, 4);
 
+	/**
+	 * A theme's metadata file.
+	 * <p>
+	 * The field names are the ones the format has always used, spaces and all, so a theme.json
+	 * written by any previous build reads unchanged - the schema was always expressible, it just
+	 * was not written down anywhere a reader could check it against.
+	 * <p>
+	 * {@code HeightSequence} is the one addition. It is optional, because the five themes that
+	 * ship with the mod do not carry it - their floor heights come from a hardcoded table. A theme
+	 * supplied by a resource pack has no entry in that table, so it needs a way to say what its
+	 * floors are, and reading it here means a theme is self-describing rather than needing the mod
+	 * to already know about it.
+	 */
+	public static final Codec<DesignTheme> CODEC = RecordCodecBuilder.create(instance -> instance
+		.group(Codec.STRING.optionalFieldOf("Name", "")
+			.forGetter(DesignTheme::getDisplayName),
+			Codec.STRING.optionalFieldOf("Designer", "")
+				.forGetter(DesignTheme::getDesigner),
+			enumNames(DesignLayer.class).optionalFieldOf("Layers", List.of())
+				.forGetter(theme -> orEmpty(theme.layers)),
+			enumNames(DesignType.class).optionalFieldOf("Types", List.of())
+				.forGetter(theme -> orEmpty(theme.types)),
+			Codec.INT.optionalFieldOf("Maximum Room Height", 10)
+				.forGetter(DesignTheme::getMaxFloorHeight),
+			// Always written, optionally read: anything the mod saves says what its floors are,
+			// while the shipped files that predate the field still fall back to the table.
+			Codec.list(Codec.INT)
+				.optionalFieldOf("HeightSequence")
+				.forGetter(theme -> Optional.of(theme.getHeightSequence())))
+		.apply(instance, DesignTheme::fromParts));
+
 	private String filePath;
 	private String displayName;
 	private String designer;
 	private DesignPicker designPicker;
 	private boolean imported;
+	/** Whether the file said what its floors are, rather than the mod's own table saying it. */
+	private boolean declaresHeightSequence;
 	private PaletteDefinition defaultPalette;
 	private PaletteDefinition defaultSecondaryPalette;
 	private ThemeStatistics statistics;
@@ -50,6 +83,19 @@ public class DesignTheme {
 	public DesignTheme withHeightSequence(List<Integer> seq) {
 		this.heightSequence = seq;
 		return this;
+	}
+
+	public List<Integer> getHeightSequence() {
+		return heightSequence;
+	}
+
+	/**
+	 * @return whether the theme's own file declared its floor heights, in which case nothing
+	 *         should override them - a resource pack saying what its floors are outranks the
+	 *         mod's table of what it remembers about the themes it ships
+	 */
+	public boolean declaresHeightSequence() {
+		return declaresHeightSequence;
 	}
 
 	protected void updateRoomLayers() {
@@ -148,84 +194,63 @@ public class DesignTheme {
 		this.types = types;
 	}
 
+	/** @return the theme as NBT, for the packed single-file export */
 	public CompoundTag asTagCompound() {
-		CompoundTag compound = new CompoundTag();
-
-		compound.putString("Name", getDisplayName());
-		compound.putString("Designer", getDesigner());
-
-		ListTag layers = new ListTag();
-		ListTag types = new ListTag();
-
-		this.layers.forEach(layer -> layers.add(StringTag.valueOf(layer.name())));
-		this.types.forEach(type -> types.add(StringTag.valueOf(type.name())));
-
-		compound.put("Layers", layers);
-		compound.put("Types", types);
-		compound.putInt("Maximum Room Height", maxFloorHeight);
-
-		return compound;
+		return JsonStorage.toNbt(CODEC, this)
+			.orElseGet(CompoundTag::new);
 	}
 
+	/** @return the theme the compound describes, or null when it does not describe one */
 	public static DesignTheme fromNBT(CompoundTag compound) {
 		if (compound == null)
 			return null;
+		return JsonStorage.fromNbt(CODEC, compound, "a theme")
+			.orElse(null);
+	}
 
-		//? if >=1.21.6 {
-		DesignTheme theme = new DesignTheme(compound.getString("Name").orElse(""), compound.getString("Designer").orElse(""));
-		//?} else {
-		/*DesignTheme theme = new DesignTheme(compound.getString("Name"), compound.getString("Designer"));
-		*///?}
-
-		theme.layers = new ArrayList<>();
-		theme.types = new ArrayList<>();
-
-		if (compound.contains("Maximum Room Height"))
-			//? if >=1.21.6 {
-			theme.maxFloorHeight = compound.getInt("Maximum Room Height").orElse(10);
-			//?} else {
-			/*theme.maxFloorHeight = compound.getInt("Maximum Room Height");
-			*///?}
-
-		//? if >=1.21.6 {
-		ListTag layerTags = compound.getList("Layers").orElse(new ListTag());
-		ListTag typeTags = compound.getList("Types").orElse(new ListTag());
-		//?} else {
-		/*ListTag layerTags = compound.getList("Layers", 8);
-		ListTag typeTags = compound.getList("Types", 8);
-		*///?}
-
-		layerTags.forEach(s -> addIfKnown(theme.layers, DesignLayer.class, stringValue(s)));
-		typeTags.forEach(s -> addIfKnown(theme.types, DesignType.class, stringValue(s)));
-
+	private static DesignTheme fromParts(String name, String designer, List<DesignLayer> layers,
+		List<DesignType> types, int maxFloorHeight, Optional<List<Integer>> heightSequence) {
+		DesignTheme theme = new DesignTheme(name, designer);
+		theme.layers = new ArrayList<>(layers);
+		theme.types = new ArrayList<>(types);
+		theme.maxFloorHeight = maxFloorHeight;
+		heightSequence.ifPresent(theme::withHeightSequence);
+		theme.declaresHeightSequence = heightSequence.isPresent();
 		theme.updateRoomLayers();
 		return theme;
 	}
 
-	//? if >=1.21.6 {
-	private static String stringValue(Tag tag) {
-		return tag instanceof StringTag string ? string.value() : "";
+	private static <E> List<E> orEmpty(List<E> list) {
+		return list == null ? List.of() : list;
 	}
-	//?} else {
-	/*private static String stringValue(Tag tag) {
-		return tag instanceof StringTag string ? string.getAsString() : "";
-	}
-	*///?}
 
 	/**
-	 * Adds an enum constant by name, skipping it if no such constant exists.
+	 * A list of enum constants by name, skipping any this build does not have.
 	 * <p>
 	 * A theme written by a newer version of the mod, or simply by hand, can name a layer or type
-	 * this build does not have. {@code valueOf} threw for it, and the throw escaped the single
-	 * try block around the whole theme directory scan - so one such file emptied the theme list
-	 * instead of costing that theme one layer.
+	 * this build does not know. {@code valueOf} threw for it, and the throw escaped the single try
+	 * block around the whole theme directory scan - so one such file emptied the theme list instead
+	 * of costing that theme one layer.
 	 */
-	private static <E extends Enum<E>> void addIfKnown(List<E> target, Class<E> type, String name) {
-		try {
-			target.add(Enum.valueOf(type, name));
-		} catch (IllegalArgumentException unknown) {
-			TheMightyArchitect.logger.warn("Ignoring unknown {} '{}' in a theme", type.getSimpleName(), name);
-		}
+	private static <E extends Enum<E>> Codec<List<E>> enumNames(Class<E> type) {
+		return Codec.list(Codec.STRING)
+			.xmap(names -> {
+				List<E> known = new ArrayList<>(names.size());
+				for (String name : names) {
+					try {
+						known.add(Enum.valueOf(type, name));
+					} catch (IllegalArgumentException unknown) {
+						TheMightyArchitect.logger.warn("Ignoring unknown {} '{}' in a theme", type.getSimpleName(),
+							name);
+					}
+				}
+				return known;
+			}, constants -> {
+				List<String> names = new ArrayList<>(constants.size());
+				for (E constant : constants)
+					names.add(constant.name());
+				return names;
+			});
 	}
 
 	public void setImported(boolean imported) {

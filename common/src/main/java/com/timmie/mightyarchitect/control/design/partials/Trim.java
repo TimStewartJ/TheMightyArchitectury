@@ -1,15 +1,12 @@
 package com.timmie.mightyarchitect.control.design.partials;
 
-import net.minecraft.nbt.CompoundTag;
-
 public class Trim extends Design {
 
 	@Override
-	public Design fromNBT(CompoundTag compound) {
+	public Design fromData(DesignData data) {
 		Trim trim = new Trim();
-		trim.applyNBT(compound);
+		trim.applyData(data);
 		return trim;
 	}
 
-	
 }

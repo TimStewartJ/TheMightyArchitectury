@@ -3,7 +3,6 @@ package com.timmie.mightyarchitect.control.design.partials;
 import com.timmie.mightyarchitect.control.design.DesignSlice;
 import com.timmie.mightyarchitect.control.palette.PaletteBlockInfo;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 
 import java.util.List;
 import java.util.Map;
@@ -13,14 +12,10 @@ public class Roof extends Design {
 	private static final int CROSS_ROOF_DEPTH = -1;
 
 	@Override
-	public Design fromNBT(CompoundTag compound) {
+	public Design fromData(DesignData data) {
 		Roof roof = new Roof();
-		roof.applyNBT(compound);
-		//? if >=1.21.6 {
-		roof.defaultWidth = compound.getInt("Roofspan").orElse(0);
-		//?} else {
-		/*roof.defaultWidth = compound.getInt("Roofspan");
-		*///?}
+		roof.applyData(data);
+		roof.defaultWidth = data.roofspan();
 		return roof;
 	}
 

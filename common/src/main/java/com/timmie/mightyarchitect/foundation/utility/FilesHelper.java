@@ -1,31 +1,27 @@
 package com.timmie.mightyarchitect.foundation.utility;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.internal.Streams;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
 import com.timmie.mightyarchitect.TheMightyArchitect;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.TagParser;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Locale;
 import java.util.Set;
 
+/**
+ * Filesystem plumbing shared by the storage layer.
+ * <p>
+ * The NBT-to-JSON helpers that used to live here - {@code saveTagCompoundAsJson} and
+ * {@code loadJsonAsNBT} - are gone; they wrote SNBT through a lenient JSON parser and read it back
+ * the same way. That job now belongs to
+ * {@link com.timmie.mightyarchitect.control.storage.JsonStorage}, which has a schema to check
+ * against. What is left here is the part that was always correct: the atomic write, and turning
+ * user-supplied names into safe path elements.
+ */
 public class FilesHelper {
 
 	/** Names Windows refuses as a file, with or without an extension. */
@@ -33,16 +29,16 @@ public class FilesHelper {
 		"com4", "com5", "com6", "com7", "com8", "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7",
 		"lpt8", "lpt9");
 
-	public static void createFolderIfMissing(String name) {
-		if (!Files.isDirectory(Paths.get(name))) {
-			try {
-				// createDirectories, not createDirectory: every caller here passes a nested path
-				// like "themes/export", and createDirectory fails outright when the parent is
-				// missing - after which the write it was preparing for silently does nothing.
-				Files.createDirectories(Paths.get(name));
-			} catch (IOException e) {
-				TheMightyArchitect.logger.warn("Could not create Folder: " + name, e);
-			}
+	public static void createFolderIfMissing(Path folder) {
+		if (Files.isDirectory(folder))
+			return;
+		try {
+			// createDirectories, not createDirectory: callers pass nested paths like
+			// <root>/themes/export, and createDirectory fails outright when the parent is
+			// missing - after which the write it was preparing for silently does nothing.
+			Files.createDirectories(folder);
+		} catch (IOException e) {
+			TheMightyArchitect.logger.warn("Could not create Folder: " + folder, e);
 		}
 	}
 
@@ -93,16 +89,15 @@ public class FilesHelper {
 		}
 	}
 
-	public static String findFirstValidFilename(String name, String folderPath, String extension) {
+	/** @return a filename below that folder which is not taken yet */
+	public static String findFirstValidFilename(String name, Path folder, String extension) {
 		String slug = slugOr(name, "unnamed");
 		int index = 0;
 		String filename;
-		String filepath;
 		do {
 			filename = slug + ((index == 0) ? "" : "_" + index) + "." + extension;
 			index++;
-			filepath = folderPath + "/" + filename;
-		} while (Files.exists(Paths.get(filepath)));
+		} while (Files.exists(folder.resolve(filename)));
 		return filename;
 	}
 
@@ -142,62 +137,6 @@ public class FilesHelper {
 	public static String slugOr(String name, String fallback) {
 		String slug = slug(name);
 		return slug.isEmpty() ? fallback : slug;
-	}
-
-	public static boolean saveTagCompoundAsJson(CompoundTag compound, String path) {
-		return saveTagCompoundAsJson(compound, path, "  ");
-	}
-
-	public static boolean saveTagCompoundAsJsonCompact(CompoundTag compound, String path) {
-		return saveTagCompoundAsJson(compound, path, "");
-	}
-
-	private static boolean saveTagCompoundAsJson(CompoundTag compound, String path, String indent) {
-		return writeAtomically(Paths.get(path), out -> {
-			try (Writer stream = new OutputStreamWriter(out, StandardCharsets.UTF_8);
-				JsonWriter writer = new JsonWriter(stream)) {
-				writer.setIndent(indent);
-				Streams.write(JsonParser.parseString(compound.toString()), writer);
-			}
-		});
-	}
-
-	public static CompoundTag loadJsonNBT(InputStream inputStream) {
-		if (inputStream == null)
-			return null;
-
-		try (JsonReader reader =
-			new JsonReader(new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)))) {
-			reader.setLenient(true);
-			JsonElement element = Streams.parse(reader);
-			//? if >=1.21.6 {
-			return TagParser.create(net.minecraft.nbt.NbtOps.INSTANCE).parseCompoundFully(element.toString());
-			//?} else {
-			/*return TagParser.parseTag(element.toString());
-			*///?}
-
-		} catch (Exception e) {
-			// Exception rather than the exact types: the parser throws a checked
-			// CommandSyntaxException before 1.21.6 and an unchecked parse error after it, and
-			// either way one malformed file must not abort the load of every other one.
-			TheMightyArchitect.logger.error("Could not read NBT from json", e);
-		}
-		return null;
-	}
-
-	public static CompoundTag loadJsonResourceAsNBT(String filepath) {
-		return loadJsonNBT(TheMightyArchitect.class.getClassLoader()
-			.getResourceAsStream(filepath));
-	}
-
-	/** @return the file's contents, or null if it is missing or unreadable - callers must check. */
-	public static CompoundTag loadJsonAsNBT(String filepath) {
-		try {
-			return loadJsonNBT(Files.newInputStream(Paths.get(filepath), StandardOpenOption.READ));
-		} catch (IOException e) {
-			TheMightyArchitect.logger.error("Could not open " + filepath, e);
-		}
-		return null;
 	}
 
 }

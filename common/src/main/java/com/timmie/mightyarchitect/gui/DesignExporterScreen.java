@@ -41,11 +41,11 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 		animationProgress = 0;
 		setWindowSize(ScreenResources.EXPORTER.width + 100, ScreenResources.EXPORTER.height + 50);
 
-		DesignTheme theme = DesignExporter.theme;
-		DesignLayer layer = DesignExporter.layer;
-		DesignType type = DesignExporter.type;
+		DesignTheme theme = DesignExporter.getTheme();
+		DesignLayer layer = DesignExporter.getLayer();
+		DesignType type = DesignExporter.getType();
 
-		additionalDataValue = DesignExporter.designParameter;
+		additionalDataValue = DesignExporter.getDesignParameter();
 
 		labelTheme = new Label(topLeftX + 96, topLeftY + 28, "").withShadow();
 		labelLayer = new Label(topLeftX + 96, topLeftY + 48, "").withShadow();
@@ -85,7 +85,7 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 			.titled("Layer")
 			.writingTo(labelLayer)
 			.setState(layers.indexOf(layer))
-			.calling(position -> initTypeScrollArea(theme, layers.get(position), DesignExporter.type));
+			.calling(position -> initTypeScrollArea(theme, layers.get(position), DesignExporter.getType()));
 
 		addWidget(labelTheme);
 		addWidget(labelLayer);
@@ -144,7 +144,7 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 			.writingTo(labelType)
 			.setState(types.indexOf(type))
 			.calling(position -> {
-				DesignExporter.type = types.get(position);
+				DesignExporter.setType(types.get(position));
 				initAdditionalDataScrollArea(types.get(position));
 			});
 
@@ -283,21 +283,21 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 
 	@Override
 	public void removed() {
-		DesignTheme theme = DesignExporter.theme;
-		DesignExporter.layer = theme.getLayers()
-			.get(scrollAreaLayer.getState());
+		DesignTheme theme = DesignExporter.getTheme();
+		DesignExporter.setLayer(theme.getLayers()
+			.get(scrollAreaLayer.getState()));
 
 		List<DesignType> types = new ArrayList<>(theme.getTypes());
 
 		// Roofs only in Roofing layer and vice versa
-		if (DesignExporter.layer == DesignLayer.Roofing) {
+		if (DesignExporter.getLayer() == DesignLayer.Roofing) {
 			types.retainAll(DesignType.roofTypes());
 		} else {
 			types.removeAll(DesignType.roofTypes());
 		}
 
-		DesignExporter.type = types.get(scrollAreaType.getState());
-		DesignExporter.designParameter = additionalDataValue;
+		DesignExporter.setType(types.get(scrollAreaType.getState()));
+		DesignExporter.setDesignParameter(additionalDataValue);
 		PhaseEditTheme.setVisualization(PhaseEditTheme.selectedDesign);
 	}
 

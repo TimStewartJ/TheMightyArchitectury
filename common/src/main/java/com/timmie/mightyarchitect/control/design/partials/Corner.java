@@ -3,17 +3,16 @@ package com.timmie.mightyarchitect.control.design.partials;
 import com.timmie.mightyarchitect.control.design.DesignSlice;
 import com.timmie.mightyarchitect.control.palette.PaletteBlockInfo;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 
 import java.util.List;
 import java.util.Map;
 
 public class Corner extends Design {
-	
+
 	@Override
-	public Design fromNBT(CompoundTag compound) {
+	public Design fromData(DesignData data) {
 		Corner corner = new Corner();
-		corner.applyNBT(compound);
+		corner.applyData(data);
 		return corner;
 	}
 	

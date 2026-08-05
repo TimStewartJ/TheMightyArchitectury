@@ -43,7 +43,7 @@ public enum ArchitectPhases {
 	
 	public String getDisplayTitle() {
 		if (this == ArchitectPhases.EditingThemes)
-			 return displayTitle + DesignExporter.theme.getDisplayName();
+			 return displayTitle + DesignExporter.getTheme().getDisplayName();
 		return displayTitle;
 	}
 

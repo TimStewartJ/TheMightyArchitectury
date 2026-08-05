@@ -2,25 +2,24 @@ package com.timmie.mightyarchitect.control.design;
 
 import com.timmie.mightyarchitect.AllBlocks;
 import com.timmie.mightyarchitect.AllPackets;
-import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.block.SliceMarkerBlock;
 import com.timmie.mightyarchitect.control.compose.Cuboid;
 import com.timmie.mightyarchitect.control.design.DesignSlice.DesignSliceTrait;
+import com.timmie.mightyarchitect.control.design.DesignSlice.SliceData;
+import com.timmie.mightyarchitect.control.design.partials.DesignData;
 import com.timmie.mightyarchitect.control.design.partials.Wall.ExpandBehaviour;
 import com.timmie.mightyarchitect.control.palette.BlockOrientation;
 import com.timmie.mightyarchitect.control.palette.Palette;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import com.timmie.mightyarchitect.control.phase.export.PhaseEditTheme;
+import com.timmie.mightyarchitect.control.storage.ArchitectPaths;
+import com.timmie.mightyarchitect.control.storage.ArchitectResources;
+import com.timmie.mightyarchitect.control.storage.ArchitectStorage;
+import com.timmie.mightyarchitect.control.storage.JsonStorage;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import com.timmie.mightyarchitect.networking.PlaceSignPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-//? if >=26 {
-//?} else {
-/*import net.minecraft.nbt.NbtUtils;
-*///?}
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -28,26 +27,86 @@ import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
+/**
+ * Scans a marked-out build in the world and writes it back as a design file.
+ * <p>
+ * The composer's export state - which theme, layer and type is being edited, and the palette being
+ * scanned against - used to be public static fields with no owner, so it survived disconnecting and
+ * reconnecting into a different world with a theme that no longer existed. It now lives on an
+ * instance {@link ArchitectStorage} can discard; the static accessors below keep the call sites
+ * unchanged in shape.
+ */
 public class DesignExporter {
 
 	// A clone, not defaultPalette() itself: the scanning palette is edited in place by the theme
 	// editor, and handing out the shared default would let that edit rewrite the palette every
 	// other theme starts from.
-	public static PaletteDefinition scanningPalette = PaletteDefinition.defaultPalette()
+	private PaletteDefinition scanningPalette = PaletteDefinition.defaultPalette()
 		.clone();
 
-	public static DesignTheme theme;
-	public static DesignType type;
-	public static DesignLayer layer;
+	private DesignTheme theme;
+	private DesignType type;
+	private DesignLayer layer;
 
-	public static int designParameter;
+	private int designParameter;
 
-	public static boolean changed = true;
+	private boolean changed = true;
+
+	private static DesignExporter get() {
+		return ArchitectStorage.designExporter();
+	}
+
+	public static PaletteDefinition getScanningPalette() {
+		return get().scanningPalette;
+	}
+
+	public static void setScanningPalette(PaletteDefinition palette) {
+		get().scanningPalette = palette;
+	}
+
+	public static DesignTheme getTheme() {
+		return get().theme;
+	}
+
+	public static DesignType getType() {
+		return get().type;
+	}
+
+	public static void setType(DesignType type) {
+		get().type = type;
+	}
+
+	public static DesignLayer getLayer() {
+		return get().layer;
+	}
+
+	public static void setLayer(DesignLayer layer) {
+		get().layer = layer;
+	}
+
+	public static int getDesignParameter() {
+		return get().designParameter;
+	}
+
+	public static void setDesignParameter(int designParameter) {
+		get().designParameter = designParameter;
+	}
+
+	public static void markChanged() {
+		get().changed = true;
+	}
 
 	public static String exportDesign(Level worldIn, BlockPos anchor) {
+		return get().export(worldIn, anchor);
+	}
+
+	private String export(Level worldIn, BlockPos anchor) {
 		BlockPos layerDefAnchor = anchor;
 		boolean found = false;
 		for (int range = 1; range < 100 && !found; range++) {
@@ -99,20 +158,11 @@ public class DesignExporter {
 
 		PhaseEditTheme.resetVisualization();
 
-		// Assemble nbt
-		CompoundTag compound = new CompoundTag();
-		//? if >=1.21.6 {
-		compound.putIntArray("Size", new int[] { size.getX(), size.getY(), size.getZ() });
-		//?} else {
-		/*compound.put("Size", NbtUtils.writeBlockPos(size));
-		*///?}
-
-		ListTag layers = new ListTag();
+		// Assemble the design
+		List<SliceData> layers = new ArrayList<>();
 
 		for (int y = 0; y < size.getY(); y++) {
-			CompoundTag layerTag = new CompoundTag();
 			DesignSliceTrait trait = DesignSliceTrait.values()[markerValueAt(worldIn, layerDefAnchor.above(y))];
-			layerTag.putString("Trait", trait.name());
 
 			StringBuilder data = new StringBuilder();
 			for (int z = 0; z < size.getZ(); z++) {
@@ -143,7 +193,6 @@ public class DesignExporter {
 				if (z < size.getZ() - 1)
 					data.append(",");
 			}
-			layerTag.putString("Blocks", data.toString());
 
 			StringBuilder orientationStrip = new StringBuilder();
 			for (int z = 0; z < size.getZ(); z++) {
@@ -155,53 +204,50 @@ public class DesignExporter {
 				if (z < size.getZ() - 1)
 					orientationStrip.append(",");
 			}
-			layerTag.putString("Facing", orientationStrip.toString());
 
-			layers.add(layerTag);
+			layers.add(new SliceData(trait, data.toString(), Optional.of(orientationStrip.toString())));
 		}
 
-		compound.put("Layers", layers);
-
-		// Additional data
+		// Additional data. Only the field this design type uses is set; the rest stay at the
+		// defaults the codec omits, so the file gains no keys it does not mean.
 		int data = designParameter;
+		int roofspan = 0;
+		int margin = 0;
+		int radius = 0;
+		ExpandBehaviour expandBehaviour = ExpandBehaviour.None;
+
 		switch (type) {
 		case ROOF:
-			compound.putInt("Roofspan", data);
+			roofspan = data;
 			break;
 		case FLAT_ROOF:
-			compound.putInt("Margin", data);
+			margin = data;
 			break;
 		case WALL:
 			if (data == -1)
 				return "Revisit the Design settings.";
-			ExpandBehaviour expandBehaviour = ExpandBehaviour.values()[data];
+			expandBehaviour = ExpandBehaviour.values()[data];
 			if (size.getX() == 1 && expandBehaviour == ExpandBehaviour.MergedRepeat)
 				return "Can't merge Walls of length 1. Use 'Repeat' instead.";
-			compound.putString("ExpandBehaviour", expandBehaviour.name());
 			break;
 		case TOWER_FLAT_ROOF:
 		case TOWER_ROOF:
 		case TOWER:
-			compound.putInt("Radius", data);
+			radius = data;
 			break;
 		default:
 			break;
 		}
 
-		// Write nbt to file
+		DesignData design = new DesignData(size, layers, roofspan, margin, radius, expandBehaviour);
 
-		String basePath = "themes";
-		FilesHelper.createFolderIfMissing(basePath);
-		String themePath = basePath + "/" + theme.getFilePath();
-		FilesHelper.createFolderIfMissing(themePath);
-		String layerPath = themePath + "/" + layer.getFilePath();
-		FilesHelper.createFolderIfMissing(layerPath);
-		String typePath = layerPath + "/" + type.getFilePath();
-		FilesHelper.createFolderIfMissing(typePath);
+		// Write it out
+		String relativeFolder = ArchitectPaths.THEMES + "/" + theme.getFilePath() + "/" + layer.getFilePath() + "/"
+			+ type.getFilePath();
+		Path folder = ArchitectPaths.resolve(relativeFolder);
+		FilesHelper.createFolderIfMissing(folder);
 
 		String filename = "";
-		String designPath = "";
-
 		BlockPos signPos = anchor.above();
 		if (worldIn.getBlockState(signPos)
 			.getBlock() == Blocks.SPRUCE_SIGN && worldIn.getBlockEntity(signPos) instanceof SignBlockEntity sign) {
@@ -213,26 +259,30 @@ public class DesignExporter {
 			filename = designFilename(signedName);
 		}
 
-		if (filename.isEmpty()) {
-			int index = 0;
-			while (index < 2048) {
-				filename = "design" + ((index == 0) ? "" : "_" + index) + ".json";
-				designPath = typePath + "/" + filename;
-				if (TheMightyArchitect.class.getClassLoader()
-					.getResource(designPath) == null && !Files.exists(Paths.get(designPath)))
-					break;
-				index++;
-			}
-		} else {
-			designPath = typePath + "/" + filename;
-		}
+		if (filename.isEmpty())
+			filename = nextFreeDesignName(relativeFolder, folder);
 
 		AllPackets.sendToServer(new PlaceSignPacket(layer.getDisplayName()
 			.substring(0, 1) + ". " + type.getDisplayName(), filename, signPos));
-		FilesHelper.saveTagCompoundAsJson(compound, designPath);
-		return designPath;
-		//
 
+		Path target = folder.resolve(filename);
+		JsonStorage.write(target, DesignData.CODEC, design);
+		return target.toString();
+	}
+
+	/**
+	 * @return the first {@code design_N.json} that neither the mod nor the user's folder already
+	 *         has - the built-in check matters because an exported design has to sit alongside the
+	 *         theme's shipped ones without shadowing one of them
+	 */
+	private static String nextFreeDesignName(String relativeFolder, Path folder) {
+		for (int index = 0; index < 2048; index++) {
+			String candidate = "design" + ((index == 0) ? "" : "_" + index) + ".json";
+			if (!ArchitectResources.exists(relativeFolder + "/" + candidate)
+				&& !Files.exists(folder.resolve(candidate)))
+				return candidate;
+		}
+		return "design.json";
 	}
 
 	/**
@@ -256,7 +306,11 @@ public class DesignExporter {
 	}
 
 	public static void setTheme(DesignTheme theme) {
-		DesignExporter.theme = theme;
+		get().applyTheme(theme);
+	}
+
+	private void applyTheme(DesignTheme theme) {
+		this.theme = theme;
 		scanningPalette = theme.getDefaultPalette();
 		if (layer == null || !theme.getLayers()
 			.contains(layer))
@@ -265,10 +319,6 @@ public class DesignExporter {
 			.contains(type))
 			type = DesignType.WALL;
 		changed = true;
-	}
-
-	public static DesignTheme getTheme() {
-		return theme;
 	}
 
 	private static boolean isMarker(Level worldIn, BlockPos pos) {

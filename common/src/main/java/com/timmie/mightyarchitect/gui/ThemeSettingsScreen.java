@@ -45,7 +45,7 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 
 	public ThemeSettingsScreen() {
 		super();
-		this.theme = DesignExporter.theme;
+		this.theme = DesignExporter.getTheme();
 	}
 
 	@Override

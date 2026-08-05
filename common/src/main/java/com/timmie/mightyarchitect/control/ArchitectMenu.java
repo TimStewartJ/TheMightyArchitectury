@@ -5,6 +5,8 @@ import com.timmie.mightyarchitect.control.design.DesignTheme;
 import com.timmie.mightyarchitect.control.design.ThemeStorage;
 import com.timmie.mightyarchitect.control.design.ThemeValidator;
 import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
+import com.timmie.mightyarchitect.control.storage.ArchitectPaths;
+import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import com.timmie.mightyarchitect.gui.ScreenHelper;
 import com.timmie.mightyarchitect.gui.TextInputPromptScreen;
 import com.timmie.mightyarchitect.gui.ThemeSettingsScreen;
@@ -14,7 +16,7 @@ import net.minecraft.util.Util;
 /*import net.minecraft.Util;*///?}
 import net.minecraft.client.Minecraft;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -138,9 +140,7 @@ public class ArchitectMenu {
 				ArchitectManager.enterPhase(ArchitectPhases.ListForEdit);
 				return false;
 			case 'o':
-				Util.getPlatform()
-					.openFile(Paths.get("themes/")
-						.toFile());
+				openThemeFolder();
 				return false;
 			case 'c':
 				ArchitectManager.unload();
@@ -207,30 +207,34 @@ public class ArchitectMenu {
 				return true;
 
 			case 'e':
-				String file = ThemeStorage.exportThemeFullyAsFile(DesignExporter.theme, true);
-				ArchitectManager.status("Exported Theme as " + file);
+				String file = ThemeStorage.exportThemeFullyAsFile(DesignExporter.getTheme(), true);
+				ArchitectManager.status("Exported Theme to " + file);
 				return false;
 
 			case 'j':
-				file = ThemeStorage.exportThemeFullyAsFile(DesignExporter.theme, false);
-				ArchitectManager.status("Exported Theme as " + file);
+				file = ThemeStorage.exportThemeFullyAsFile(DesignExporter.getTheme(), false);
+				ArchitectManager.status("Exported Theme to " + file);
+				return false;
+
+			case 'o':
+				openThemeFolder();
 				return false;
 
 			case 'r':
-				DesignExporter.theme.clearDesigns();
-				ThemeStorage.exportTheme(DesignExporter.theme);
+				DesignExporter.getTheme().clearDesigns();
+				ThemeStorage.exportTheme(DesignExporter.getTheme());
 				ArchitectManager.testRun = true;
-				ArchitectManager.compose(DesignExporter.theme);
+				ArchitectManager.compose(DesignExporter.getTheme());
 				return true;
 
 			case 'f':
-				DesignExporter.theme.clearDesigns();
-				ThemeStorage.exportTheme(DesignExporter.theme);
+				DesignExporter.getTheme().clearDesigns();
+				ThemeStorage.exportTheme(DesignExporter.getTheme());
 				ArchitectManager.unload();
 				return true;
 
 			case 'v':
-				ThemeValidator.check(DesignExporter.theme);
+				ThemeValidator.check(DesignExporter.getTheme());
 				return true;
 			}
 			break;
@@ -324,6 +328,7 @@ public class ArchitectMenu {
 			keybinds.put("R", "Run a Test");
 			keybinds.put("E", "Export Theme compressed");
 			keybinds.put("J", "Export Theme as Json");
+			keybinds.put("O", "Open Theme Folder");
 			keybinds.put("F", "Finish editing");
 			break;
 		default:
@@ -331,6 +336,20 @@ public class ArchitectMenu {
 		}
 
 		return keybinds;
+	}
+
+	/**
+	 * Opens the folder themes are read from and written to.
+	 * <p>
+	 * Reachable from the theme editor as well as from Manage Themes, because the editor is where
+	 * the export keys are and being told a file was written is not much use without a way to reach
+	 * it.
+	 */
+	private static void openThemeFolder() {
+		Path themes = ArchitectPaths.themes();
+		FilesHelper.createFolderIfMissing(themes);
+		Util.getPlatform()
+			.openFile(themes.toFile());
 	}
 
 	public static class KeyBindList {
