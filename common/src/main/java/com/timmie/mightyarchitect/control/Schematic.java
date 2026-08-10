@@ -185,6 +185,16 @@ public class Schematic {
 		return false;
 	}
 
+	/**
+	 * True while a palette change is being applied across ticks rather than in one pass.
+	 * <p>
+	 * Exposed for the client test harness: "the work was deferred rather than done inline" is the
+	 * property, and it is invisible from the outside otherwise.
+	 */
+	public boolean isMaterializing() {
+		return pendingMaterialization != null;
+	}
+
 	private void finishMaterializing() {
 		if (pendingMaterialization == null)
 			return;

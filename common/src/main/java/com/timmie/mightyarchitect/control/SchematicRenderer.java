@@ -206,6 +206,28 @@ public class SchematicRenderer {
 		changed = true;
 	}
 
+	/**
+	 * True while a redraw is spread across ticks rather than finished.
+	 * <p>
+	 * Exposed for the client test harness, which cannot otherwise tell a budgeted redraw from an
+	 * instant one - and "it was budgeted" is the whole property. A plain method rather than an
+	 * accessor mixin because a mixin target is a string that compiles green on all 25 targets and
+	 * fails at runtime on the one where the field moved.
+	 */
+	public boolean isRedrawing() {
+		return pendingPositions != null;
+	}
+
+	/**
+	 * True while there is complete geometry to draw.
+	 * <p>
+	 * The field this reads is declared once per layer-type arm, but {@code isEmpty()} is the same
+	 * call on all of them, so this needs no guard of its own.
+	 */
+	public boolean hasGeometry() {
+		return !usedBlockRenderLayers.isEmpty();
+	}
+
 	public void tick() {
 		if (!active)
 			return;
