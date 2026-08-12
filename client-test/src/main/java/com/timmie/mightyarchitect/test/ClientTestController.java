@@ -34,6 +34,8 @@ import com.timmie.mightyarchitect.gui.widgets.Indicator;
 import com.timmie.mightyarchitect.gui.widgets.Label;
 import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
+import com.timmie.mightyarchitect.platform.MightyPacket;
+import com.timmie.mightyarchitect.platform.PacketSender;
 import com.timmie.mightyarchitect.test.mixin.ArchitectManagerAccessor;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
@@ -337,7 +339,8 @@ public final class ClientTestController {
             "architect_wand identity recognized");
         InstantPrintPacket printProbe = InstantPrintPacket.sendSchematic(
             Map.of(BlockPos.ZERO, Blocks.STONE.defaultBlockState()), BlockPos.ZERO).get(0);
-        check(AllPackets.canSendToServer(printProbe), "server advertises the instant-print payload");
+        check(!AllPackets.canSendToServer(printProbe),
+            "vanilla server does not advertise the instant-print payload");
         check(!PaletteStorage.getResourcePaletteNames().isEmpty(), "resource palettes loaded");
         check(!ThemeStorage.getIncluded().isEmpty(), "included themes loaded");
 
@@ -357,16 +360,43 @@ public final class ClientTestController {
     }
 
     /**
-     * The harness is connected to a dedicated server, so the old singleplayer predicate would send
-     * this down the command fallback. An empty sketch exercises routing without changing the world.
+     * Exercises both transport decisions without changing the world: the harness's real vanilla
+     * server must retain the command fallback, while an injected available sender stands in for a
+     * modded multiplayer server.
      */
     private static void checkModdedServerPrintRoute() {
         ArchitectManager.compose(ThemeStorage.getIncluded().get(0));
         ArchitectManager.getModel().setSketch(new Sketch());
         ArchitectManager.print();
+        check(ArchitectManager.inPhase(ArchitectPhases.PrintingToMultiplayer),
+            "vanilla multiplayer printing selected the command fallback");
+        ArchitectManager.unload();
 
-        check(ArchitectManager.inPhase(ArchitectPhases.Empty),
-            "modded multiplayer printing selected the payload transport");
+        int[] sent = { 0 };
+        PacketSender actual = AllPackets.setSender(new PacketSender() {
+            @Override
+            public boolean canSendToServer(MightyPacket packet) {
+                return true;
+            }
+
+            @Override
+            public void sendToServer(MightyPacket packet) {
+                sent[0]++;
+            }
+        });
+        try {
+            ArchitectManager.compose(ThemeStorage.getIncluded().get(0));
+            ArchitectManager.getModel().setSketch(new Sketch());
+            ArchitectManager.print();
+
+            check(ArchitectManager.inPhase(ArchitectPhases.Empty),
+                "modded multiplayer printing selected the payload transport");
+            check(sent[0] == 1, "payload transport sent the print packet");
+        } finally {
+            AllPackets.setSender(actual);
+            if (!ArchitectManager.inPhase(ArchitectPhases.Empty))
+                ArchitectManager.unload();
+        }
     }
 
     /**

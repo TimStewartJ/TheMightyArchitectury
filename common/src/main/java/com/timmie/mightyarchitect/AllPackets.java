@@ -57,8 +57,10 @@ public class AllPackets {
 		}
 	};
 
-	public static void setSender(PacketSender value) {
-		sender = value;
+	public static PacketSender setSender(PacketSender value) {
+		PacketSender previous = sender;
+		sender = java.util.Objects.requireNonNull(value, "value");
+		return previous;
 	}
 
 	public static boolean canSendToServer(MightyPacket packet) {
