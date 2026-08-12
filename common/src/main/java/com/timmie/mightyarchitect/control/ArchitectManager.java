@@ -39,6 +39,7 @@ import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 import java.nio.file.Path;
+import java.util.List;
 
 public class ArchitectManager {
 
@@ -125,10 +126,10 @@ public class ArchitectManager {
 		if (getModel().getSketch() == null)
 			return;
 
-		Minecraft mc = Minecraft.getInstance();
+		List<InstantPrintPacket> packets = getModel().getPackets();
 
-		if (mc.hasSingleplayerServer()) {
-			for (InstantPrintPacket packet : getModel().getPackets())
+		if (!packets.isEmpty() && AllPackets.canSendToServer(packets.get(0))) {
+			for (InstantPrintPacket packet : packets)
 				AllPackets.sendToServer(packet);
 			MightyClient.renderer.setActive(false);
 			status("Printed result into world.");

@@ -46,11 +46,23 @@ public class AllPackets {
 	public static final Function<FriendlyByteBuf, SetHotbarItemPacket> SET_HOTBAR_ITEM_DECODER = SetHotbarItemPacket::new;
 	*///?}
 
-	private static PacketSender sender = packet -> {
+	private static PacketSender sender = new PacketSender() {
+		@Override
+		public boolean canSendToServer(MightyPacket packet) {
+			return false;
+		}
+
+		@Override
+		public void sendToServer(MightyPacket packet) {
+		}
 	};
 
 	public static void setSender(PacketSender value) {
 		sender = value;
+	}
+
+	public static boolean canSendToServer(MightyPacket packet) {
+		return sender.canSendToServer(packet);
 	}
 
 	public static void sendToServer(MightyPacket packet) {

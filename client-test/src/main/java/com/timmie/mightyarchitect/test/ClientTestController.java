@@ -8,6 +8,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.timmie.mightyarchitect.AllBlocks;
 import com.timmie.mightyarchitect.AllItems;
+import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.ArchitectManager;
@@ -32,6 +33,7 @@ import com.timmie.mightyarchitect.gui.TextInputPromptScreen;
 import com.timmie.mightyarchitect.gui.widgets.Indicator;
 import com.timmie.mightyarchitect.gui.widgets.Label;
 import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
+import com.timmie.mightyarchitect.networking.InstantPrintPacket;
 import com.timmie.mightyarchitect.test.mixin.ArchitectManagerAccessor;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
@@ -333,9 +335,13 @@ public final class ClientTestController {
             "slice_marker registered");
         check(AllItems.ARCHITECT_WAND.typeOf(new ItemStack(AllItems.ARCHITECT_WAND.get())),
             "architect_wand identity recognized");
+        InstantPrintPacket printProbe = InstantPrintPacket.sendSchematic(
+            Map.of(BlockPos.ZERO, Blocks.STONE.defaultBlockState()), BlockPos.ZERO).get(0);
+        check(AllPackets.canSendToServer(printProbe), "server advertises the instant-print payload");
         check(!PaletteStorage.getResourcePaletteNames().isEmpty(), "resource palettes loaded");
         check(!ThemeStorage.getIncluded().isEmpty(), "included themes loaded");
 
+        checkModdedServerPrintRoute();
         checkPaletteRoundTrip();
 
         // WrappedWorld overrides methods NeoForge adds to Level that vanilla does not have. Those
@@ -348,6 +354,19 @@ public final class ClientTestController {
             "WrappedWorld loads and delegates to the wrapped level");
 
         advance(Stage.CAPTURE_BASELINE);
+    }
+
+    /**
+     * The harness is connected to a dedicated server, so the old singleplayer predicate would send
+     * this down the command fallback. An empty sketch exercises routing without changing the world.
+     */
+    private static void checkModdedServerPrintRoute() {
+        ArchitectManager.compose(ThemeStorage.getIncluded().get(0));
+        ArchitectManager.getModel().setSketch(new Sketch());
+        ArchitectManager.print();
+
+        check(ArchitectManager.inPhase(ArchitectPhases.Empty),
+            "modded multiplayer printing selected the payload transport");
     }
 
     /**
