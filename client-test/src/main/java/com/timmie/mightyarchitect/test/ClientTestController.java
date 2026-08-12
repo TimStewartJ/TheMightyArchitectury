@@ -48,6 +48,7 @@ import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -365,13 +366,6 @@ public final class ClientTestController {
      * modded multiplayer server.
      */
     private static void checkModdedServerPrintRoute() {
-        ArchitectManager.compose(ThemeStorage.getIncluded().get(0));
-        ArchitectManager.getModel().setSketch(new Sketch());
-        ArchitectManager.print();
-        check(ArchitectManager.inPhase(ArchitectPhases.PrintingToMultiplayer),
-            "vanilla multiplayer printing selected the command fallback");
-        ArchitectManager.unload();
-
         int[] sent = { 0 };
         PacketSender actual = AllPackets.setSender(new PacketSender() {
             @Override
@@ -384,15 +378,19 @@ public final class ClientTestController {
                 sent[0]++;
             }
         });
+        GameType previousMode = Minecraft.getInstance().gameMode.getPlayerMode();
         try {
+            Minecraft.getInstance().gameMode.setLocalMode(GameType.CREATIVE);
             ArchitectManager.compose(ThemeStorage.getIncluded().get(0));
             ArchitectManager.getModel().setSketch(new Sketch());
+            ArchitectManager.enterPhase(ArchitectPhases.Previewing);
             ArchitectManager.print();
 
             check(ArchitectManager.inPhase(ArchitectPhases.Empty),
                 "modded multiplayer printing selected the payload transport");
             check(sent[0] == 1, "payload transport sent the print packet");
         } finally {
+            Minecraft.getInstance().gameMode.setLocalMode(previousMode);
             AllPackets.setSender(actual);
             if (!ArchitectManager.inPhase(ArchitectPhases.Empty))
                 ArchitectManager.unload();

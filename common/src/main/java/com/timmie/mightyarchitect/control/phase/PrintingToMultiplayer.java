@@ -23,23 +23,9 @@ public class PrintingToMultiplayer extends PhaseBase {
 	private static final int POSITION_CHECKS_PER_TICK = 8_192;
 
 	private Deque<MultiplayerPrintCommands.Command> remaining;
-	private boolean success;
 
 	@Override
 	public void whenEntered() {
-		// check for permissions for the setblock command
-		//? if >=1.21.11 {
-		if (!Minecraft.getInstance().player.permissions().hasPermission(net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER)) {
-		//?} else {
-		/*if (!Minecraft.getInstance().player.hasPermissions(2)) {
-		*///?}
-			success = false;
-
-			return;
-		}
-
-		success = true;
-
 		// Printing deliberately does NOT touch the server's gamerules. It used to turn off
 		// sendCommandFeedback and logAdminCommands and turn them back on afterwards, which
 		// silently disabled the server's admin-command audit log for everyone, and left it
@@ -57,19 +43,6 @@ public class PrintingToMultiplayer extends PhaseBase {
 
 	@Override
 	public void update() {
-		// exit state if not successful
-		if (!success) {
-			//? if >=26 {
-			Minecraft.getInstance().player.sendSystemMessage(Component.literal(
-							ChatFormatting.RED + "You do not have permission to print on this server."));
-			//?} else {
-			/*Minecraft.getInstance().player.displayClientMessage(Component.literal(
-							ChatFormatting.RED + "You do not have permission to print on this server."), false);
-			*///?}
-			ArchitectManager.enterPhase(ArchitectPhases.Previewing);
-			return;
-		}
-
 		int sent = 0;
 		int checked = 0;
 		while (sent < COMMANDS_PER_TICK && checked < POSITION_CHECKS_PER_TICK) {
@@ -110,14 +83,12 @@ public class PrintingToMultiplayer extends PhaseBase {
 
 	@Override
 	public void whenExited() {
-		if (success) {
-			//? if >=26 {
-			Minecraft.getInstance().player.sendSystemMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"));
-			//?} else {
-			/*Minecraft.getInstance().player.displayClientMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"),
-					false);
-			*///?}
-		}
+		//? if >=26 {
+		Minecraft.getInstance().player.sendSystemMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"));
+		//?} else {
+		/*Minecraft.getInstance().player.displayClientMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"),
+				false);
+		*///?}
 	}
 
 	@Override
