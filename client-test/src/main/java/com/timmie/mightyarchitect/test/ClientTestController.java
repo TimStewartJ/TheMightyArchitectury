@@ -11,11 +11,14 @@ import com.timmie.mightyarchitect.AllItems;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.ArchitectManager;
+import com.timmie.mightyarchitect.control.Schematic;
 import com.timmie.mightyarchitect.control.design.DesignTheme;
 import com.timmie.mightyarchitect.control.design.DesignExporter;
 import com.timmie.mightyarchitect.control.design.Sketch;
 import com.timmie.mightyarchitect.control.design.ThemeStorage;
+import com.timmie.mightyarchitect.control.palette.BlockOrientation;
 import com.timmie.mightyarchitect.control.palette.Palette;
+import com.timmie.mightyarchitect.control.palette.PaletteBlockInfo;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import com.timmie.mightyarchitect.control.palette.PaletteStorage;
 import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
@@ -41,6 +44,7 @@ import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -55,9 +59,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 
 public final class ClientTestController {
 
@@ -80,6 +87,8 @@ public final class ClientTestController {
         CAPTURE_ALIGN_OUTLINE,
         CAPTURE_LABEL_BASELINE,
         CAPTURE_LABEL_TEXT,
+        BUILD_LARGE_SKETCH,
+        VERIFY_REDRAW_BUDGET,
         VERIFY_RENDER,
         FINISHED
     }
@@ -139,6 +148,20 @@ public final class ClientTestController {
     /** Characters typed at the text prompt; read back from its abort callback on close. */
     private static final String TYPED_PROBE = "clienttest";
 
+    /**
+     * Side of the synthetic cube the budget stage builds.
+     * <p>
+     * Sized so both budgets are crossed several times over rather than just barely: 36 gives
+     * {@value #LARGE_SKETCH_ENTRIES} palette entries against a budget of 8192, and a bounds volume
+     * of 37³ = 50,653 tesselation steps against 4096 - around six and twelve slices respectively.
+     * A cube that merely cleared each threshold once would make the "spread over at least two
+     * ticks" assertions turn on where the harness's tick happens to fall relative to the mod's,
+     * which is exactly the kind of gate that goes intermittently red on one node in twenty-five.
+     * Only the cube's surface emits quads, because the renderer culls against its neighbours.
+     */
+    private static final int LARGE_SKETCH_SIDE = 36;
+    private static final int LARGE_SKETCH_ENTRIES = LARGE_SKETCH_SIDE * LARGE_SKETCH_SIDE * LARGE_SKETCH_SIDE;
+
     private static final List<String> checks = new ArrayList<>();
     private static Stage stage = Stage.CONNECT;
     private static int totalTicks;
@@ -160,6 +183,13 @@ public final class ClientTestController {
     private static int worldRenderFrames;
     private static int hudRenderFrames;
     private static int composerOverlayFrames;
+    private static int materializeTicks;
+    private static int redrawTicks;
+    private static int secondRedrawTicks;
+    private static int geometryGapTicks;
+    private static int tokenDriftTicks;
+    private static boolean paletteSwapped;
+    private static Object modelGenerationToken;
 
     private ClientTestController() {
     }
@@ -221,6 +251,8 @@ public final class ClientTestController {
                 case CAPTURE_ALIGN_OUTLINE -> captureAlignOutline(minecraft);
                 case CAPTURE_LABEL_BASELINE -> captureLabelBaseline(minecraft);
                 case CAPTURE_LABEL_TEXT -> captureLabelText(minecraft);
+                case BUILD_LARGE_SKETCH -> buildLargeSketch(minecraft);
+                case VERIFY_REDRAW_BUDGET -> verifyRedrawBudget(minecraft);
                 case VERIFY_RENDER -> verifyRender(minecraft);
                 case FINISHED -> {
                 }
@@ -255,7 +287,7 @@ public final class ClientTestController {
      * and vanilla throws a {@link NullPointerException} that disconnects the client with
      * "Network Protocol Error".</li>
      * <li>Capturing early compares splash frames instead of game frames, which fails checks that
-     * should pass and silently passes checks that should fail — the red splash on its own carries
+     * should pass and silently passes checks that should fail - the red splash on its own carries
      * enough distinct colours to satisfy the palette grid probe.</li>
      * </ul>
      * Waiting here makes the harness behave like a player, who cannot leave the main menu until
@@ -308,7 +340,7 @@ public final class ClientTestController {
 
         // WrappedWorld overrides methods NeoForge adds to Level that vanilla does not have. Those
         // resolve when the class is verified, so a wrong override is an AbstractMethodError the
-        // moment the class first loads — which the build matrix cannot catch. It is client-only
+        // moment the class first loads - which the build matrix cannot catch. It is client-only
         // (on 26.1 it implements the client BlockAndTintGetter), so this is the right place.
         BlockPos probe = minecraft.player.blockPosition();
         WrappedWorld wrapped = new WrappedWorld(minecraft.level);
@@ -738,7 +770,7 @@ public final class ClientTestController {
         check(diff.luminanceSpread() >= MIN_LABEL_LUMINANCE_SPREAD,
             "world-space measurement label legible against its backdrop (luminance spread "
                 + round(diff.luminanceSpread()) + ")");
-        advance(Stage.VERIFY_RENDER);
+        advance(Stage.BUILD_LARGE_SKETCH);
     }
 
     /** Uses the room dimension colour, the one pairing that has actually gone unreadable. */
@@ -757,6 +789,145 @@ public final class ClientTestController {
         MightyClient.outliner.showAABB(PROBE_SLOT, box)
             .colored(0xFFFF0000)
             .lineWidth(0.125f);
+    }
+
+    /**
+     * Builds a schematic large enough that both the palette walk and the tesselation have to be
+     * spread across ticks, then hands it to the renderer the way {@code PhasePreviewing} does.
+     * <p>
+     * <b>Why this stage exists.</b> Every other stage drives {@code new Sketch()} - an empty one.
+     * An empty sketch assembles to empty maps, so the palette walk has nothing to do and the
+     * renderer's bounds come back null; the budgeted paths never execute at all. The matrix was
+     * therefore green on 25 targets while the feature under test had never run once. A gate that
+     * only ever renders an empty sketch cannot see a redraw defect, in exactly the way a diff that
+     * only asks "did pixels change" cannot see a black-on-black label.
+     * <p>
+     * The sketch is synthesised rather than composed from a theme's designs on purpose: the design
+     * picker's output depends on which designs a theme happens to ship for the requested spans, so
+     * composing a real building would make the volume - and therefore whether the budget engages at
+     * all - a property of the content rather than of the test.
+     */
+    private static void buildLargeSketch(Minecraft minecraft) {
+        Schematic model = ArchitectManager.getModel();
+
+        // The planning tool sets this on the first placed room; nothing has placed one here.
+        model.setAnchor(minecraft.player.blockPosition());
+        model.setSketch(new FixedSketch(solidCube(LARGE_SKETCH_SIDE, Palette.HEAVY_PRIMARY)));
+
+        // The assertion that would have caught the regression this whole stage exists to cover:
+        // with no budget, setSketch applies the entire palette walk before it returns.
+        check(model.isMaterializing(),
+            "a " + LARGE_SKETCH_ENTRIES + "-entry sketch deferred its palette walk instead of "
+                + "applying it inline");
+
+        MightyClient.renderer.display(model);
+        check(!MightyClient.renderer.hasGeometry(), "renderer starts with no geometry for a new sketch");
+
+        modelGenerationToken = McCompat.modelGeneration(minecraft);
+        check(modelGenerationToken != null, "model generation token resolved");
+
+        materializeTicks = 0;
+        redrawTicks = 0;
+        secondRedrawTicks = 0;
+        geometryGapTicks = 0;
+        tokenDriftTicks = 0;
+        paletteSwapped = false;
+        advance(Stage.VERIFY_REDRAW_BUDGET);
+    }
+
+    /**
+     * Watches one full build and one palette swap go through, asserting the three properties the
+     * budgeting rests on: the work is spread over several ticks, it finishes, and the geometry
+     * already on screen is never taken away while a replacement is being built.
+     */
+    private static void verifyRedrawBudget(Minecraft minecraft) {
+        Schematic model = ArchitectManager.getModel();
+
+        // A token that changed every tick would restart the redraw forever, so the build below
+        // would never finish - this reports that as a token fault rather than as a timeout. It is
+        // recorded once, at the end, rather than as one check per tick.
+        if (McCompat.modelGeneration(minecraft) != modelGenerationToken)
+            tokenDriftTicks++;
+
+        if (model.isMaterializing())
+            materializeTicks++;
+        else if (MightyClient.renderer.isRedrawing())
+            if (paletteSwapped)
+                secondRedrawTicks++;
+            else
+                redrawTicks++;
+
+        // Once the first build has landed, the preview must never go blank again: a palette swap
+        // rebuilds behind the geometry already on screen rather than clearing it first.
+        if (paletteSwapped && !MightyClient.renderer.hasGeometry())
+            geometryGapTicks++;
+
+        if (model.isMaterializing() || MightyClient.renderer.isRedrawing())
+            return;
+
+        if (!paletteSwapped) {
+            check(materializeTicks >= 2,
+                "palette walk was spread over " + materializeTicks + " ticks");
+            check(redrawTicks >= 2, "tesselation was spread over " + redrawTicks + " ticks");
+            check(MightyClient.renderer.hasGeometry(), "geometry present once the first build completed");
+
+            PaletteDefinition swapped = PaletteDefinition.defaultPalette().clone();
+            swapped.setName("Client Test Swap");
+            swapped.put(Palette.HEAVY_PRIMARY, Blocks.GOLD_BLOCK);
+            model.swapPrimaryPalette(swapped);
+            MightyClient.renderer.update();
+
+            check(model.isMaterializing(), "a palette swap deferred its walk too");
+            paletteSwapped = true;
+            return;
+        }
+
+        check(secondRedrawTicks >= 2,
+            "the swap's tesselation was spread over " + secondRedrawTicks + " ticks");
+        check(geometryGapTicks == 0,
+            "the preview never went blank during the swap (" + geometryGapTicks + " blank ticks)");
+        check(MightyClient.renderer.hasGeometry(), "geometry present once the swap completed");
+        check(tokenDriftTicks == 0,
+            "model generation token stable while resources were untouched (" + tokenDriftTicks
+                + " drifting ticks)");
+        advance(Stage.VERIFY_RENDER);
+    }
+
+    /** A solid cube of one palette entry, anchored at the origin. */
+    private static Map<BlockPos, PaletteBlockInfo> solidCube(int side, Palette palette) {
+        Map<BlockPos, PaletteBlockInfo> blocks = new HashMap<>();
+        for (int x = 0; x < side; x++)
+            for (int y = 0; y < side; y++)
+                for (int z = 0; z < side; z++)
+                    blocks.put(new BlockPos(x, y, z), info(palette));
+        return blocks;
+    }
+
+    /**
+     * {@code afterPosition} is filled in by the real {@code Sketch.assemble}, and
+     * {@code PaletteDefinition.get} dereferences it.
+     */
+    private static PaletteBlockInfo info(Palette palette) {
+        PaletteBlockInfo blockInfo = new PaletteBlockInfo(palette, BlockOrientation.NONE);
+        blockInfo.afterPosition = BlockOrientation.NONE;
+        return blockInfo;
+    }
+
+    /** A sketch that assembles to a fixed set of blocks instead of to placed designs. */
+    private static final class FixedSketch extends Sketch {
+
+        private final Vector<Map<BlockPos, PaletteBlockInfo>> assembled;
+
+        private FixedSketch(Map<BlockPos, PaletteBlockInfo> primaryLayer) {
+            assembled = new Vector<>(2);
+            assembled.add(primaryLayer);
+            assembled.add(new HashMap<>());
+        }
+
+        @Override
+        public Vector<Map<BlockPos, PaletteBlockInfo>> assemble() {
+            return assembled;
+        }
     }
 
     private static void verifyRender(Minecraft minecraft) {

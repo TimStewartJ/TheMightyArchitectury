@@ -17,6 +17,17 @@ import java.util.*;
 
 public class Schematic {
 
+	/**
+	 * Palette entries applied per client tick while a materialization is in flight.
+	 * <p>
+	 * Every palette swap, reroll and preview step re-applies the palette to the whole build volume.
+	 * That used to happen inside whichever input handler asked for it.
+	 */
+	private static final int ENTRY_BUDGET_PER_TICK = 8192;
+
+	/** Below this there is nothing worth spreading, so small edits stay instant. */
+	private static final int INLINE_ENTRY_LIMIT = ENTRY_BUDGET_PER_TICK;
+
 	private BlockPos anchor;
 	private GroundPlan groundPlan;
 	private PaletteDefinition primaryPalette;
@@ -26,6 +37,8 @@ public class Schematic {
 	private Vector<Map<BlockPos, PaletteBlockInfo>> assembledSketch;
 	private TemplateBlockAccess materializedSketch;
 	private Cuboid bounds;
+
+	private Materialization pendingMaterialization;
 
 	private PaletteDefinition editedPalette;
 	private boolean editingPrimary;
@@ -79,7 +92,13 @@ public class Schematic {
 		return secondaryPalette;
 	}
 
+	/**
+	 * @return the materialized sketch, finishing a pending materialization first. Callers that need
+	 *         the blocks - printing, exporting - need all of them, so this is where a budget stops
+	 *         applying.
+	 */
 	public TemplateBlockAccess getMaterializedSketch() {
+		finishMaterializing();
 		return materializedSketch;
 	}
 
@@ -88,11 +107,12 @@ public class Schematic {
 	}
 
 	public Cuboid getLocalBounds() {
+		finishMaterializing();
 		return bounds;
 	}
 
 	public Cuboid getGlobalBounds() {
-		Cuboid clone = bounds.clone();
+		Cuboid clone = getLocalBounds().clone();
 		clone.move(anchor.getX(), anchor.getY(), anchor.getZ());
 		return clone;
 	}
@@ -138,32 +158,133 @@ public class Schematic {
 	}
 
 	private void materializeSketch(PaletteDefinition primary, PaletteDefinition secondary) {
-		bounds = null;
+		// A new request supersedes one still in flight rather than queueing behind it: cycling
+		// through palettes should cost one materialization, not one per press.
+		pendingMaterialization = new Materialization(primary, secondary, assembledSketch.get(0),
+			assembledSketch.get(1));
 
-		HashMap<BlockPos, BlockState> blockMap = new HashMap<>();
-		assembledSketch.get(0)
-			.forEach((pos, paletteInfo) -> {
-				BlockState state = primary.get(paletteInfo);
-				blockMap.put(pos, state);
-				checkBounds(pos);
-			});
-		assembledSketch.get(1)
-			.forEach((pos, paletteInfo) -> {
-				if (!assembledSketch.get(0)
-					.containsKey(pos)
-					|| !assembledSketch.get(0)
-						.get(pos).palette.isPrefferedOver(paletteInfo.palette)) {
-					BlockState state = secondary.get(paletteInfo);
-					blockMap.put(pos, state);
-					checkBounds(pos);
-				}
-			});
+		if (pendingMaterialization.total <= INLINE_ENTRY_LIMIT)
+			finishMaterializing();
+	}
 
+	/**
+	 * Applies a slice of a pending palette change.
+	 * <p>
+	 * Driven from the renderer's tick, which is the one place that both runs every tick and knows
+	 * whether the result is being looked at.
+	 *
+	 * @return true while work remains
+	 */
+	public boolean advanceMaterialization() {
+		if (pendingMaterialization == null)
+			return false;
+		if (!pendingMaterialization.advance(ENTRY_BUDGET_PER_TICK))
+			return true;
+
+		publishMaterialization();
+		return false;
+	}
+
+	/**
+	 * True while a palette change is being applied across ticks rather than in one pass.
+	 * <p>
+	 * Exposed for the client test harness: "the work was deferred rather than done inline" is the
+	 * property, and it is invisible from the outside otherwise.
+	 */
+	public boolean isMaterializing() {
+		return pendingMaterialization != null;
+	}
+
+	private void finishMaterializing() {
+		if (pendingMaterialization == null)
+			return;
+		pendingMaterialization.advance(Integer.MAX_VALUE);
+		publishMaterialization();
+	}
+
+	/**
+	 * Swaps the finished result in.
+	 * <p>
+	 * Building the {@link TemplateBlockAccess} is the one step that stays whole: it settles every
+	 * block against its neighbours in two passes, so a half-applied one would show fences and walls
+	 * connected to blocks that are about to change. It is also the cheap half now that it no longer
+	 * allocates a {@code RandomSource} per neighbour per block.
+	 */
+	private void publishMaterialization() {
+		bounds = pendingMaterialization.bounds;
+		Map<BlockPos, BlockState> blockMap = pendingMaterialization.blockMap;
+		pendingMaterialization = null;
 		materializedSketch = new TemplateBlockAccess(blockMap, bounds, anchor);
 	}
 
-	private void checkBounds(BlockPos pos) {
-		bounds = growToInclude(bounds, pos);
+	/**
+	 * One palette change, applied a slice at a time.
+	 * <p>
+	 * It accumulates into its own map and its own bounding box, so the sketch and bounds already on
+	 * display stay coherent until the whole thing is ready to replace them.
+	 * <p>
+	 * Public for the same reason {@link Schematic#growToInclude} is: this is the half of
+	 * materializing a sketch that needs no world, so it is the half a unit test can pin down. What
+	 * it has to guarantee is that applying the palette in slices lands on exactly the same blocks
+	 * as applying it in one pass, and that is not a property a screenshot can check.
+	 */
+	public static final class Materialization {
+
+		private final PaletteDefinition primary;
+		private final PaletteDefinition secondary;
+		private final Map<BlockPos, PaletteBlockInfo> primaryLayer;
+		private final Iterator<Map.Entry<BlockPos, PaletteBlockInfo>> primaryEntries;
+		private final Iterator<Map.Entry<BlockPos, PaletteBlockInfo>> secondaryEntries;
+
+		/** The blocks applied so far; complete once {@link #advance} has returned true. */
+		public final Map<BlockPos, BlockState> blockMap;
+		/** Entries across both layers, which is what the budget is measured against. */
+		public final int total;
+		/** The box grown over every position applied so far, or null before the first. */
+		public Cuboid bounds;
+
+		public Materialization(PaletteDefinition primary, PaletteDefinition secondary,
+			Map<BlockPos, PaletteBlockInfo> primaryLayer, Map<BlockPos, PaletteBlockInfo> secondaryLayer) {
+			this.primary = primary;
+			this.secondary = secondary;
+			this.primaryLayer = primaryLayer;
+			this.primaryEntries = primaryLayer.entrySet()
+				.iterator();
+			this.secondaryEntries = secondaryLayer.entrySet()
+				.iterator();
+			this.total = primaryLayer.size() + secondaryLayer.size();
+			this.blockMap = new HashMap<>(Math.max(16, total));
+		}
+
+		/** @return true once every entry of both layers has been applied */
+		public boolean advance(int budget) {
+			int remaining = budget;
+
+			while (remaining > 0 && primaryEntries.hasNext()) {
+				remaining--;
+				Map.Entry<BlockPos, PaletteBlockInfo> entry = primaryEntries.next();
+				blockMap.put(entry.getKey(), primary.get(entry.getValue()));
+				bounds = growToInclude(bounds, entry.getKey());
+			}
+			if (primaryEntries.hasNext())
+				return false;
+
+			while (remaining > 0 && secondaryEntries.hasNext()) {
+				remaining--;
+				Map.Entry<BlockPos, PaletteBlockInfo> entry = secondaryEntries.next();
+				BlockPos pos = entry.getKey();
+				PaletteBlockInfo paletteInfo = entry.getValue();
+
+				// The primary layer wins wherever it says it should
+				PaletteBlockInfo covering = primaryLayer.get(pos);
+				if (covering != null && covering.palette.isPrefferedOver(paletteInfo.palette))
+					continue;
+
+				blockMap.put(pos, secondary.get(paletteInfo));
+				bounds = growToInclude(bounds, pos);
+			}
+			return !secondaryEntries.hasNext();
+		}
 	}
 
 	/**
@@ -216,19 +337,20 @@ public class Schematic {
 		template.setAuthor(Minecraft.getInstance().player.getName()
 			.getString());
 
-		materializedSketch.localMode(true);
-		template.fillFromWorld(materializedSketch, materializedSketch.getBounds()
+		TemplateBlockAccess sketch = getMaterializedSketch();
+		sketch.localMode(true);
+		template.fillFromWorld(sketch, sketch.getBounds()
 			.getOrigin(),
-			materializedSketch.getBounds()
+			sketch.getBounds()
 				.getSize(),
 			false, null);
-		materializedSketch.localMode(false);
+		sketch.localMode(false);
 
 		return template;
 	}
 
 	public List<InstantPrintPacket> getPackets() {
-		return InstantPrintPacket.sendSchematic(materializedSketch.getBlockMap(), anchor);
+		return InstantPrintPacket.sendSchematic(getMaterializedSketch().getBlockMap(), anchor);
 	}
 
 	public boolean isEditingPrimary() {

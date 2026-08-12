@@ -60,6 +60,15 @@ public class PaletteDefinition {
 	private static PaletteDefinition defaultPalette;
 
 	/**
+	 * Reverse index for {@link #getKeyIgnoreRotation(BlockState)}, built on demand.
+	 * <p>
+	 * That lookup is called once per block by {@link #scan(BlockState)} and rebuilt the whole
+	 * palette into a fresh {@code HashMap} every time, which made scanning a build allocate one map
+	 * per block. Null means "not built yet"; every write to {@link #definition} drops it.
+	 */
+	private Map<Block, Palette> blockToKey;
+
+	/**
 	 * The palette every other one starts from.
 	 * <p>
 	 * This is a single shared instance and {@link PaletteDefinition} is mutable, so anything that
@@ -95,7 +104,7 @@ public class PaletteDefinition {
 	public PaletteDefinition clone() {
 		PaletteDefinition clone = new PaletteDefinition(name);
 		clone.clear = defaultPalette().clear();
-		clone.definition = new HashMap<>(defaultPalette().getDefinition());
+		clone.definition = new HashMap<>(defaultPalette().definition);
 		definition.forEach((key, value) -> clone.definition.put(key, value));
 		clone.definition.put(Palette.CLEAR, Blocks.BARRIER.defaultBlockState());
 		return clone;
@@ -115,10 +124,17 @@ public class PaletteDefinition {
 		if (block.getBlock() instanceof TrapDoorBlock)
 			block = block.setValue(TrapDoorBlock.OPEN, true);
 		definition.put(key, block);
+		blockToKey = null;
 		return this;
 	}
 
+	/**
+	 * @return the live slot map. Callers that write to it must not expect
+	 *         {@link #getKeyIgnoreRotation(BlockState)} to have seen the write, which is why the
+	 *         reverse index is dropped here rather than trusting them.
+	 */
 	public Map<Palette, BlockState> getDefinition() {
+		blockToKey = null;
 		return definition;
 	}
 
@@ -297,15 +313,13 @@ public class PaletteDefinition {
 	}
 
 	protected Palette getKeyIgnoreRotation(BlockState state) {
-		Map<Block, Palette> scanMap = new HashMap<>();
-		definition.forEach((palette, block) -> {
-			scanMap.put(block.getBlock(), palette);
-		});
-		
-		if (scanMap.containsKey(state.getBlock()))
-			return scanMap.get(state.getBlock());
-		
-		return null;
+		if (blockToKey == null) {
+			Map<Block, Palette> scanMap = new HashMap<>(definition.size());
+			definition.forEach((palette, block) -> scanMap.put(block.getBlock(), palette));
+			blockToKey = scanMap;
+		}
+
+		return blockToKey.get(state.getBlock());
 	}
 
 }
