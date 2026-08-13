@@ -8,6 +8,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.timmie.mightyarchitect.AllBlocks;
 import com.timmie.mightyarchitect.AllItems;
+import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.ArchitectManager;
@@ -32,6 +33,9 @@ import com.timmie.mightyarchitect.gui.TextInputPromptScreen;
 import com.timmie.mightyarchitect.gui.widgets.Indicator;
 import com.timmie.mightyarchitect.gui.widgets.Label;
 import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
+import com.timmie.mightyarchitect.networking.InstantPrintPacket;
+import com.timmie.mightyarchitect.platform.MightyPacket;
+import com.timmie.mightyarchitect.platform.PacketSender;
 import com.timmie.mightyarchitect.test.mixin.ArchitectManagerAccessor;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
@@ -44,6 +48,7 @@ import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -333,9 +338,14 @@ public final class ClientTestController {
             "slice_marker registered");
         check(AllItems.ARCHITECT_WAND.typeOf(new ItemStack(AllItems.ARCHITECT_WAND.get())),
             "architect_wand identity recognized");
+        InstantPrintPacket printProbe = InstantPrintPacket.sendSchematic(
+            Map.of(BlockPos.ZERO, Blocks.STONE.defaultBlockState()), BlockPos.ZERO).get(0);
+        check(!AllPackets.canSendToServer(printProbe),
+            "vanilla server does not advertise the instant-print payload");
         check(!PaletteStorage.getResourcePaletteNames().isEmpty(), "resource palettes loaded");
         check(!ThemeStorage.getIncluded().isEmpty(), "included themes loaded");
 
+        checkModdedServerPrintRoute();
         checkPaletteRoundTrip();
 
         // WrappedWorld overrides methods NeoForge adds to Level that vanilla does not have. Those
@@ -348,6 +358,43 @@ public final class ClientTestController {
             "WrappedWorld loads and delegates to the wrapped level");
 
         advance(Stage.CAPTURE_BASELINE);
+    }
+
+    /**
+     * Exercises both transport decisions without changing the world: the harness's real vanilla
+     * server must retain the command fallback, while an injected available sender stands in for a
+     * modded multiplayer server.
+     */
+    private static void checkModdedServerPrintRoute() {
+        int[] sent = { 0 };
+        PacketSender actual = AllPackets.setSender(new PacketSender() {
+            @Override
+            public boolean canSendToServer(MightyPacket packet) {
+                return true;
+            }
+
+            @Override
+            public void sendToServer(MightyPacket packet) {
+                sent[0]++;
+            }
+        });
+        GameType previousMode = Minecraft.getInstance().gameMode.getPlayerMode();
+        try {
+            Minecraft.getInstance().gameMode.setLocalMode(GameType.CREATIVE);
+            ArchitectManager.compose(ThemeStorage.getIncluded().get(0));
+            ArchitectManager.getModel().setSketch(new Sketch());
+            ArchitectManager.enterPhase(ArchitectPhases.Previewing);
+            ArchitectManager.print();
+
+            check(ArchitectManager.inPhase(ArchitectPhases.Empty),
+                "modded multiplayer printing selected the payload transport");
+            check(sent[0] == 1, "payload transport sent the print packet");
+        } finally {
+            Minecraft.getInstance().gameMode.setLocalMode(previousMode);
+            AllPackets.setSender(actual);
+            if (!ArchitectManager.inPhase(ArchitectPhases.Empty))
+                ArchitectManager.unload();
+        }
     }
 
     /**

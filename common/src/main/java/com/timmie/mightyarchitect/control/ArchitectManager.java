@@ -39,6 +39,7 @@ import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 import java.nio.file.Path;
+import java.util.List;
 
 public class ArchitectManager {
 
@@ -125,10 +126,15 @@ public class ArchitectManager {
 		if (getModel().getSketch() == null)
 			return;
 
-		Minecraft mc = Minecraft.getInstance();
+		List<InstantPrintPacket> packets = getModel().getPackets();
 
-		if (mc.hasSingleplayerServer()) {
-			for (InstantPrintPacket packet : getModel().getPackets())
+		if (!packets.isEmpty() && AllPackets.canSendToServer(packets.get(0))) {
+			if (!Minecraft.getInstance().gameMode.getPlayerMode().isCreative()
+				&& !hasGameMasterPermission()) {
+				reportPrintPermissionDenied();
+				return;
+			}
+			for (InstantPrintPacket packet : packets)
 				AllPackets.sendToServer(packet);
 			MightyClient.renderer.setActive(false);
 			status("Printed result into world.");
@@ -136,7 +142,31 @@ public class ArchitectManager {
 			return;
 		}
 
+		if (!hasGameMasterPermission()) {
+			reportPrintPermissionDenied();
+			return;
+		}
 		enterPhase(ArchitectPhases.PrintingToMultiplayer);
+	}
+
+	private static boolean hasGameMasterPermission() {
+		// Numeric permission levels were replaced by named permissions in 1.21.11.
+		//? if >=1.21.11 {
+		return Minecraft.getInstance().player.permissions()
+			.hasPermission(net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER);
+		//?} else {
+		/*return Minecraft.getInstance().player.hasPermissions(2);
+		*///?}
+	}
+
+	private static void reportPrintPermissionDenied() {
+		Component message = Component.literal(
+			ChatFormatting.RED + "You do not have permission to print on this server.");
+		//? if >=26 {
+		Minecraft.getInstance().player.sendSystemMessage(message);
+		//?} else {
+		/*Minecraft.getInstance().player.displayClientMessage(message, false);
+		*///?}
 	}
 
 	public static void writeToFile(String name) {

@@ -3,6 +3,9 @@ package com.timmie.mightyarchitect.forge;
 import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.platform.Env;
+import com.timmie.mightyarchitect.platform.MightyPacket;
+import com.timmie.mightyarchitect.platform.PacketSender;
+import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -12,6 +15,7 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 /*import net.neoforged.neoforge.network.PacketDistributor;
 *///?}
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.network.registration.NetworkRegistry;
 
 // From 20.5 FML constructs this only on the physical client, which is also how the mod learns its
 // side without reaching into loader internals. 20.4's @Mod has no dist attribute, so there the main
@@ -32,16 +36,37 @@ public class TheMightyArchitectForgeClient {
 		// Options is being built - so build them here rather than in a setup listener.
 		MightyClient.init();
 
-		// The client-side distributor moved to its own class in 21.8, and before 1.20.5 there is no
-		// payload-level send at all - the payload has to be wrapped in the vanilla packet first.
-		//? if >=1.21.8 {
-		AllPackets.setSender(ClientPacketDistributor::sendToServer);
-		//?} else if >=1.20.5 {
-		/*AllPackets.setSender(PacketDistributor::sendToServer);
-		*///?} else {
-		/*AllPackets.setSender(packet -> PacketDistributor.SERVER.noArg()
-			.send(new net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket(packet)));
-		*///?}
+		AllPackets.setSender(new PacketSender() {
+			@Override
+			public boolean canSendToServer(MightyPacket packet) {
+				if (Minecraft.getInstance().getConnection() == null)
+					return false;
+
+				// 20.4 predates the static channel query. Its packet check asks the same question
+				// after wrapping the payload in the vanilla serverbound packet.
+				//? if >=1.20.5 {
+				return NetworkRegistry.hasChannel(Minecraft.getInstance().getConnection(), packet.type().id());
+				//?} else {
+				/*return NetworkRegistry.getInstance().canSendPacket(
+					new net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket(packet),
+					Minecraft.getInstance().getConnection());
+				*///?}
+			}
+
+			@Override
+			public void sendToServer(MightyPacket packet) {
+				// The client-side distributor moved to its own class in 21.8, and before 1.20.5
+				// payloads have to be wrapped in the vanilla packet first.
+				//? if >=1.21.8 {
+				ClientPacketDistributor.sendToServer(packet);
+				//?} else if >=1.20.5 {
+				/*PacketDistributor.sendToServer(packet);
+				*///?} else {
+				/*PacketDistributor.SERVER.noArg()
+					.send(new net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket(packet));
+				*///?}
+			}
+		});
 
 		modEventBus.addListener(TheMightyArchitectForgeClient::registerKeyMappings);
 	}

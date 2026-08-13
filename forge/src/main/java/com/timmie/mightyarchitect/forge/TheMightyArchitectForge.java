@@ -8,6 +8,7 @@ import com.timmie.mightyarchitect.networking.SetHotbarItemPacket;
 import com.timmie.mightyarchitect.platform.MightyPacket;
 import com.timmie.mightyarchitect.platform.PacketContext;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
@@ -69,8 +70,14 @@ public class TheMightyArchitectForge {
 			PlaceSignPacket::handle);
 		register(index++, SetHotbarItemPacket.class, AllPackets.SET_HOTBAR_ITEM_DECODER,
 			SetHotbarItemPacket::handle);
+	}
 
-		AllPackets.setSender(CHANNEL::sendToServer);
+	public static boolean canSendToServer(Connection connection) {
+		return CHANNEL.isRemotePresent(connection);
+	}
+
+	public static void sendToServer(MightyPacket packet) {
+		CHANNEL.sendToServer(packet);
 	}
 
 	private static <T extends MightyPacket> void register(int index, Class<T> type,

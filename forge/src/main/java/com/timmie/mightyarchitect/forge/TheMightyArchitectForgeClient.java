@@ -1,7 +1,11 @@
 package com.timmie.mightyarchitect.forge;
 
+import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.platform.Env;
+import com.timmie.mightyarchitect.platform.MightyPacket;
+import com.timmie.mightyarchitect.platform.PacketSender;
+import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -20,6 +24,20 @@ public class TheMightyArchitectForgeClient {
 		// before Options is built - which is exactly when Forge fires this event.
 		Env.setClient(true);
 		MightyClient.init();
+		AllPackets.setSender(new PacketSender() {
+			@Override
+			public boolean canSendToServer(MightyPacket packet) {
+				if (Minecraft.getInstance().getConnection() == null)
+					return false;
+				return TheMightyArchitectForge.canSendToServer(
+					Minecraft.getInstance().getConnection().getConnection());
+			}
+
+			@Override
+			public void sendToServer(MightyPacket packet) {
+				TheMightyArchitectForge.sendToServer(packet);
+			}
+		});
 
 		event.register(MightyClient.COMPOSE);
 		event.register(MightyClient.TOOL_MENU);

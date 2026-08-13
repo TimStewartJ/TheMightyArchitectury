@@ -11,80 +11,70 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 
-import java.util.LinkedList;
+import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Deque;
 
 public class PrintingToMultiplayer extends PhaseBase {
 
-	static List<BlockPos> remaining;
-	static boolean success;
+	private static final int COMMANDS_PER_TICK = 1;
+	private static final int POSITION_CHECKS_PER_TICK = 8_192;
+
+	private Deque<MultiplayerPrintCommands.Command> remaining;
 
 	@Override
 	public void whenEntered() {
-		// check for permissions for the setblock command
-		//? if >=1.21.11 {
-		if (!Minecraft.getInstance().player.permissions().hasPermission(net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER)) {
-		//?} else {
-		/*if (!Minecraft.getInstance().player.hasPermissions(2)) {
-		*///?}
-			success = false;
-
-			return;
-		}
-
-		success = true;
-
 		// Printing deliberately does NOT touch the server's gamerules. It used to turn off
 		// sendCommandFeedback and logAdminCommands and turn them back on afterwards, which
 		// silently disabled the server's admin-command audit log for everyone, and left it
 		// disabled for good if the print was interrupted by a crash, kick or disconnect. The
 		// resulting command feedback in chat is the honest cost of building with commands.
 
-		remaining = new LinkedList<>(getModel().getMaterializedSketch().getAllPositions());
-		remaining.sort((o1, o2) -> Integer.compare(o1.getY(), o2.getY()));
+		Map<BlockPos, BlockState> blocks = new HashMap<>();
+		for (BlockPos localPos : getModel().getMaterializedSketch().getAllPositions()) {
+			BlockPos worldPos = localPos.offset(getModel().getAnchor());
+			BlockState state = getModel().getMaterializedSketch().getBlockState(worldPos);
+			blocks.put(worldPos, state);
+		}
+		remaining = new ArrayDeque<>(MultiplayerPrintCommands.plan(blocks));
 	}
 
 	@Override
 	public void update() {
-		// exit state if not successful
-		if (!success) {
-			//? if >=26 {
-			Minecraft.getInstance().player.sendSystemMessage(Component.literal(
-							ChatFormatting.RED + "You do not have permission to print on this server."));
-			//?} else {
-			/*Minecraft.getInstance().player.displayClientMessage(Component.literal(
-							ChatFormatting.RED + "You do not have permission to print on this server."), false);
-			*///?}
-			ArchitectManager.enterPhase(ArchitectPhases.Previewing);
-			return;
-		}
-
-		// print 10 blocks an update until completed
-		for (int i = 0; i < 10; i++) {
-			if (!remaining.isEmpty()) {
-				BlockPos pos = remaining.get(0);
-				remaining.remove(0);
-				pos = pos.offset(getModel().getAnchor());
-				BlockState state = getModel().getMaterializedSketch().getBlockState(pos);
-
-				if (minecraft.level.getBlockState(pos) == state)
-					continue;
-				if (!minecraft.level.isUnobstructed(state, pos, CollisionContext.of(minecraft.player)))
-					continue;
-
-				String blockstring = state.toString().replaceFirst("Block\\{", "").replaceFirst("\\}", "");
-
-				String cmd = "setblock " + pos.getX() + " " + pos.getY() + " " + pos.getZ() + " " + blockstring;
-				//? if >=1.21.6 {
-				Minecraft.getInstance().player.connection.sendCommand(cmd);
-				//?} else {
-				/*Minecraft.getInstance().player.connection.sendUnsignedCommand(cmd);
-				*///?}
-			} else {
+		int sent = 0;
+		int checked = 0;
+		while (sent < COMMANDS_PER_TICK && checked < POSITION_CHECKS_PER_TICK) {
+			MultiplayerPrintCommands.Command queued = remaining.pollFirst();
+			if (queued == null) {
 				ArchitectManager.unload();
 				break;
 			}
+			checked += queued.blockCount();
+
+			List<MultiplayerPrintCommands.Command> current = MultiplayerPrintCommands.replan(queued,
+				pos -> isCurrentlyPlaceable(pos, queued.state()));
+			for (int i = current.size() - 1; i > 0; i--)
+				remaining.addFirst(current.get(i));
+			if (current.isEmpty())
+				continue;
+
+			//? if >=1.21.6 {
+			Minecraft.getInstance().player.connection.sendCommand(current.get(0).text());
+			//?} else {
+			/*Minecraft.getInstance().player.connection.sendUnsignedCommand(current.get(0).text());
+			*///?}
+			sent++;
 		}
+	}
+
+	private boolean isCurrentlyPlaceable(BlockPos pos, BlockState state) {
+		// A matching block is left untouched, including any block-entity data already there.
+		return minecraft.level.isInWorldBounds(pos)
+			&& minecraft.level.isLoaded(pos)
+			&& !minecraft.level.getBlockState(pos).equals(state)
+			&& minecraft.level.isUnobstructed(state, pos, CollisionContext.of(minecraft.player));
 	}
 
 	@Override
@@ -93,20 +83,18 @@ public class PrintingToMultiplayer extends PhaseBase {
 
 	@Override
 	public void whenExited() {
-		if (success) {
-			//? if >=26 {
-			Minecraft.getInstance().player.sendSystemMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"));
-			//?} else {
-			/*Minecraft.getInstance().player.displayClientMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"),
-					false);
-			*///?}
-		}
+		//? if >=26 {
+		Minecraft.getInstance().player.sendSystemMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"));
+		//?} else {
+		/*Minecraft.getInstance().player.displayClientMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"),
+				false);
+		*///?}
 	}
 
 	@Override
 	public List<String> getToolTip() {
 		return ImmutableList.of("Please be patient while your building is being transferred.",
-			"Your server will report each block as it is placed.");
+			"Your server will report each command batch as it is placed.");
 	}
 
 }
