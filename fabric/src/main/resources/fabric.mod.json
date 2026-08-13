@@ -9,7 +9,8 @@
     "timmie"
   ],
   "contact": {
-    "homepage": "https://github.com/simibubi/TheMightyArchitect",
+    "homepage": "https://modrinth.com/mod/the-mighty-architectury",
+    "issues": "https://github.com/TimStewartJ/TheMightyArchitectury/issues",
     "sources": "https://github.com/TimStewartJ/TheMightyArchitectury"
   },
   "license": "MIT",
