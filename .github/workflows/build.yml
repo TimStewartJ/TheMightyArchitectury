@@ -114,8 +114,15 @@ jobs:
 
             unzip -p "$l2_jar" pack.mcmeta > /tmp/l2.mcmeta
             echo "--- pack.mcmeta ---"; cat /tmp/l2.mcmeta
-            grep -qE "\"pack_format\"[[:space:]]*:[[:space:]]*$pack_format[[:space:]]*$" /tmp/l2.mcmeta \
-              || { echo "::error::${{ matrix.loader2 }} pack_format is not $pack_format"; exit 1; }
+            if [[ "${{ matrix.mc }}" == 26.* ]]; then
+              grep -qE "\"min_format\"[[:space:]]*:[[:space:]]*$pack_format[[:space:]]*," /tmp/l2.mcmeta \
+                || { echo "::error::${{ matrix.loader2 }} min_format is not $pack_format"; exit 1; }
+              grep -qE "\"max_format\"[[:space:]]*:[[:space:]]*$pack_format[[:space:]]*$" /tmp/l2.mcmeta \
+                || { echo "::error::${{ matrix.loader2 }} max_format is not $pack_format"; exit 1; }
+            else
+              grep -qE "\"pack_format\"[[:space:]]*:[[:space:]]*$pack_format[[:space:]]*$" /tmp/l2.mcmeta \
+                || { echo "::error::${{ matrix.loader2 }} pack_format is not $pack_format"; exit 1; }
+            fi
           else
             echo "Fabric-only version; no second loader to verify."
           fi
