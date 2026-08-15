@@ -273,6 +273,7 @@ function Start-TestVanillaServer {
     $jar = Get-TestServerJar -MinecraftVersion $minecraftVersion -RuntimeRoot $RuntimeRoot
     Set-Content (Join-Path $directory 'eula.txt') 'eula=true' -Encoding ascii
     $serverProperties = @(
+        'server-ip=127.0.0.1'
         "server-port=$Port"
         'online-mode=false'
         'enforce-secure-profile=false'
