@@ -263,7 +263,7 @@ function Select-JourneyPalette {
         param($s)
         $s.screen -eq 'PalettePickerScreen' -and $s.paletteName -eq $picker.paletteTargetName
     } | Out-Null
-    Send-JourneyKey 'Escape'
+    Send-JourneyKey 'e'
     Wait-JourneyState 'palette picker closed back to preview' {
         param($s) $s.phase -eq 'Previewing' -and -not $s.screen
     } | Out-Null
