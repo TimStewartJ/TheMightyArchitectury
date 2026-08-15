@@ -293,6 +293,7 @@ function Save-JourneyBuild {
 }
 
 function Print-JourneyBuild {
+    Aim-JourneyAt -X 7 -Z 7
     Send-JourneyKey 'g'
     Wait-JourneyState 'preview menu opened for print' { param($s) $s.screen -eq 'ArchitectMenuScreen' } | Out-Null
     Send-JourneyKey 'p'

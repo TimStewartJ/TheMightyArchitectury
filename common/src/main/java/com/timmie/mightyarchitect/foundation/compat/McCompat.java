@@ -170,7 +170,7 @@ public final class McCompat {
 	}
 
 	public static int selectedHotbarSlot(LocalPlayer player) {
-		//? if >=1.21.10 {
+		//? if >=1.21.6 {
 		return player.getInventory().getSelectedSlot();
 		//?} else {
 		/*return player.getInventory().selected;
