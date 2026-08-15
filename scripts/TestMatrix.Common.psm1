@@ -259,7 +259,9 @@ function Start-TestVanillaServer {
         [int]$Port,
         [Parameter(Mandatory = $true)]
         [string]$Motd,
-        [int]$StartupTimeoutSeconds = 180
+        [int]$StartupTimeoutSeconds = 180,
+        [string]$OfflineOperator,
+        [switch]$Creative
     )
 
     $minecraftVersion = $Properties.minecraft_version
@@ -270,7 +272,7 @@ function Start-TestVanillaServer {
 
     $jar = Get-TestServerJar -MinecraftVersion $minecraftVersion -RuntimeRoot $RuntimeRoot
     Set-Content (Join-Path $directory 'eula.txt') 'eula=true' -Encoding ascii
-    @(
+    $serverProperties = @(
         "server-port=$Port"
         'online-mode=false'
         'enforce-secure-profile=false'
@@ -281,7 +283,25 @@ function Start-TestVanillaServer {
         'level-type=minecraft:flat'
         'difficulty=peaceful'
         "motd=$Motd"
-    ) | Set-Content (Join-Path $directory 'server.properties') -Encoding ascii
+    )
+    if ($Creative) {
+        $serverProperties += 'gamemode=creative'
+        $serverProperties += 'force-gamemode=true'
+    }
+    $serverProperties | Set-Content (Join-Path $directory 'server.properties') -Encoding ascii
+
+    if ($OfflineOperator) {
+        $operators = @(
+            [ordered]@{
+                uuid = Get-TestOfflineUuid -Name $OfflineOperator
+                name = $OfflineOperator
+                level = 4
+                bypassesPlayerLimit = $false
+            }
+        )
+        ConvertTo-Json -InputObject $operators |
+            Set-Content (Join-Path $directory 'ops.json') -Encoding utf8
+    }
 
     $stdout = Join-Path $directory 'server.stdout.log'
     $stderr = Join-Path $directory 'server.stderr.log'
@@ -303,6 +323,7 @@ function Start-TestVanillaServer {
             if ($process.HasExited) {
                 throw "Vanilla server $minecraftVersion exited early with code $($process.ExitCode)"
             }
+
             if (Test-Path $log) {
                 $text = Get-Content $log -Raw -ErrorAction SilentlyContinue
                 if ($text -match 'Done \(') {
@@ -321,6 +342,21 @@ function Start-TestVanillaServer {
         Stop-TestProcessTree -Process $process
         throw
     }
+}
+
+function Get-TestOfflineUuid {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name
+    )
+
+    $bytes = [Text.Encoding]::UTF8.GetBytes("OfflinePlayer:$Name")
+    $hash = [Security.Cryptography.MD5]::HashData($bytes)
+    $hash[6] = ($hash[6] -band 0x0f) -bor 0x30
+    $hash[8] = ($hash[8] -band 0x3f) -bor 0x80
+    $hex = -join ($hash | ForEach-Object { $_.ToString('x2') })
+    return '{0}-{1}-{2}-{3}-{4}' -f $hex.Substring(0, 8), $hex.Substring(8, 4),
+        $hex.Substring(12, 4), $hex.Substring(16, 4), $hex.Substring(20, 12)
 }
 
 function Get-TestHiddenWindowOption {
@@ -727,6 +763,7 @@ Export-ModuleMember -Function @(
     'Stop-TestOwnedProcess',
     'Write-TestSessionManifest',
     'Start-TestVanillaServer',
+    'Get-TestOfflineUuid',
     'Get-TestHiddenWindowOption',
     'Write-TestClientOptions',
     'Expand-TestListArgument',

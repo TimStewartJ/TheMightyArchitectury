@@ -28,7 +28,7 @@ public class MightyArchitectClientTestNeoForge {
 
     private static void startClientTest() {
         try {
-            Class.forName("com.timmie.mightyarchitect.test.ClientTestController")
+            Class.forName("com.timmie.mightyarchitect.test.ClientTestEntrypoint")
                 .getMethod("start")
                 .invoke(null);
         } catch (ReflectiveOperationException exception) {

@@ -18,6 +18,10 @@ def prodClientTestRunDir = clientTestSessionId
 def prodClientTestResultFile = clientTestSessionId
     ? layout.buildDirectory.file("prod-client-test-${clientTestSessionId}/result.json")
     : layout.buildDirectory.file("prod-client-test/result.json")
+def playerJourneyRunDir = "run-player-journey"
+def playerJourneyStateFile = layout.buildDirectory.file("player-journey/state.json")
+def playerJourneyServer = (System.getenv("MIGHTYARCHITECT_PLAYER_JOURNEY_SERVER")
+    ?: "127.0.0.1:25566").toString()
 def clientTestServer = (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SERVER")
     ?: project.findProperty("clientTestServer")
     ?: "127.0.0.1:25565").toString()
@@ -299,6 +303,28 @@ tasks.register("runProductionClientTest", ClientProductionRunTask) {
 
     // javaLauncher is left on its convention, which is this project's own toolchain - the same
     // JDK the dev run and the node's compile use.
+}
+
+tasks.register("runProductionPlayerJourney", ClientProductionRunTask) {
+    group = "verification"
+    description = "Runs the packaged Fabric jars for an externally driven player journey."
+
+    mods.from packagedClientTestJar
+    runDir = layout.projectDirectory.dir(playerJourneyRunDir)
+
+    jvmArgs.addAll(
+        "-Dmightyarchitect.playerJourney.enabled=true",
+        "-Dmightyarchitect.playerJourney.server=${playerJourneyServer}".toString(),
+        "-Dmightyarchitect.playerJourney.state=${playerJourneyStateFile.get().asFile.absolutePath}".toString()
+    )
+
+    programArgs.addAll(
+        "--accessToken", "0",
+        "--version", "mightyarchitect-player-journey",
+        "--username", "ArchitectTest"
+    )
+
+    useXVFB = false
 }
 
 if (unobf) {
