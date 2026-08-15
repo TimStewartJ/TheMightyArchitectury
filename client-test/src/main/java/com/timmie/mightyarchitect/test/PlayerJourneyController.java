@@ -12,9 +12,12 @@ import com.timmie.mightyarchitect.control.palette.PaletteStorage;
 import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.timmie.mightyarchitect.foundation.compat.ServerConnect;
 import com.timmie.mightyarchitect.gui.PalettePickerScreen;
+import com.timmie.mightyarchitect.gui.ArchitectMenuScreen;
+import com.timmie.mightyarchitect.gui.TextInputPromptScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
@@ -169,7 +172,7 @@ public final class PlayerJourneyController {
             state.addProperty("paletteTargetY", (Number) null);
 
             Screen screen = McCompat.currentScreen(minecraft);
-            String screenName = screen == null ? "" : screen.getClass().getSimpleName();
+            String screenName = screenName(screen);
             state.addProperty("screen", screenName);
             String phase = ArchitectManager.getPhase().name();
             state.addProperty("phase", phase);
@@ -251,6 +254,7 @@ public final class PlayerJourneyController {
                 continue;
             buttons.add(widget);
         }
+
         buttons.sort(Comparator.comparingInt(AbstractWidget::getY).thenComparingInt(AbstractWidget::getX));
         List<String> paletteNames = PaletteStorage.getResourcePaletteNames();
         int targetIndex = -1;
@@ -270,6 +274,20 @@ public final class PlayerJourneyController {
         state.addProperty("paletteTargetX", (target.getX() + target.getWidth() / 2.0) * scale);
         state.addProperty("paletteTargetY", (target.getY() + target.getHeight() / 2.0) * scale);
         state.addProperty("paletteTargetName", paletteNames.get(targetIndex));
+    }
+
+    private static String screenName(Screen screen) {
+        if (screen == null)
+            return "";
+        if (screen instanceof ArchitectMenuScreen)
+            return "ArchitectMenuScreen";
+        if (screen instanceof PalettePickerScreen)
+            return "PalettePickerScreen";
+        if (screen instanceof TextInputPromptScreen)
+            return "TextInputPromptScreen";
+        if (screen instanceof ChatScreen)
+            return "ChatScreen";
+        return screen.getClass().getSimpleName();
     }
 
     private static void deleteState() {
