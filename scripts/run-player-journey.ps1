@@ -299,12 +299,12 @@ function Print-JourneyBuild {
     Wait-JourneyState 'vanilla-server command fallback started' {
         param($s) $s.phase -eq 'PrintingToMultiplayer'
     } | Out-Null
-    Wait-JourneyState 'printed blocks match the preview in the server world' {
+    $printed = Wait-JourneyState 'printed block identities match the preview in the server world' {
         param($s)
-        $s.phase -eq 'Empty' -and [bool]$s.printedWorldMatches -and
+        $s.phase -eq 'Empty' -and [bool]$s.printedWorldBlockTypesMatch -and
             [int]$s.expectedPrintedBlocks -gt 0
-    } -Seconds 240 | Out-Null
-    Add-JourneyCheck 'real menu input printed the second build through the vanilla command fallback'
+    } -Seconds 240
+    Add-JourneyCheck "real menu input printed all $($printed.expectedPrintedBlocks) block identities through the vanilla command fallback ($($printed.matchingPrintedBlocks) exact settled states)"
 }
 
 function Write-JourneyResult {

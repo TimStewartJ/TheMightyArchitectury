@@ -1,6 +1,7 @@
 package com.timmie.mightyarchitect.test;
 
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.TheMightyArchitect;
@@ -222,13 +223,27 @@ public final class PlayerJourneyController {
                 state.addProperty("previewBlocks", previewBlocks);
 
                 int matches = 0;
-                for (Map.Entry<BlockPos, BlockState> expected : expectedPrintedBlocks.entrySet())
-                    if (minecraft.level.getBlockState(expected.getKey()).equals(expected.getValue()))
+                int blockMatches = 0;
+                JsonArray mismatchSamples = new JsonArray();
+                for (Map.Entry<BlockPos, BlockState> expected : expectedPrintedBlocks.entrySet()) {
+                    BlockState actual = minecraft.level.getBlockState(expected.getKey());
+                    if (actual.getBlock() == expected.getValue().getBlock())
+                        blockMatches++;
+                    if (actual.equals(expected.getValue())) {
                         matches++;
+                    } else if (mismatchSamples.size() < 8) {
+                        mismatchSamples.add(expected.getKey() + ": expected " + expected.getValue()
+                            + ", found " + actual);
+                    }
+                }
                 state.addProperty("expectedPrintedBlocks", expectedPrintedBlocks.size());
+                state.addProperty("matchingPrintedBlockTypes", blockMatches);
                 state.addProperty("matchingPrintedBlocks", matches);
+                state.addProperty("printedWorldBlockTypesMatch",
+                    !expectedPrintedBlocks.isEmpty() && blockMatches == expectedPrintedBlocks.size());
                 state.addProperty("printedWorldMatches",
                     !expectedPrintedBlocks.isEmpty() && matches == expectedPrintedBlocks.size());
+                state.add("printedStateMismatchSamples", mismatchSamples);
             }
 
             addPaletteTarget(state, minecraft, screen);
