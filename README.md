@@ -4,12 +4,17 @@
 
 # The Mighty Architectury
 
-A WIP port of [simibubi's](https://github.com/simibubi) [The Mighty Architect](https://github.com/simibubi/TheMightyArchitect)
-to Fabric and NeoForge. No third-party multiloader framework: each loader is built with its own
-official toolkit, so the mod has no runtime dependencies beyond the loader itself (plus Fabric API
-on Fabric).
+A port of [simibubi's](https://github.com/simibubi) [The Mighty Architect](https://github.com/simibubi/TheMightyArchitect)
+to Fabric, NeoForge and Forge, maintained for 13 Minecraft versions from 1.19.4 to 26.2. No
+third-party multiloader framework: each loader is built with its own official toolkit, so the mod
+has no runtime dependencies beyond the loader itself (plus Fabric API on Fabric). Downloads are on
+[Modrinth](https://modrinth.com/mod/the-mighty-architectury); what changed in each release is in
+[`CHANGELOG.md`](CHANGELOG.md).
 
-This is experimental. Some things may still be broken!
+Every jar is verified the way it ships: the same client test harness runs against the packaged
+artifact on all 25 targets, alongside a dedicated-server test and a JUnit suite, on every change.
+Bugs still happen — please [report them](https://github.com/TimStewartJ/TheMightyArchitectury/issues)
+with the Minecraft version and loader.
 
 ## Contributing
 
@@ -153,3 +158,30 @@ To stop every retained session:
 ```powershell
 pwsh -File scripts/stop-kept-open-clients.ps1 -All
 ```
+
+## Releasing
+
+Publishing goes through [mod-publish-plugin](https://github.com/modmuss50/mod-publish-plugin),
+applied to every loader node by `buildSrc/src/main/groovy/mightyarchitect.publish.gradle`. Each
+node's listing metadata lives next to its toolchain values in `versions/<mc>/gradle.properties`:
+
+| property | meaning |
+| --- | --- |
+| `meta_game_versions` | the **inclusive** list of Minecraft versions the listing declares. Written out explicitly because `meta_mc_max` is *exclusive*; `checkPublishMetadata` (part of `check`, so part of every CI build) fails if any listed version falls outside the jar's own `[meta_mc_range, meta_mc_max)` |
+| `meta_release_channel` | `release`, `beta` or `alpha` for that node's uploads |
+
+Release notes are the top section of `CHANGELOG.md`. The version number of each upload is the
+jar's own version plus a loader suffix (`2.0.0+mc1.21.1-fabric`), one upload per jar, as before.
+
+```powershell
+./gradlew :fabric:1.21.1:publishMods   # dry run: writes build/publishMods/ for review, uploads nothing
+./gradlew publishAll                   # the same for all 25 jars
+./gradlew publishAll -PpublishLive=true # real upload; needs MODRINTH_TOKEN (and CURSEFORGE_TOKEN)
+```
+
+In CI, `.github/workflows/release.yml` runs the whole matrix on the commit, then a dry run of all 25
+publications whose resolved metadata is tabulated in the run summary (`workflow_dispatch` on any
+ref stops here). Pushing a `v<mod_version>` tag continues to the live upload from the `release`
+environment, which is where the tokens belong and where a required reviewer makes the upload a
+manual gate. A tag that does not match `mod_version`, or a `CHANGELOG.md` whose top heading is
+still marked unreleased or does not name `mod_version`, refuses to publish.

@@ -236,6 +236,11 @@ jar {
     archiveClassifier.set("neoforge")
 }
 
+// Modrinth / CurseForge publication of the jar above. See buildSrc's mightyarchitect.publish.
+ext.publishArtifactTask = "jar"
+ext.publishLoaders = ["neoforge"]
+apply plugin: "mightyarchitect.publish"
+
 publishing {
     publications {
         mavenNeoForge(MavenPublication) {
