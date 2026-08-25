@@ -19,6 +19,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 /*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
@@ -165,6 +166,14 @@ public final class McCompat {
 		/*return mc.getModelManager()
 			.getBlockModelShaper()
 			.getBlockModel(net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+		*///?}
+	}
+
+	public static int selectedHotbarSlot(LocalPlayer player) {
+		//? if >=1.21.6 {
+		return player.getInventory().getSelectedSlot();
+		//?} else {
+		/*return player.getInventory().selected;
 		*///?}
 	}
 }

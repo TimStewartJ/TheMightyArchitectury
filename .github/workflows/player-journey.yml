@@ -1,0 +1,95 @@
+name: Recorded player journey
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/player-journey.yml"
+      - "client-test/**"
+      - "common/src/**"
+      - "fabric/**"
+      - "scripts/run-player-journey.ps1"
+      - "scripts/TestMatrix.Common.psm1"
+  pull_request:
+    paths:
+      - ".github/workflows/player-journey.yml"
+      - "client-test/**"
+      - "common/src/**"
+      - "fabric/**"
+      - "scripts/run-player-journey.ps1"
+      - "scripts/TestMatrix.Common.psm1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  record:
+    name: 1.20.2 Fabric recording
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+            25
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install virtual display, input, and recording tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb openbox xdotool ffmpeg libgl1 libgl1-mesa-dri mesa-utils
+
+      - name: Run recorded packaged-client journey
+        env:
+          CI: true
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          ALSOFT_DRIVERS: "null"
+        run: |
+          chmod +x ./gradlew
+          xvfb-run -a -s "-screen 0 1280x720x24" bash -c '
+            cat >/tmp/openbox-rc.xml <<EOF
+          <openbox_config xmlns="http://openbox.org/3.4/rc">
+            <applications>
+              <application class="*"><decor>no</decor></application>
+            </applications>
+          </openbox_config>
+          EOF
+            openbox --config-file /tmp/openbox-rc.xml >/tmp/openbox.log 2>&1 &
+            pwsh -NoProfile -File ./scripts/run-player-journey.ps1
+          '
+
+      - name: Add journey summary
+        if: always()
+        run: |
+          summary="build/player-journey-results/1.20.2-fabric/summary.md"
+          if [ -f "$summary" ]; then
+            cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## Recorded player journey" >> "$GITHUB_STEP_SUMMARY"
+            echo "No result summary was produced." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload recording and evidence
+        id: evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: player-journey-1.20.2-fabric
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+          path: build/player-journey-results/1.20.2-fabric/
+
+      - name: Link recording
+        if: always() && steps.evidence.outputs.artifact-url != ''
+        run: echo "[Download the MP4 recording and evidence bundle](${{ steps.evidence.outputs.artifact-url }})" >> "$GITHUB_STEP_SUMMARY"

@@ -1,6 +1,6 @@
 package com.timmie.mightyarchitect.test.forge;
 
-import com.timmie.mightyarchitect.test.ClientTestController;
+import com.timmie.mightyarchitect.test.ClientTestEntrypoint;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
@@ -10,6 +10,6 @@ public class MightyArchitectClientTestForge {
 
     public MightyArchitectClientTestForge() {
         if (FMLEnvironment.dist == Dist.CLIENT)
-            ClientTestController.start();
+            ClientTestEntrypoint.start();
     }
 }

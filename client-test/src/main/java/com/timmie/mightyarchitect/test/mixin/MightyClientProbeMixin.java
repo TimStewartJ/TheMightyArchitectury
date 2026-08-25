@@ -2,6 +2,7 @@ package com.timmie.mightyarchitect.test.mixin;
 
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.test.ClientTestController;
+import com.timmie.mightyarchitect.test.PlayerJourneyController;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,5 +22,6 @@ public abstract class MightyClientProbeMixin {
     @Inject(method = "onTick", at = @At("HEAD"), remap = false)
     private static void mightyarchitectTest$tick(Minecraft minecraft, CallbackInfo callback) {
         ClientTestController.tick(minecraft);
+        PlayerJourneyController.tick(minecraft);
     }
 }

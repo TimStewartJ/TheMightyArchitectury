@@ -6,6 +6,7 @@
   "client": [
     "ArchitectManagerProbeMixin",
     "ArchitectManagerAccessor",
+    "ClientHooksProbeMixin",
     "MightyClientProbeMixin",
     "PhaseComposingProbeMixin"
   ],
