@@ -4,12 +4,17 @@
 
 # The Mighty Architectury
 
-A WIP port of [simibubi's](https://github.com/simibubi) [The Mighty Architect](https://github.com/simibubi/TheMightyArchitect)
-to Fabric and NeoForge. No third-party multiloader framework: each loader is built with its own
-official toolkit, so the mod has no runtime dependencies beyond the loader itself (plus Fabric API
-on Fabric).
+A port of [simibubi's](https://github.com/simibubi) [The Mighty Architect](https://github.com/simibubi/TheMightyArchitect)
+to Fabric, NeoForge and Forge, maintained for 13 Minecraft versions from 1.19.4 to 26.2. No
+third-party multiloader framework: each loader is built with its own official toolkit, so the mod
+has no runtime dependencies beyond the loader itself (plus Fabric API on Fabric). Downloads are on
+[Modrinth](https://modrinth.com/mod/the-mighty-architectury); what changed in each release is in
+[`CHANGELOG.md`](CHANGELOG.md).
 
-This is experimental. Some things may still be broken!
+Every jar is verified the way it ships: the same client test harness runs against the packaged
+artifact on all 25 targets, alongside a dedicated-server test and a JUnit suite, on every change.
+Bugs still happen — please [report them](https://github.com/TimStewartJ/TheMightyArchitectury/issues)
+with the Minecraft version and loader.
 
 ## Contributing
 
@@ -178,5 +183,5 @@ In CI, `.github/workflows/release.yml` runs the whole matrix on the commit, then
 publications whose resolved metadata is tabulated in the run summary (`workflow_dispatch` on any
 ref stops here). Pushing a `v<mod_version>` tag continues to the live upload from the `release`
 environment, which is where the tokens belong and where a required reviewer makes the upload a
-manual gate. A tag that does not match `mod_version`, or a `CHANGELOG.md` still headed
-`[Unreleased]`, refuses to publish.
+manual gate. A tag that does not match `mod_version`, or a `CHANGELOG.md` whose top heading is
+still marked unreleased or does not name `mod_version`, refuses to publish.

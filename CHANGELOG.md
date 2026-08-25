@@ -4,19 +4,21 @@ All notable changes to The Mighty Architectury. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One entry covers every Minecraft version
 the release ships for; version-specific notes say which versions they apply to.
 
-## [Unreleased]
+## [2.0.0] — unreleased
 
-<!-- DECISIONS STILL OPEN — resolve before this file is fed to Modrinth/CurseForge:
-     1. Version number and channel: the heading above becomes the chosen version, e.g. [2.0.0].
-     2. 1.19.2 / 1.19.3: the "Removed" entry below assumes they are end-of-life. If a 1.19.2 build
-        is added instead, delete that entry and list 1.19.2 under "Added". -->
+<!-- DECISION STILL OPEN — resolve before tagging v2.0.0:
+     1.19.2 / 1.19.3: the "Removed" entry below assumes they are end-of-life. If a 1.19.2 build
+     is added instead, delete that entry and list 1.19.2 under "Added".
+     Replace "unreleased" above with the release date when tagging. -->
 
 This release supersedes every previously published jar from 0.8.0 (1.19.4) through 0.11.0 (1.21.11)
 and is the first built from the single-branch, multi-version codebase. It ships for 13 Minecraft
 versions — 1.19.4, 1.20.1, 1.20.2, 1.20.4, 1.20.6, 1.21.1, 1.21.4, 1.21.6, 1.21.8, 1.21.10, 1.21.11,
 26.1 and 26.2 — on Fabric everywhere, NeoForge from 1.20.4, and Forge on 1.19.4 and 1.20.1. 1.20.2
 is Fabric-only: no NeoForge 20.2 build was ever published with the metadata the toolchain needs.
-Architectury API is no longer required; Fabric builds still need Fabric API.
+Architectury API is no longer required; Fabric builds still need Fabric API. Versions that had a
+published 0.x build ship as full releases; the six Minecraft versions that have never had a build
+(1.20.2, 1.20.4, 1.20.6, 1.21.8, 26.1, 26.2) ship as betas until they have users behind them.
 
 ### Security — update now if you run a server with the mod installed
 

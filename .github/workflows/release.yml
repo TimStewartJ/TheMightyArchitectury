@@ -14,7 +14,8 @@ name: Release
 #                        the live step into a manual gate with the dry-run artifacts already in hand.
 #
 # Two things refuse to publish live: a tag that does not match mod_version in gradle.properties, and a
-# CHANGELOG.md whose top section is still [Unreleased] (checked by checkPublishMetadata).
+# CHANGELOG.md whose top heading is still marked unreleased or does not name mod_version (checked by
+# checkPublishMetadata).
 
 on:
   push:

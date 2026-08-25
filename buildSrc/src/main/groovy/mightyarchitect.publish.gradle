@@ -15,7 +15,8 @@
 //                           published version used)
 //
 // Nothing here can upload by accident: publishMods is a dry run unless -PpublishLive=true is passed,
-// and a live run additionally refuses a CHANGELOG.md whose top section is still [Unreleased].
+// and a live run additionally refuses a CHANGELOG.md whose top heading is still marked unreleased or
+// does not name mod_version.
 import me.modmuss50.mpp.ReleaseType
 import me.modmuss50.mpp.platforms.modrinth.ModrinthEnvironment
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
@@ -112,8 +113,11 @@ def checkPublishMetadata = tasks.register("checkPublishMetadata") {
         }
         releaseType(channel)
         def notes = topChangelogSection()
-        if (live && notes.heading.equalsIgnoreCase("[Unreleased]")) {
-            throw new GradleException("CHANGELOG.md still has an [Unreleased] heading; name the version before publishing live")
+        if (live && (notes.heading.equalsIgnoreCase("[Unreleased]") || notes.heading.toLowerCase().contains("unreleased"))) {
+            throw new GradleException("CHANGELOG.md's top heading '${notes.heading}' is still marked unreleased; date it before publishing live")
+        }
+        if (live && !notes.heading.contains("[${rootProject.mod_version}]")) {
+            throw new GradleException("CHANGELOG.md's top heading '${notes.heading}' does not name mod_version ${rootProject.mod_version}")
         }
         if (notes.body.isEmpty()) {
             throw new GradleException("CHANGELOG.md's top section '${notes.heading}' is empty")
