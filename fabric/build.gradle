@@ -341,6 +341,11 @@ if (unobf) {
     }
 }
 
+// Modrinth / CurseForge publication of the jar above. See buildSrc's mightyarchitect.publish.
+ext.publishArtifactTask = unobf ? "jar" : "remapJar"
+ext.publishLoaders = ["fabric"]
+apply plugin: "mightyarchitect.publish"
+
 publishing {
     publications {
         mavenFabric(MavenPublication) {

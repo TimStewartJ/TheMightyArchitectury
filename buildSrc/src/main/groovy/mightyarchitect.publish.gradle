@@ -1,0 +1,182 @@
+// Release publishing for one loader node: Modrinth now, CurseForge once a project exists (#13).
+//
+// Applied by the three branch scripts after they have set two project properties:
+//   ext.publishArtifactTask - name of the task whose archive is the distributable jar
+//                             (remapJar / jar on Fabric, jar on NeoForge, reobfJar on Forge)
+//   ext.publishLoaders      - the loader tags the listing carries, e.g. ["fabric"]
+//
+// Everything node-specific comes from versions/<mc>/gradle.properties:
+//   meta_game_versions    - comma-separated Minecraft versions the LISTING declares. Explicit on
+//                           purpose: meta_mc_max is exclusive while every hosting platform takes an
+//                           inclusive list, and deriving one from the other is exactly how a jar ends
+//                           up listed for a version it was never run on. checkPublishMetadata proves
+//                           every listed version sits inside the jar's own [meta_mc_range, meta_mc_max).
+//   meta_release_channel  - release | beta | alpha (defaults to beta, the channel every previously
+//                           published version used)
+//
+// Nothing here can upload by accident: publishMods is a dry run unless -PpublishLive=true is passed,
+// and a live run additionally refuses a CHANGELOG.md whose top section is still [Unreleased].
+import me.modmuss50.mpp.ReleaseType
+import me.modmuss50.mpp.platforms.modrinth.ModrinthEnvironment
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
+
+plugins {
+    id "me.modmuss50.mod-publish-plugin"
+}
+
+def node = rootProject.project(":${stonecutter.current.version}")
+String mcVersion = node.property('minecraft_version').toString()
+List<String> loaders = (project.publishLoaders as List<String>)
+String primaryLoader = loaders[0]
+boolean live = project.findProperty("publishLive") == "true"
+String channel = (node.findProperty('meta_release_channel') ?: 'beta').toString().toLowerCase()
+List<String> gameVersions = node.property('meta_game_versions').toString()
+    .split(',').collect { it.trim() }.findAll { !it.isEmpty() }
+String mcMin = node.property('meta_mc_range').toString()
+String mcMax = node.property('meta_mc_max').toString()
+String javaRange = node.property('meta_java_range').toString()
+File changelogFile = rootProject.file("CHANGELOG.md")
+String modrinthProjectId = rootProject.property('modrinth_project_id').toString().trim()
+String curseforgeProjectId = (rootProject.findProperty('curseforge_project_id') ?: '').toString().trim()
+String curseforgeProjectSlug = (rootProject.findProperty('curseforge_project_slug') ?: '').toString().trim()
+String versionNumber = "${project.version}-${primaryLoader}".toString()
+String displayTitle = "The Mighty Architectury ${rootProject.mod_version} for ${primaryLoader} ${mcVersion}".toString()
+
+// Numeric dotted comparison - the only shape Minecraft release ids take (1.20 < 1.20.1 < 26.1).
+def compareMc = { String a, String b ->
+    List<Integer> pa = a.tokenize('.').collect { it as int }
+    List<Integer> pb = b.tokenize('.').collect { it as int }
+    for (int i = 0; i < Math.max(pa.size(), pb.size()); i++) {
+        int x = i < pa.size() ? pa[i] : 0
+        int y = i < pb.size() ? pb[i] : 0
+        if (x != y) return x <=> y
+    }
+    return 0
+}
+
+// The top section of CHANGELOG.md: from the first "## " heading up to the next one, HTML comments
+// removed. That section becomes the release notes on every platform.
+def topChangelogSection = {
+    if (!changelogFile.exists()) {
+        throw new GradleException("${changelogFile} does not exist; the release notes come from its top section")
+    }
+    List<String> lines = changelogFile.readLines()
+    int start = lines.findIndexOf { it.startsWith("## ") }
+    if (start < 0) {
+        throw new GradleException("${changelogFile} has no '## ' version heading")
+    }
+    List<String> rest = lines.drop(start + 1)
+    int end = rest.findIndexOf { it.startsWith("## ") }
+    String body = (end < 0 ? rest : rest.take(end)).join("\n")
+    [heading: lines[start].substring(3).trim(), body: body.replaceAll(/(?s)<!--.*?-->/, "").trim()]
+}
+
+def releaseType = { String name ->
+    switch (name) {
+        case 'release': return ReleaseType.STABLE
+        case 'beta': return ReleaseType.BETA
+        case 'alpha': return ReleaseType.ALPHA
+        default: throw new GradleException("meta_release_channel must be release, beta or alpha, not '${name}'")
+    }
+}
+
+def artifact = tasks.named(project.publishArtifactTask.toString(), AbstractArchiveTask)
+
+// Proves the listing and the jar agree before anything is uploaded, and writes the resolved
+// metadata for every publication so a dry run leaves something reviewable behind. Wired into
+// `check` so the ordinary CI build exercises it on all 25 targets.
+def checkPublishMetadata = tasks.register("checkPublishMetadata") {
+    group = "publishing"
+    description = "Verifies the listing metadata against the jar's own dependency range."
+    def summaryFile = layout.buildDirectory.file("publishMods/metadata-${primaryLoader}.json")
+    inputs.property("gameVersions", gameVersions)
+    inputs.property("range", "[${mcMin},${mcMax})".toString())
+    inputs.property("channel", channel)
+    inputs.property("live", live)
+    inputs.file(changelogFile)
+    outputs.file(summaryFile)
+    doLast {
+        if (gameVersions.isEmpty()) {
+            throw new GradleException("versions/${stonecutter.current.version}/gradle.properties declares no meta_game_versions")
+        }
+        if (gameVersions.toSet().size() != gameVersions.size()) {
+            throw new GradleException("meta_game_versions repeats a version: ${gameVersions}")
+        }
+        List<String> outside = gameVersions.findAll { compareMc(it, mcMin) < 0 || compareMc(it, mcMax) >= 0 }
+        if (!outside.isEmpty()) {
+            throw new GradleException("meta_game_versions lists ${outside}, outside the jar's own range [${mcMin},${mcMax}). " +
+                "A listing must never claim a Minecraft version the jar itself refuses.")
+        }
+        if (!gameVersions.any { compareMc(it, mcVersion) == 0 }) {
+            throw new GradleException("meta_game_versions ${gameVersions} does not include the version this node is built against (${mcVersion})")
+        }
+        releaseType(channel)
+        def notes = topChangelogSection()
+        if (live && notes.heading.equalsIgnoreCase("[Unreleased]")) {
+            throw new GradleException("CHANGELOG.md still has an [Unreleased] heading; name the version before publishing live")
+        }
+        if (notes.body.isEmpty()) {
+            throw new GradleException("CHANGELOG.md's top section '${notes.heading}' is empty")
+        }
+        def summary = new groovy.json.JsonBuilder([
+            loader        : primaryLoader,
+            minecraft     : mcVersion,
+            file          : artifact.get().archiveFile.get().asFile.name,
+            versionNumber : versionNumber,
+            displayName   : displayTitle,
+            channel       : channel,
+            gameVersions  : gameVersions,
+            jarRange      : "[${mcMin},${mcMax})".toString(),
+            loaders       : loaders,
+            javaVersion   : javaRange,
+            changelogTitle: notes.heading,
+            modrinth      : modrinthProjectId,
+            curseforge    : curseforgeProjectId.isEmpty() ? null : curseforgeProjectId,
+            live          : live
+        ])
+        summaryFile.get().asFile.parentFile.mkdirs()
+        summaryFile.get().asFile.text = summary.toPrettyString()
+        logger.lifecycle("publish metadata ${primaryLoader} ${mcVersion}: ${gameVersions} ${channel}${live ? ' LIVE' : ' (dry run)'}")
+    }
+}
+
+tasks.named("check") { dependsOn checkPublishMetadata }
+tasks.named("publishMods") { dependsOn checkPublishMetadata }
+
+publishMods {
+    dryRun = !live
+    file = artifact.flatMap { it.archiveFile }
+    // One Modrinth/CurseForge version per jar, as every earlier upload did. The loader suffix keeps
+    // the Fabric and NeoForge versions of one node distinguishable on the listing.
+    version = versionNumber
+    displayName = displayTitle
+    changelog = provider { topChangelogSection().body }
+    type = releaseType(channel)
+    modLoaders.addAll(loaders)
+
+    modrinth {
+        projectId = modrinthProjectId
+        accessToken = providers.environmentVariable("MODRINTH_TOKEN")
+        minecraftVersions.addAll(gameVersions)
+        // Needed on the client; a server that also has it gains the fast packet route.
+        environment = ModrinthEnvironment.CLIENT_ONLY_SERVER_OPTIONAL
+        if (loaders.contains("fabric")) {
+            requires("fabric-api")
+        }
+    }
+
+    if (!curseforgeProjectId.isEmpty()) {
+        curseforge {
+            projectId = curseforgeProjectId
+            projectSlug = curseforgeProjectSlug
+            accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
+            minecraftVersions.addAll(gameVersions)
+            javaVersions.add(JavaVersion.toVersion(javaRange))
+            client = true
+            server = true
+            if (loaders.contains("fabric")) {
+                requires("fabric-api")
+            }
+        }
+    }
+}

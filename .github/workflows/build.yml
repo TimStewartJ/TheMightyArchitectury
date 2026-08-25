@@ -1,6 +1,13 @@
 name: Build (all versions)
 
-on: [push, pull_request]
+on:
+  # Every branch, but not tags: a version tag is built once, by release.yml calling this workflow,
+  # so the same commit is not put through the matrix twice. Branch pushes still run on their own,
+  # which is what lets a throwaway branch serve as a mutation test without opening a PR.
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

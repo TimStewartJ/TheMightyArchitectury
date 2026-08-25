@@ -24,4 +24,7 @@ dependencies {
     // ModDevGradle's legacy addon, released in lockstep with the main plugin. It is what builds
     // the 1.19.4 / 1.20.1 Forge targets, where NeoForge does not exist yet.
     implementation "net.neoforged.moddev.legacyforge:net.neoforged.moddev.legacyforge.gradle.plugin:${rootProps.moddev_version}"
+    // Publishes the finished jars to Modrinth / CurseForge. Same shared-classloader argument: one
+    // copy of the plugin serves all 25 loader nodes.
+    implementation "me.modmuss50.mod-publish-plugin:me.modmuss50.mod-publish-plugin.gradle.plugin:${rootProps.mod_publish_plugin_version}"
 }

@@ -287,6 +287,15 @@ tasks.register("buildClientTestMod") {
     dependsOn clientTestJarTask
 }
 
+// Modrinth / CurseForge publication. The legacy plugin reobfuscates `jar` to SRG through `reobfJar`
+// and moves the official-names original to build/devlibs, so the distributable is reobfJar's output
+// (LEGACY.md: "upload the reobfJar task's output"). Listed for Forge only: 1.19.4 predates NeoForge,
+// and on 1.20.1 the production lane runs Forge 47, not NeoForge 47, so that tag would be an untested
+// claim. See buildSrc's mightyarchitect.publish.
+ext.publishArtifactTask = "reobfJar"
+ext.publishLoaders = ["forge"]
+apply plugin: "mightyarchitect.publish"
+
 publishing {
     publications {
         mavenForge(MavenPublication) {
