@@ -7,6 +7,7 @@ def enableClientTestMod = project.findProperty("enableClientTestMod") == "true"
 // same template renamed back to the Forge-era path. (20.4 does already accept `type` dependency
 // entries, so only the file name differs.)
 def legacyModsToml = stonecutter.eval(stonecutter.current.version, "<1.20.5")
+def modernPackMetadata = stonecutter.eval(stonecutter.current.version, ">=26")
 final String LEGACY_METADATA_PATH = "META-INF/mods.toml"
 def clientTestSessionId = System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SESSION_ID")
     ?.replaceAll("[^A-Za-z0-9._-]", "-")
@@ -145,6 +146,7 @@ processResources {
     ]
     inputs.properties(metaProps)
     inputs.property("legacy_mods_toml", legacyModsToml)
+    inputs.property("modern_pack_metadata", modernPackMetadata)
     filesMatching("META-INF/neoforge.mods.toml") {
         expand(metaProps)
         if (legacyModsToml) {
@@ -152,7 +154,19 @@ processResources {
         }
     }
     filesMatching("pack.mcmeta") {
-        expand(metaProps)
+        if (modernPackMetadata) {
+            exclude()
+        } else {
+            expand(metaProps)
+        }
+    }
+    filesMatching("pack-modern.mcmeta") {
+        if (modernPackMetadata) {
+            expand(metaProps)
+            it.path = "pack.mcmeta"
+        } else {
+            exclude()
+        }
     }
     filesMatching("mightyarchitect.mixins.json") {
         expand(metaProps)

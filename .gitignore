@@ -20,3 +20,6 @@ libs/
 classes/
 .metadata
 .settings
+
+.architectury-transformer/
+*.class

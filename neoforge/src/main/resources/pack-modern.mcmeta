@@ -1,0 +1,7 @@
+{
+  "pack": {
+    "description": "Mighty Architectury",
+    "min_format": ${meta_pack_format},
+    "max_format": ${meta_pack_format}
+  }
+}

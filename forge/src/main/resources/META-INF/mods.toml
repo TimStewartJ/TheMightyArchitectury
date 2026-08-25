@@ -8,10 +8,11 @@ modId = "mightyarchitect"
 version = "${version}"
 displayName = "The Mighty Architect"
 authors = "simibubi, timmie"
+displayURL = "https://modrinth.com/mod/the-mighty-architectury"
+logoFile = "assets/mightyarchitect/icon.png"
 description = '''
 Design elaborate buildings within a minute!
 '''
-#logoFile = ""
 
 [[mixins]]
 config = "mightyarchitect.mixins.json"
