@@ -2,6 +2,9 @@ name: Release
 
 # Publishes the 25 jars to the configured hosting platforms.
 #
+#   pull_request       - only when publishing-related files change: the dry run alone (the PR's own
+#                        build.yml run already verifies the same commit). Keeps the pipeline exercised
+#                        between releases instead of discovering breakage on release day.
 #   workflow_dispatch  - dry run on any ref: the full matrix must pass, then every node writes what it
 #                        WOULD upload (jar + resolved listing metadata) into a review artifact, and a
 #                        table of all 25 publications lands in the run summary. Nothing is uploaded.
@@ -17,6 +20,15 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/release.yml'
+      - 'buildSrc/**'
+      - 'CHANGELOG.md'
+      - 'gradle.properties'
+      - 'stonecutter.gradle'
+      - '*/build.gradle'
+      - 'versions/*/gradle.properties'
 
 concurrency:
   group: publish-${{ github.ref }}
@@ -27,9 +39,11 @@ permissions:
 
 jobs:
   # The full matrix - builds, metadata verification, JUnit, dedicated server, both client lanes and
-  # the source-shape gate - on exactly the commit being released.
+  # the source-shape gate - on exactly the commit being released. A pull request already gets this
+  # from build.yml on the same commit, so it is not repeated there.
   verify:
     name: Verify
+    if: github.event_name != 'pull_request'
     uses: ./.github/workflows/build.yml
 
   tag-matches-version:
@@ -51,6 +65,8 @@ jobs:
   dry-run:
     name: Dry run ${{ matrix.mc }}
     needs: verify
+    # Runs after a successful verify, or directly on a pull request where verify is skipped.
+    if: ${{ !cancelled() && (needs.verify.result == 'success' || needs.verify.result == 'skipped') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
