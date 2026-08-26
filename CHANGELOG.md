@@ -4,12 +4,7 @@ All notable changes to The Mighty Architectury. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One entry covers every Minecraft version
 the release ships for; version-specific notes say which versions they apply to.
 
-## [2.0.0] — unreleased
-
-<!-- DECISION STILL OPEN — resolve before tagging v2.0.0:
-     1.19.2 / 1.19.3: the "Removed" entry below assumes they are end-of-life. If a 1.19.2 build
-     is added instead, delete that entry and list 1.19.2 under "Added".
-     Replace "unreleased" above with the release date when tagging. -->
+## [2.0.0] - 2026-08-25
 
 This release supersedes every previously published jar from 0.8.0 (1.19.4) through 0.11.0 (1.21.11)
 and is the first built from the single-branch, multi-version codebase. It ships for 13 Minecraft
@@ -106,8 +101,11 @@ published 0.x build ship as full releases; the six Minecraft versions that have 
 
 ### Removed
 
-- Support for Minecraft 1.19.2 and 1.19.3. The last builds for those versions (0.6.2 and 0.7.0)
-  predate the server-side authorization fix above and will not be updated.
+- **Minecraft 1.19.2 and 1.19.3** are not part of this release. Their last builds (0.6.2 and 0.7.0)
+  predate the server-side authorization fix above: **do not install them on a multiplayer server.**
+  The mod is client-side and works without a server install, so a server that has them should
+  simply remove them; players lose nothing. A 1.19.2 build is not ruled out — open an issue if you
+  need one.
 - The Architectury API dependency.
 
 ### Internal
@@ -123,3 +121,5 @@ jars are built and verified.
   matched a vanilla method by shape, and the legacy-Forge mixin configs name their refmap
   ([#36](https://github.com/TimStewartJ/TheMightyArchitectury/pull/36),
   [#37](https://github.com/TimStewartJ/TheMightyArchitectury/pull/37)).
+
+[2.0.0]: https://github.com/TimStewartJ/TheMightyArchitectury/releases/tag/v2.0.0
