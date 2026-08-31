@@ -141,7 +141,9 @@ jobs:
     environment: release
     strategy:
       fail-fast: false
-      max-parallel: 3
+      # All matrix jobs must reach the protected environment together so one review approves every
+      # deployment. Limiting parallelism here batches the deployments and asks for another review
+      # after each batch; GitHub still schedules the approved jobs against the available runner pool.
       matrix:
         include:
           - { mc: "1.19.4",  loader2: forge }
