@@ -500,8 +500,22 @@ public class ArchitectMenuScreen extends Screen {
 		adjustTarget();
 	}
 
+	// Every shortcut in this menu arrives as a typed character; see McCompat.keepTextInput.
+	@Override
+	protected void init() {
+		super.init();
+		McCompat.keepTextInput(this);
+	}
+
+	@Override
+	public void tick() {
+		super.tick();
+		McCompat.keepTextInput(this);
+	}
+
 	@Override
 	public void removed() {
+		McCompat.releaseTextInput(this);
 		super.removed();
 		setFocused(false);
 	}

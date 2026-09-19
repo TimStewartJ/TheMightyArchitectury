@@ -206,6 +206,24 @@ public final class McCompat {
 		*///?}
 	}
 
+	// From 26.3 typed characters only exist while SDL text input is switched on, and vanilla switches
+	// it on for a focused text field and nothing else. The mod's screens read their shortcuts from
+	// charTyped with no text field in sight - G, then 1 to pick a theme - so while one is open it
+	// asks for text input itself. It asks again every tick because a text field inside the screen
+	// takes ownership when it gains focus and would switch it off on losing it. Before 26.3
+	// characters always arrive and there is nothing to ask for.
+	public static void keepTextInput(Screen screen) {
+		//? if >=26.3 {
+		/*Minecraft.getInstance().textInputManager().startTextInput(screen);
+		*///?}
+	}
+
+	public static void releaseTextInput(Screen screen) {
+		//? if >=26.3 {
+		/*Minecraft.getInstance().textInputManager().stopTextInput(screen);
+		*///?}
+	}
+
 	// Util moved packages at 1.21.11, and 26.3 took "show this in the file manager" off Util.OS
 	// and gave it to Blaze3D.
 	public static void openFolder(java.nio.file.Path folder) {

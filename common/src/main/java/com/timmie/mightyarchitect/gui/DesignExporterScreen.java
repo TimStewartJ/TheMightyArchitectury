@@ -283,6 +283,7 @@ public class DesignExporterScreen extends AbstractSimiScreen {
 
 	@Override
 	public void removed() {
+		super.removed();
 		DesignTheme theme = DesignExporter.getTheme();
 		DesignExporter.setLayer(theme.getLayers()
 			.get(scrollAreaLayer.getState()));
