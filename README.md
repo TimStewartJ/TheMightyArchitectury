@@ -133,6 +133,10 @@ artifact. Its Minecraft lives in `build/headlessmc` and is cached in CI per vers
 > Linux/CI only. HeadlessMc forces its LWJGL stub for offline accounts unless Xvfb is present, and a
 > stubbed renderer produces empty framebuffers that fail every screenshot assertion. The Fabric
 > production lane has no such constraint and runs anywhere, including `-KeepOpen`.
+>
+> Under Xvfb, Minecraft 26.3 and newer also need `SDL_VIDEO_FORCE_EGL=1` in the environment: the
+> game asks SDL for an sRGB-capable framebuffer, which Xvfb's GLX does not offer and EGL does.
+> Without it the client logs `Couldn't find matching GLX visual` and waits until the timeout.
 
 The server matrix boots a real dedicated server per target and runs the print-to-world test in
 `server-test/`: a schematic is turned into `InstantPrintPacket`s, round-tripped through the

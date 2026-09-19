@@ -149,12 +149,18 @@ jobs:
       - name: Install virtual display
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libgl1 libgl1-mesa-dri mesa-utils
+          sudo apt-get install -y xvfb libgl1 libgl1-mesa-dri libegl1 libegl-mesa0 mesa-utils
 
       - name: Automated client feature tests
         env:
           CI: true
           LIBGL_ALWAYS_SOFTWARE: "1"
+          # From 26.3 the game opens its window through SDL and asks for an sRGB-capable
+          # framebuffer. GLX under Xvfb has no such visual - "Couldn't find matching GLX visual",
+          # then a client that waits on an error dialog until the timeout - while EGL offers one
+          # through EGL_KHR_gl_colorspace. Same X display, same llvmpipe, same OpenGL backend a
+          # player gets; only the context comes from EGL. Versions on GLFW never read this.
+          SDL_VIDEO_FORCE_EGL: "1"
           ALSOFT_DRIVERS: "null"
         run: |
           xvfb-run -a -s "-screen 0 1280x720x24" \
@@ -178,6 +184,7 @@ jobs:
       - name: Production client test
         env:
           LIBGL_ALWAYS_SOFTWARE: "1"
+          SDL_VIDEO_FORCE_EGL: "1"   # see the dev lane above
           ALSOFT_DRIVERS: "null"
         run: |
           xvfb-run -a -s "-screen 0 1280x720x24" \
