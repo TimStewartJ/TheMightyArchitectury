@@ -16,11 +16,14 @@ the release ships for; version-specific notes say which versions they apply to.
 - **Fabric 26.2: the blueprint view works.** In 2.0.0 the world kept its normal colours while
   composing on that one build, because the piece that applies the effect was never registered
   there. NeoForge 26.2 and every other version were unaffected.
+- **Saving a build as a schematic works again on Minecraft 1.21.6 and newer.** In 2.0.0, confirming
+  the save prompt on 1.21.6, 1.21.8, 1.21.10, 1.21.11, 26.1 and 26.2 did nothing: no file was
+  written and the prompt stayed open. 1.21.4 and older were unaffected.
 
 ### Changed
 
 - The Minecraft 26.1 and 26.2 builds are full releases now; they shipped as betas in 2.0.0.
-- Nothing changes on any other Minecraft version; those jars are rebuilt from the same code.
+- Minecraft 1.19.4 to 1.21.4 behave exactly as in 2.0.0; those jars are rebuilt from the same code.
 
 ## [2.0.0] - 2026-08-25
 
