@@ -662,7 +662,11 @@ public final class ClientTestController {
         ImageStats blueprint = imageStats(blueprintScreenshot);
         double baselineBlueBias = baseline.blue - (baseline.red + baseline.green) / 2.0;
         double blueprintBlueBias = blueprint.blue - (blueprint.red + blueprint.green) / 2.0;
-        check(blueprintBlueBias > baselineBlueBias + 5.0,
+        // A working chain shifts the bias by +81 to +125: that is every lane of the 2.0.0 build except
+        // the two for Fabric 26.2, which measured +12 and +14 because the mixin that runs the chain
+        // was never registered there. The margin was 5 then, so both passed - two captures of the
+        // same scene differ by more than that on their own.
+        check(blueprintBlueBias > baselineBlueBias + 50.0,
             "blueprint frame has stronger blue bias (" + round(baselineBlueBias) + " -> "
                 + round(blueprintBlueBias) + ")");
         check(Shaders.Blueprint.isActive(), "blueprint post-chain active");

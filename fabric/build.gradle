@@ -185,9 +185,11 @@ tasks.named("test", Test) {
 
 processResources {
     // The blueprint post-process shader is driven from a mixin on Fabric; the post_effect API it
-    // targets only exists from 1.21.4, so every older node ships no client mixins of its own.
-    def postEffectVersions = ["1.21.4", "1.21.6", "1.21.8", "1.21.10", "1.21.11", "26.1"]
-    def includeGameRendererMixin = postEffectVersions.contains(stonecutter.current.version)
+    // targets only exists from 1.21.4, so every older node ships no client mixins of its own. This
+    // is a rule and not a list of versions on purpose: the list it replaces predated 26.2, so that
+    // node shipped 2.0.0 without the mixin - no blueprint view - and nothing failed. A version the
+    // mixin no longer fits now fails at startup instead (defaultRequire in the mixin config).
+    def includeGameRendererMixin = stonecutter.eval(stonecutter.current.version, ">=1.21.4")
     def metaProps = [
         "version"            : project.version,
         "meta_mc_range"      : node.property('meta_mc_range'),
