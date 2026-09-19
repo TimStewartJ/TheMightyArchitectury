@@ -24,6 +24,7 @@ import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import com.timmie.mightyarchitect.control.palette.PaletteStorage;
 import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
 import com.timmie.mightyarchitect.foundation.WrappedWorld;
+import com.timmie.mightyarchitect.foundation.utility.Mouse;
 import com.timmie.mightyarchitect.foundation.utility.ShaderManager;
 import com.timmie.mightyarchitect.foundation.utility.Shaders;
 import com.timmie.mightyarchitect.gui.ArchitectMenuScreen;
@@ -540,7 +541,7 @@ public final class ClientTestController {
     private static PaletteDefinition clickCentre(Screen screen, AbstractWidget widget) {
         double x = widget.getX() + widget.getWidth() / 2.0;
         double y = widget.getY() + widget.getHeight() / 2.0;
-        check(ScreenInput.click(screen, x, y, 0), "click consumed at " + (int) x + "," + (int) y);
+        check(ScreenInput.click(screen, x, y, Mouse.LEFT), "click consumed at " + (int) x + "," + (int) y);
         return ArchitectManager.getModel().getPrimary();
     }
 

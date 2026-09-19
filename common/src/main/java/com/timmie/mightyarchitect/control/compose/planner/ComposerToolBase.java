@@ -27,7 +27,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import org.lwjgl.glfw.GLFW;
 
 public abstract class ComposerToolBase implements IComposerTool {
 
@@ -90,7 +89,7 @@ public abstract class ComposerToolBase implements IComposerTool {
 
 	protected void updateOverlay() {
 		lastToolModeYOffset = toolModeYOffset;
-		if (Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL))
+		if (Keyboard.isKeyDown(Keyboard.LCONTROL))
 			toolModeYOffset += (12 - toolModeYOffset) * .2f;
 		else
 			toolModeYOffset *= .8f;
@@ -135,7 +134,7 @@ public abstract class ComposerToolBase implements IComposerTool {
 		*///?}
 		if (toolModeNoCtrl != null) {
 			int color = 0xFFFFFFFF;
-			if (Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL))
+			if (Keyboard.isKeyDown(Keyboard.LCONTROL))
 				color = 0x66AACCFF;
 			//? if >=26 {
 			graphics.text(mc.font, toolModeNoCtrl, baseX, baseY, color);
@@ -147,7 +146,7 @@ public abstract class ComposerToolBase implements IComposerTool {
 		}
 		if (toolModeCtrl != null) {
 			int color = 0xFFFFFFFF;
-			if (!Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL))
+			if (!Keyboard.isKeyDown(Keyboard.LCONTROL))
 				color = 0x66AACCFF;
 			//? if >=26 {
 			graphics.text(mc.font, toolModeCtrl, baseX, baseY + 12, color);

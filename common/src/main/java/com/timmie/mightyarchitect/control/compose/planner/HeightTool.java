@@ -3,7 +3,6 @@ package com.timmie.mightyarchitect.control.compose.planner;
 import com.timmie.mightyarchitect.control.compose.Room;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import net.minecraft.ChatFormatting;
-import org.lwjgl.glfw.GLFW;
 
 public class HeightTool extends AbstractRoomFaceSelectionTool {
 
@@ -17,7 +16,7 @@ public class HeightTool extends AbstractRoomFaceSelectionTool {
 	@Override
 	public boolean handleMouseWheel(int scroll) {
 		if (selectedRoom != null) {
-			if (Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL)) {
+			if (Keyboard.isKeyDown(Keyboard.LCONTROL)) {
 				// Resize
 				if (selectedRoom.height + scroll > model.getTheme()
 					.getMaxFloorHeight()) {
@@ -53,14 +52,14 @@ public class HeightTool extends AbstractRoomFaceSelectionTool {
 	@Override
 	protected boolean isRoomHighlighted(Room room) {
 		return super.isRoomHighlighted(room)
-			|| (!Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL) && selectedStack != null && selectedStack.getRooms()
+			|| (!Keyboard.isKeyDown(Keyboard.LCONTROL) && selectedStack != null && selectedStack.getRooms()
 				.contains(room));
 	}
 
 	@Override
 	public void updateSelection() {
 		super.updateSelection();
-		highlightRoom = Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL);
+		highlightRoom = Keyboard.isKeyDown(Keyboard.LCONTROL);
 	}
 
 	@Override

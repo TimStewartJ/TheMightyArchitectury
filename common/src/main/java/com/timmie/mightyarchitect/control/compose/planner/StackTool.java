@@ -7,7 +7,6 @@ import com.timmie.mightyarchitect.control.compose.Stack;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import net.minecraft.ChatFormatting;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.lwjgl.glfw.GLFW;
 
 public class StackTool extends AbstractRoomFaceSelectionTool {
 
@@ -23,7 +22,7 @@ public class StackTool extends AbstractRoomFaceSelectionTool {
 		if (selectedStack == null)
 			return super.handleMouseWheel(scroll);
 
-		boolean ctrl = Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL);
+		boolean ctrl = Keyboard.isKeyDown(Keyboard.LCONTROL);
 		GroundPlan groundPlan = ArchitectManager.getModel()
 			.getGroundPlan();
 
@@ -63,7 +62,7 @@ public class StackTool extends AbstractRoomFaceSelectionTool {
 	@Override
 	public void updateSelection() {
 		super.updateSelection();
-		highlightRoom = Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL);
+		highlightRoom = Keyboard.isKeyDown(Keyboard.LCONTROL);
 
 		if (selectedStack != null)
 			status("Floors: " + ChatFormatting.AQUA + selectedStack.floors());

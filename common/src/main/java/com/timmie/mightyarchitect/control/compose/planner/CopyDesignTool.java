@@ -13,7 +13,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
 import net.minecraft.world.phys.AABB;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -45,7 +44,7 @@ public class CopyDesignTool extends WallDecorationToolBase {
 				selectedPos.getZ() == selectedRoom.z || selectedPos.getZ() == selectedRoom.z + selectedRoom.length - 1;
 			boolean xInCorner =
 				selectedPos.getX() == selectedRoom.x || selectedPos.getX() == selectedRoom.x + selectedRoom.width - 1;
-			boolean pasting = !Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL);
+			boolean pasting = !Keyboard.isKeyDown(Keyboard.LCONTROL);
 			selectingCorners = (xInCorner && zInCorner && !(selectedStack instanceof CylinderStack))
 				|| copiedDesignType == DesignType.CORNER && pasting;
 			selectingCorners = selectingCorners && !(copiedDesignType == DesignType.WALL && pasting);
@@ -126,7 +125,7 @@ public class CopyDesignTool extends WallDecorationToolBase {
 
 	@Override
 	public String handleRightClick() {
-		boolean keyDown = Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL);
+		boolean keyDown = Keyboard.isKeyDown(Keyboard.LCONTROL);
 
 		if (copiedDesign == null && !keyDown)
 			return ChatFormatting.RED + "Ctrl+Click to copy a Design";

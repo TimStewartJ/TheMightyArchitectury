@@ -19,11 +19,6 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 /*import net.minecraft.client.gui.screens.Screen;
 *///?}
 import net.minecraft.network.chat.Component;
-//? if >=1.21.10 {
-import org.lwjgl.glfw.GLFW;
-//?} else {
-/*
-*///?}
 
 import java.util.function.Consumer;
 
@@ -102,7 +97,7 @@ public class ScrollInput extends AbstractSimiWidget {
 
 		int priorState = state;
 		//? if >=1.21.10 {
-		boolean shifted = Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_SHIFT) || Keyboard.isKeyDown(GLFW.GLFW_KEY_RIGHT_SHIFT);
+		boolean shifted = Keyboard.isKeyDown(Keyboard.LSHIFT) || Keyboard.isKeyDown(Keyboard.RSHIFT);
 		//?} else {
 		/*boolean shifted = Screen.hasShiftDown();
 		*///?}

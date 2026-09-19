@@ -13,6 +13,7 @@ import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import com.timmie.mightyarchitect.control.palette.PaletteStorage;
 import com.timmie.mightyarchitect.control.storage.ArchitectPaths;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
+import com.timmie.mightyarchitect.foundation.utility.Mouse;
 import com.timmie.mightyarchitect.gui.widgets.IconButton;
 import net.minecraft.ChatFormatting;
 //? if >=1.21.11 {
@@ -230,9 +231,9 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 
 			if (guibutton.isMouseOver(mouseX, mouseY)) {
 				guibutton.playDownSound(this.minecraft.getSoundManager());
-				if (mouseButton == 0)
+				if (mouseButton == Mouse.LEFT)
 					this.buttonClicked(guibutton);
-				if (mouseButton == 1)
+				if (mouseButton == Mouse.RIGHT)
 					this.buttonRightClicked(guibutton);
 				return true;
 			}

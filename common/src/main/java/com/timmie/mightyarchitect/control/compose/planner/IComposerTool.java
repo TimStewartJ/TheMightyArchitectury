@@ -19,7 +19,6 @@ import net.minecraft.client.input.KeyEvent;
 /*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
 import org.apache.commons.lang3.ArrayUtils;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -45,7 +44,7 @@ public interface IComposerTool {
 			return;
 
 		int number = ArrayUtils.indexOf(Minecraft.getInstance().options.keyHotbarSlots, mapping.get()) + 1;
-		if (Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_SHIFT) || Keyboard.isKeyDown(GLFW.GLFW_KEY_RIGHT_SHIFT)) {
+		if (Keyboard.isKeyDown(Keyboard.LSHIFT) || Keyboard.isKeyDown(Keyboard.RSHIFT)) {
 			number = number * -1;
 		}
 
