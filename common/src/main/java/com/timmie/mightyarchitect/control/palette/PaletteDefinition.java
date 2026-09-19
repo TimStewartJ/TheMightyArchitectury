@@ -5,10 +5,12 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.JsonOps;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.storage.JsonStorage;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -35,6 +37,49 @@ public class PaletteDefinition {
 	private static final String NAME_KEY = "Name";
 
 	/**
+	 * A block state the way every palette file has always spelled it: {@code {"Name": id,
+	 * "Properties": {...}}}, the second key only when there is something in it.
+	 * <p>
+	 * This was {@code BlockState.CODEC}, which wrote exactly that until 26.3, where vanilla moved to
+	 * lowercase {@code id}/{@code properties} and a bare string for a default state. Every shipped
+	 * and user palette would have stopped loading there, anything saved there would have loaded
+	 * nowhere else, and a palette's own {@code Name} string would have been tried as a block id. The
+	 * format belongs to the mod, so the mod spells it out - from registry and property calls that
+	 * are the same on every version. A property the block no longer has, or a value it no longer
+	 * takes, costs that property and not the block.
+	 */
+	public static final Codec<BlockState> BLOCK_STATE = RecordCodecBuilder.create(instance -> instance.group(
+			BuiltInRegistries.BLOCK.byNameCodec().fieldOf("Name").forGetter(BlockState::getBlock),
+			Codec.unboundedMap(Codec.STRING, Codec.STRING).optionalFieldOf("Properties", Map.of())
+				.forGetter(PaletteDefinition::propertiesOf))
+		.apply(instance, PaletteDefinition::stateOf));
+
+	private static Map<String, String> propertiesOf(BlockState state) {
+		Map<String, String> properties = new LinkedHashMap<>();
+		for (Property<?> property : state.getProperties())
+			properties.put(property.getName(), valueName(state, property));
+		return properties;
+	}
+
+	private static <T extends Comparable<T>> String valueName(BlockState state, Property<T> property) {
+		return property.getName(state.getValue(property));
+	}
+
+	private static BlockState stateOf(Block block, Map<String, String> properties) {
+		BlockState state = block.defaultBlockState();
+		for (Map.Entry<String, String> entry : properties.entrySet()) {
+			Property<?> property = block.getStateDefinition().getProperty(entry.getKey());
+			if (property != null)
+				state = withValue(state, property, entry.getValue());
+		}
+		return state;
+	}
+
+	private static <T extends Comparable<T>> BlockState withValue(BlockState state, Property<T> property, String value) {
+		return property.getValue(value).map(parsed -> state.setValue(property, parsed)).orElse(state);
+	}
+
+	/**
 	 * One value inside a palette object: a block state, or anything else.
 	 * <p>
 	 * The "anything else" arm is what makes this total, and it has to be. A palette file mixes its
@@ -44,7 +89,7 @@ public class PaletteDefinition {
 	 * the user's entire palette instead would be a regression, not a fix.
 	 */
 	private static final Codec<Either<BlockState, Dynamic<?>>> ENTRY =
-		Codec.either(BlockState.CODEC, Codec.PASSTHROUGH);
+		Codec.either(BLOCK_STATE, Codec.PASSTHROUGH);
 
 	/** The inside of the {@code Palette} object: the name, alongside one entry per slot. */
 	public static final Codec<PaletteDefinition> ENTRIES_CODEC = Codec.unboundedMap(Codec.STRING, ENTRY)
