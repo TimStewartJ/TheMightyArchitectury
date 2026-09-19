@@ -16,11 +16,6 @@ import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import com.timmie.mightyarchitect.foundation.utility.Mouse;
 import com.timmie.mightyarchitect.gui.widgets.IconButton;
 import net.minecraft.ChatFormatting;
-//? if >=1.21.11 {
-import net.minecraft.util.Util;
-//?} else {
-/*import net.minecraft.Util;
-*///?}
 import net.minecraft.client.Minecraft;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -249,8 +244,7 @@ public class PalettePickerScreen extends AbstractSimiScreen {
 		if (button == buttonOpenFolder) {
 			Path folder = ArchitectPaths.palettes();
 			FilesHelper.createFolderIfMissing(folder);
-			Util.getPlatform()
-				.openFile(folder.toFile());
+			McCompat.openFolder(folder);
 		}
 
 		if (button == buttonRefresh) {

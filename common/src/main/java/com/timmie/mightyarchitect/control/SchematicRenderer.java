@@ -13,7 +13,11 @@ import com.mojang.blaze3d.vertex.MeshData;
 /*
 *///?}
 import com.mojang.blaze3d.vertex.PoseStack;
+//? if >=26.3 {
+/*import com.mojang.renderpearl.api.vertex.VertexFormat;
+*///?} else {
 import com.mojang.blaze3d.vertex.VertexFormat;
+//?}
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.control.compose.Cuboid;
 import com.timmie.mightyarchitect.foundation.compat.McCompat;

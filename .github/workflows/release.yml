@@ -1,13 +1,13 @@
 name: Release
 
-# Publishes the 25 jars to the configured hosting platforms.
+# Publishes every jar to the configured hosting platforms.
 #
 #   pull_request       - only when publishing-related files change: the dry run alone (the PR's own
 #                        build.yml run already verifies the same commit). Keeps the pipeline exercised
 #                        between releases instead of discovering breakage on release day.
 #   workflow_dispatch  - dry run on any ref: the full matrix must pass, then every node writes what it
 #                        WOULD upload (jar + resolved listing metadata) into a review artifact, and a
-#                        table of all 25 publications lands in the run summary. Nothing is uploaded.
+#                        table of every publication lands in the run summary. Nothing is uploaded.
 #   push of a v* tag   - the same, then the live upload - from the `release` environment, so that
 #                        MODRINTH_TOKEN / CURSEFORGE_TOKEN live there rather than as repository secrets
 #                        a PR build could see, and so a required reviewer on that environment turns
@@ -87,6 +87,7 @@ jobs:
           - { mc: "1.21.11", loader2: neoforge }
           - { mc: "26.1",    loader2: neoforge }
           - { mc: "26.2",    loader2: neoforge }
+          - { mc: "26.3",    loader2: neoforge }
     steps:
       - uses: actions/checkout@v4
         with:
@@ -159,6 +160,7 @@ jobs:
           - { mc: "1.21.11", loader2: neoforge }
           - { mc: "26.1",    loader2: neoforge }
           - { mc: "26.2",    loader2: neoforge }
+          - { mc: "26.3",    loader2: neoforge }
     steps:
       - uses: actions/checkout@v4
         with:

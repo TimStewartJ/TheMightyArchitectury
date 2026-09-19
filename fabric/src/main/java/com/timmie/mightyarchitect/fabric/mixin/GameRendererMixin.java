@@ -7,7 +7,7 @@ package com.timmie.mightyarchitect.fabric.mixin;
  //? if >=1.21.4 {
 import com.mojang.blaze3d.resource.CrossFrameResourcePool;
 import com.timmie.mightyarchitect.foundation.utility.PostChainManager;
-import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -33,9 +33,11 @@ public class GameRendererMixin {
      //* The injection point is at the TAIL of renderLevel(), ensuring the world
      //* has been fully rendered to the framebuffer before we process it.
      //
+    // Takes none of the target's arguments on purpose: renderLevel lost its DeltaTracker parameter
+    // in 26.3, and Minecraft hands out that same tracker on every version this mixin applies to.
     @Inject(method = "renderLevel", at = @At("TAIL"))
-    private void mightyarchitect$afterRenderLevel(DeltaTracker deltaTracker, CallbackInfo ci) {
-        float partialTicks = deltaTracker.getGameTimeDeltaPartialTick(false);
+    private void mightyarchitect$afterRenderLevel(CallbackInfo ci) {
+        float partialTicks = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false);
         PostChainManager.processShader(partialTicks, resourcePool);
     }
 }

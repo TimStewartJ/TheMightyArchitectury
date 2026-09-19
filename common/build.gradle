@@ -20,11 +20,14 @@ group = rootProject.maven_group
 def oldApiVersions = ["1.19.4", "1.20.1", "1.20.2", "1.20.4", "1.20.6", "1.21.1"]  // GameRenderer.loadEffect PostChain (shaders/post + shaders/program)
 def t4ShaderVersions = ["1.21.4"]          // transitional: post_effect (program) + shaders/post program def
 def p6ShaderVersions = ["1.21.6", "1.21.8"] // post_effect (post/blit vertex) + #version 150 fragment
-// Everything newer (1.21.10, 1.21.11, 26.1, ...) uses post_effect (core/screenquad) + #version 330 fragment.
+// 1.21.10 through 26.2 use post_effect (core/screenquad) + #version 330 fragment. From 26.3 vanilla's
+// screenquad declares `layout(location = 0)` on its outputs, and an interface variable with a location
+// never matches one without, so the fragment shader has to declare its own the same way.
 def shaderVariant =
     oldApiVersions.contains(stonecutter.current.version)   ? "old" :
     t4ShaderVersions.contains(stonecutter.current.version) ? "t4"  :
-    p6ShaderVersions.contains(stonecutter.current.version) ? "p6"  : "p10"
+    p6ShaderVersions.contains(stonecutter.current.version) ? "p6"  :
+    stonecutter.eval(stonecutter.current.version, ">=26.3") ? "p26.3" : "p10"
 sourceSets.main.resources.srcDir rootProject.file("common/shader-variants/${shaderVariant}")
 
 // Nothing here can compile or package: Minecraft only exists on the loader nodes' classpaths.

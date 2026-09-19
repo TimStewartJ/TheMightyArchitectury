@@ -7,12 +7,16 @@ import com.mojang.blaze3d.vertex.MeshData;
 *///?}
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-//? if >=26 {
+//? if >=26.3 {
+/*import com.mojang.renderpearl.api.vertex.VertexFormat;
+import com.mojang.renderpearl.api.vertex.VertexFormatElement;
+*///?} else if >=26 {
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
 //?} else {
 /*
 *///?}
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector4f;
@@ -257,7 +261,7 @@ public class SuperByteBuffer {
 			return this;
 		Quaternionf quaternionOfAxisRotation = new Quaternionf();
 		quaternionOfAxisRotation.fromAxisAngleRad(axis.step(), radians);
-		transforms.mulPose(quaternionOfAxisRotation);
+		McCompat.rotate(transforms, quaternionOfAxisRotation);
 		return this;
 	}
 

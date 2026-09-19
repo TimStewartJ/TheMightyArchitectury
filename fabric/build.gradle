@@ -26,6 +26,12 @@ def clientTestServer = (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_SERVER")
     ?: project.findProperty("clientTestServer")
     ?: "127.0.0.1:25565").toString()
 def clientTestKeepOpen = (System.getenv("MIGHTYARCHITECT_CLIENT_TEST_KEEP_OPEN") ?: "false").toString()
+// JVM flags from Mojang's own launch profile that the game does not survive without. Launchers
+// read them out of the version manifest; Loom's run tasks do not, so every client launch below is
+// given them here. 26.3 added -XX:StackShadowPages=32: its shader cross-compiler (shaderc into
+// SPIRV-Cross, natively, on a Java thread) overruns the default shadow zone, and the JVM dies with
+// an access violation in the first resource reload - no hs_err, no log line, exit 0xC0000005.
+def launcherJvmArgs = stonecutter.eval(stonecutter.current.version, ">=26.3") ? ["-XX:StackShadowPages=32"] : []
 
 // Source inclusion: this node compiles the matching common node's Stonecutter output alongside its
 // own. There is no shared artifact and no bytecode transformer - each loader compiles the shared
@@ -108,6 +114,11 @@ loom {
             name "Mighty Architect Automated Server Test"
             runDir "run-server-test"
             property "mightyarchitect.serverTest.enabled", "true"
+        }
+    }
+    runs.configureEach { run ->
+        if (run.environment == "client") {
+            launcherJvmArgs.each { run.vmArg(it) }
         }
     }
 }
@@ -327,6 +338,10 @@ tasks.register("runProductionPlayerJourney", ClientProductionRunTask) {
     )
 
     useXVFB = false
+}
+
+tasks.withType(ClientProductionRunTask).configureEach {
+    jvmArgs.addAll(launcherJvmArgs)
 }
 
 if (unobf) {

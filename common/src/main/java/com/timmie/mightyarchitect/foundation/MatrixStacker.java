@@ -2,6 +2,7 @@ package com.timmie.mightyarchitect.foundation;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.timmie.mightyarchitect.foundation.utility.AngleHelper;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
 import net.minecraft.core.BlockPos;
@@ -75,7 +76,7 @@ public class MatrixStacker {
 	}
 
 	private MatrixStacker multiply(Axis axis, double angle) {
-		ms.mulPose(axis.rotationDegrees((float) angle));
+		McCompat.rotate(ms, axis.rotationDegrees((float) angle));
 		return this;
 	}
 

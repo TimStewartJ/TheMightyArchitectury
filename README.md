@@ -5,20 +5,20 @@
 # The Mighty Architectury
 
 A port of [simibubi's](https://github.com/simibubi) [The Mighty Architect](https://github.com/simibubi/TheMightyArchitect)
-to Fabric, NeoForge and Forge, maintained for 13 Minecraft versions from 1.19.4 to 26.2. No
+to Fabric, NeoForge and Forge, maintained for 14 Minecraft versions from 1.19.4 to 26.3. No
 third-party multiloader framework: each loader is built with its own official toolkit, so the mod
 has no runtime dependencies beyond the loader itself (plus Fabric API on Fabric). Downloads are on
 [Modrinth](https://modrinth.com/mod/the-mighty-architectury); what changed in each release is in
 [`CHANGELOG.md`](CHANGELOG.md).
 
 Every jar is verified the way it ships: the same client test harness runs against the packaged
-artifact on all 25 targets, alongside a dedicated-server test and a JUnit suite, on every change.
+artifact on all 27 targets, alongside a dedicated-server test and a JUnit suite, on every change.
 Bugs still happen — please [report them](https://github.com/TimStewartJ/TheMightyArchitectury/issues)
 with the Minecraft version and loader.
 
 ## Contributing
 
-Everything lives on `main`. One source tree builds 13 Minecraft versions - 25 jars - through
+Everything lives on `main`. One source tree builds 14 Minecraft versions - 27 jars - through
 [Stonecutter](https://stonecutter.kikugie.dev/); there are no per-version branches. The versions are
 listed in `settings.gradle`, and each has its own dependency and metadata values in
 `versions/<mc>/gradle.properties`.
@@ -79,7 +79,7 @@ same way, so keep such comments inside the body.
 ```powershell
 ./gradlew stonecutterSwitchTo1.21.8   # switch which version the tree targets
 ./gradlew compileAll                   # compile every node and source set - the local inner loop
-./gradlew buildAll                     # build all 25 jars
+./gradlew buildAll                     # build every jar
 ./gradlew ":fabric:1.21.8:build"       # build one target
 ./gradlew ":forge:1.20.1:build"        # the Forge branch only covers 1.19.4 and 1.20.1
 ```
@@ -115,7 +115,7 @@ pwsh -File scripts/run-client-test-matrix.ps1 -Mode prod
 `-Mode prod` runs the identical harness, but launched the way a launcher launches the game:
 packaged artifacts, remapped or reobfuscated names, mods discovered from a jar rather than a
 classpath. It needs no account and no installed launcher, so it runs in CI alongside everything
-else, on all 25 targets.
+else, on every target.
 
 Two launchers sit behind it, because no single one covers every loader:
 
@@ -175,12 +175,12 @@ jar's own version plus a loader suffix (`2.0.0+mc1.21.1-fabric`), one upload per
 
 ```powershell
 ./gradlew :fabric:1.21.1:publishMods   # dry run: writes build/publishMods/ for review, uploads nothing
-./gradlew publishAll                   # the same for all 25 jars
+./gradlew publishAll                   # the same for every jar
 ./gradlew publishAll -PpublishLive=true # real upload; needs MODRINTH_TOKEN (and CURSEFORGE_TOKEN)
 ```
 
-In CI, `.github/workflows/release.yml` runs the whole matrix on the commit, then a dry run of all 25
-publications whose resolved metadata is tabulated in the run summary (`workflow_dispatch` on any
+In CI, `.github/workflows/release.yml` runs the whole matrix on the commit, then a dry run of every
+publication, whose resolved metadata is tabulated in the run summary (`workflow_dispatch` on any
 ref stops here). Pushing a `v<mod_version>` tag continues to the live upload from the `release`
 environment, which is where the tokens belong and where a required reviewer makes the upload a
 manual gate. A tag that does not match `mod_version`, or a `CHANGELOG.md` whose top heading is

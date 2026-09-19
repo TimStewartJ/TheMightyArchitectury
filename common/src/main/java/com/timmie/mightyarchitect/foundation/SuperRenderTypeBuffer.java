@@ -2,6 +2,7 @@ package com.timmie.mightyarchitect.foundation;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 //? if >=1.21 {
@@ -158,7 +159,7 @@ public class SuperRenderTypeBuffer implements MultiBufferSource, MightyBuffers {
 	}
 
 	// Records the VertexConsumer calls made during the frame so they can be replayed later. Only the
-	// eight non-default methods need recording; everything else on VertexConsumer funnels into them.
+	// non-default methods need recording; everything else on VertexConsumer funnels into them.
 	private static class RecordedGeometry implements VertexConsumer {
 
 		private static final int ADD_VERTEX = 0;
@@ -169,6 +170,7 @@ public class SuperRenderTypeBuffer implements MultiBufferSource, MightyBuffers {
 		private static final int SET_UV2 = 5;
 		private static final int SET_NORMAL = 6;
 		private static final int SET_LINE_WIDTH = 7;
+		private static final int SET_UV3 = 8;
 
 		// Ops and their arguments interleaved; floats are stored as raw bits.
 		private final IntArrayList calls = new IntArrayList();
@@ -221,6 +223,10 @@ public class SuperRenderTypeBuffer implements MultiBufferSource, MightyBuffers {
 					case SET_LINE_WIDTH -> {
 						consumer.setLineWidth(f(i));
 						i += 1;
+					}
+					case SET_UV3 -> {
+						McCompat.setUv3(consumer, f(i), f(i + 1));
+						i += 2;
 					}
 					default -> throw new IllegalStateException("Unknown recorded vertex op: " + op);
 				}
@@ -315,6 +321,13 @@ public class SuperRenderTypeBuffer implements MultiBufferSource, MightyBuffers {
 		@Override
 		public VertexConsumer setLineWidth(float width) {
 			push(SET_LINE_WIDTH, width);
+			return this;
+		}
+
+		// VertexConsumer gained this channel in 26.3. Deliberately no @Override: 26.2 compiles this
+		// same arm against an interface without it, and a guard cannot nest in here.
+		public VertexConsumer setUv3(float u, float v) {
+			push(SET_UV3, u, v);
 			return this;
 		}
 	}

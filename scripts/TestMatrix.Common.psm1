@@ -276,6 +276,8 @@ function Start-TestVanillaServer {
         'server-ip=127.0.0.1'
         "server-port=$Port"
         'online-mode=false'
+        # 26.3 turned the whitelist on by default; an offline test server has no list to be on.
+        'white-list=false'
         'enforce-secure-profile=false'
         'spawn-protection=0'
         'view-distance=3'

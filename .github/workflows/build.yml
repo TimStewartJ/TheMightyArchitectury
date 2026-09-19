@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Cheap structural gate, in parallel with the 13 build jobs. Guards the bug class PR #34 vs #32
+  # Cheap structural gate, in parallel with the build jobs. Guards the bug class PR #34 vs #32
   # demonstrated: a guard that wraps a whole file gives every version its own copy of the shared
   # logic, so a fix applied to one copy silently misses the others. Marker counts hide it - one
   # guard can wrap hundreds of duplicated lines - so this looks for the repeated `package`
@@ -56,6 +56,7 @@ jobs:
           - { mc: "1.21.11", loader2: neoforge }
           - { mc: "26.1",    loader2: neoforge }
           - { mc: "26.2",    loader2: neoforge }
+          - { mc: "26.3",    loader2: neoforge }
     steps:
       - uses: actions/checkout@v4
         with:
@@ -220,4 +221,4 @@ jobs:
             echo "One or more version builds failed."
             exit 1
           fi
-          echo "All 13 versions built green (25 jars: 13 Fabric + 12 Forge-family), with production-jar client coverage on all 13 Fabric nodes."
+          echo "Every version built green on every loader it targets, with production-jar client coverage."

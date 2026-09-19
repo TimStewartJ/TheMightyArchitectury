@@ -67,7 +67,15 @@ tasks.named("compileJava") { dependsOn commonGenerate }
 tasks.named("processResources") { dependsOn commonGenerate }
 
 neoForge {
-    version = neoforgeVersion
+    enable {
+        version = neoforgeVersion
+        // A node can opt out of ModDevGradle's decompile-and-recompile step and build against the
+        // binary-patched game instead. CI does that for every node already (ModDevGradle defaults
+        // to it when CI=true), so this only changes what a local build of that node does.
+        if (node.findProperty('neoforge_disable_recompilation') == 'true') {
+            disableRecompilation = true
+        }
+    }
 
     addModdingDependenciesTo sourceSets.clientTest
     addModdingDependenciesTo sourceSets.serverTest

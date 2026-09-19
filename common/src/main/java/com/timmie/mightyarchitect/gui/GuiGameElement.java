@@ -17,6 +17,7 @@ import com.mojang.math.Axis;
 //?} else {
 /*import com.timmie.mightyarchitect.foundation.utility.ColorHelper;
 *///?}
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.timmie.mightyarchitect.foundation.utility.VecHelper;
 import net.minecraft.client.Minecraft;
 //? if >=26 {
@@ -202,9 +203,9 @@ public class GuiGameElement {
 			matrixStack.scale(1, -1, 1);
 			matrixStack.translate(rotationOffset.x, rotationOffset.y, rotationOffset.z);
 
-			matrixStack.mulPose(Axis.ZP.rotationDegrees((float) zRot));
-			matrixStack.mulPose(Axis.XP.rotationDegrees((float) xRot));
-			matrixStack.mulPose(Axis.YP.rotationDegrees((float) yRot));
+			McCompat.rotate(matrixStack, Axis.ZP.rotationDegrees((float) zRot));
+			McCompat.rotate(matrixStack, Axis.XP.rotationDegrees((float) xRot));
+			McCompat.rotate(matrixStack, Axis.YP.rotationDegrees((float) yRot));
 			matrixStack.translate(-rotationOffset.x, -rotationOffset.y, -rotationOffset.z);
 		}
 
