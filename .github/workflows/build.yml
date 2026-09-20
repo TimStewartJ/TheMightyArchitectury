@@ -228,6 +228,12 @@ jobs:
           xvfb-run -a -s "-screen 0 1280x720x24" \
             pwsh -NoProfile -File ./scripts/run-client-test-matrix.ps1 -Mode prod -Versions '${{ matrix.mc }}'
 
+      # Restored objects keep the age they were saved with, so anything newer than the start of
+      # this job was downloaded by it. Zero is the normal answer; a number means the store is stale.
+      - name: Asset downloads in this job
+        if: always()
+        run: echo "$(find ~/mc-assets/objects -type f -newer "$GITHUB_EVENT_PATH" | wc -l) of $(find ~/mc-assets/objects -type f | wc -l) asset objects were downloaded by this job"
+
       - name: Save HeadlessMc Minecraft
         if: github.ref == 'refs/heads/main' && matrix.loader2 != '' && steps.hmc.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
