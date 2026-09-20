@@ -148,8 +148,16 @@ function Send-JourneyCommand {
 function Focus-JourneyWindow {
     $deadline = (Get-Date).AddSeconds(180)
     while ((Get-Date) -lt $deadline) {
-        $windowIds = @(& xdotool search --onlyvisible --name 'Minecraft' 2>$null)
-        if ($LASTEXITCODE -eq 0 -and $windowIds.Count -gt 0) {
+        # GLFW titles its window "Minecraft ..."; the SDL window (26.3 on) is only found by class.
+        $windowIds = @()
+        foreach ($query in @(@('--name', 'Minecraft'), @('--class', 'minecraft'))) {
+            $found = @(& xdotool search --onlyvisible @query 2>$null)
+            if ($LASTEXITCODE -eq 0 -and $found.Count -gt 0) {
+                $windowIds = $found
+                break
+            }
+        }
+        if ($windowIds.Count -gt 0) {
             $windowId = "$($windowIds[-1])".Trim()
             Invoke-Xdotool -Arguments @('windowactivate', '--sync', $windowId)
             Invoke-Xdotool -Arguments @('windowsize', $windowId, '1280', '720')
