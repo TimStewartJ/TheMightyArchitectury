@@ -3,7 +3,6 @@ package com.timmie.mightyarchitect.control.compose.planner;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import net.minecraft.core.Direction;
-import org.lwjgl.glfw.GLFW;
 
 public class RerollTargetTool extends WallDecorationToolBase {
 
@@ -21,7 +20,7 @@ public class RerollTargetTool extends WallDecorationToolBase {
 	@Override
 	public boolean handleMouseWheel(int amount) {
 		
-		boolean keyDown = Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL);
+		boolean keyDown = Keyboard.isKeyDown(Keyboard.LCONTROL);
 		if (selectedRoom != null && keyDown) {
 			model.seed += amount;
 			
@@ -50,7 +49,7 @@ public class RerollTargetTool extends WallDecorationToolBase {
 	public void updateSelection() {
 		super.updateSelection();
 		
-		highlightRoom = Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL);
+		highlightRoom = Keyboard.isKeyDown(Keyboard.LCONTROL);
 		highlightStack = !highlightRoom;
 		highlightRoof = highlightRoom;
 	}

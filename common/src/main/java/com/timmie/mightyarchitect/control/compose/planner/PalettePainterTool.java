@@ -11,7 +11,6 @@ import net.minecraft.client.input.KeyEvent;
 /*
 *///?}
 import org.apache.commons.lang3.ArrayUtils;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -43,7 +42,7 @@ public class PalettePainterTool extends WallDecorationToolBase {
 			return false;
 		}
 
-		if (Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL)) {
+		if (Keyboard.isKeyDown(Keyboard.LCONTROL)) {
 			// Paint Room
 			selectedRoom.secondaryPalette ^= true;
 
@@ -83,7 +82,7 @@ public class PalettePainterTool extends WallDecorationToolBase {
 			return;
 		}
 
-		if (Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL)) {
+		if (Keyboard.isKeyDown(Keyboard.LCONTROL)) {
 			// Paint Room
 			selectedRoom.secondaryPalette = index == 1;
 
@@ -100,7 +99,7 @@ public class PalettePainterTool extends WallDecorationToolBase {
 	public void updateSelection() {
 		super.updateSelection();
 
-		highlightRoom = Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL);
+		highlightRoom = Keyboard.isKeyDown(Keyboard.LCONTROL);
 		highlightStack = !highlightRoom;
 		highlightRoof = highlightRoom;
 	}

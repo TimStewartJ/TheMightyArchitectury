@@ -1,6 +1,7 @@
 package com.timmie.mightyarchitect.gui;
 
 import com.timmie.mightyarchitect.foundation.compat.McCompat;
+import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 //? if >=26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 //?} else if >=1.20 {
@@ -16,7 +17,6 @@ import net.minecraft.client.input.KeyEvent;
 /*
 *///?}
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.function.Consumer;
 
@@ -113,14 +113,14 @@ public class TextInputPromptScreen extends AbstractSimiScreen {
 	@Override
 	//? if >=1.21.10 {
 	public boolean keyPressed(KeyEvent event) {
-		if (event.key() == GLFW.GLFW_KEY_ENTER) {
+		if (event.key() == Keyboard.RETURN) {
 			confirm.onPress(null);
 			return true;
 		}
 		return super.keyPressed(event);
 	//?} else {
 	/*public boolean keyPressed(int keyCode, int p_keyPressed_2_, int p_keyPressed_3_) {
-		if (keyCode == GLFW.GLFW_KEY_ENTER) {
+		if (keyCode == Keyboard.RETURN) {
 			confirm.onPress();
 			return true;
 		}

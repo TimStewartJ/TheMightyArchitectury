@@ -339,11 +339,17 @@ public class Schematic {
 
 		TemplateBlockAccess sketch = getMaterializedSketch();
 		sketch.localMode(true);
-		template.fillFromWorld(sketch, sketch.getBounds()
-			.getOrigin(),
-			sketch.getBounds()
-				.getSize(),
-			false, null);
+		// The last argument is what to leave out of the template: nothing. It was one nullable Block
+		// until Minecraft 1.21.5 made it a list that vanilla streams without a null check - and the
+		// null this passed compiles against either, so no build pointed at it while every save from
+		// 1.21.6 on threw.
+		//? if >=1.21.6 {
+		template.fillFromWorld(sketch, sketch.getBounds().getOrigin(), sketch.getBounds().getSize(), false,
+			List.of());
+		//?} else {
+		/*template.fillFromWorld(sketch, sketch.getBounds().getOrigin(), sketch.getBounds().getSize(), false,
+			null);
+		*///?}
 		sketch.localMode(false);
 
 		return template;

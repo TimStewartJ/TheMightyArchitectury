@@ -16,8 +16,10 @@ import net.minecraft.world.clock.ClockManager;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.flag.FeatureFlagSet;
-// Brewing recipes and the MapId wrapper only exist from 1.20.5 onward.
-//? if >=1.20.5 {
+// Brewing recipes and the MapId wrapper only exist from 1.20.5 onward; 26.3 removed PotionBrewing.
+//? if >=26.3 {
+/*
+*///?} else if >=1.20.5 {
 import net.minecraft.world.item.alchemy.PotionBrewing;
 //?} else {
 /*
@@ -35,7 +37,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
-//? if >=1.21.4 {
+//? if >=26.3 {
+/*
+*///?} else if >=1.21.4 {
 import net.minecraft.world.level.block.entity.FuelValues;
 //?} else {
 /*
@@ -317,15 +321,21 @@ public class WrappedWorld extends Level implements BlockAndTintGetter {
 	/*public void destroyBlockProgress(int breakerId, BlockPos pos, int progress) {}
 	*///?}
 
+	// This slot is fuelValues() from 1.21.6 until 26.3 took it off Level again, and getScoreboard()
+	// before 1.21.6 (the newer versions' copy of that sits two slots up). Each arm is a whole method.
+	//? if >=26.3 {
+	/*
+	*///?} else if >=1.21.6 {
 	@Override
-	//? if >=1.21.6 {
 	public FuelValues fuelValues() {
 		return world.fuelValues();
-	//?} else {
-	/*public Scoreboard getScoreboard() {
-		return world.getScoreboard();
-	*///?}
 	}
+	//?} else {
+	/*@Override
+	public Scoreboard getScoreboard() {
+		return world.getScoreboard();
+	}
+	*///?}
 
 	@Override
 	// NeoForge holds its own PartEntity type in Level's dragonParts. The shared source is compiled
@@ -406,8 +416,11 @@ public class WrappedWorld extends Level implements BlockAndTintGetter {
 		return world.enabledFeatures();
 	}
 
-	// PotionBrewing moved onto Level in 1.20.5; TickRateManager arrived with the /tick command in 1.20.3.
-	//? if >=1.20.5 {
+	// PotionBrewing moved onto Level in 1.20.5 and off it again in 26.3; TickRateManager arrived with
+	// the /tick command in 1.20.3.
+	//? if >=26.3 {
+	/*
+	*///?} else if >=1.20.5 {
 	@Override
 	public PotionBrewing potionBrewing() {
 		return world.potionBrewing();

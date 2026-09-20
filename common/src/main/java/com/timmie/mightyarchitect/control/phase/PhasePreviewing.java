@@ -1,6 +1,7 @@
 package com.timmie.mightyarchitect.control.phase;
 
 import com.timmie.mightyarchitect.foundation.compat.McCompat;
+import com.timmie.mightyarchitect.foundation.utility.Mouse;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.MightyClient;
@@ -57,7 +58,7 @@ public class PhasePreviewing extends PhaseBase implements IRenderGameOverlay {
 
 	@Override
 	public void onClick(int button) {
-		if (button == 1) {
+		if (button == Mouse.RIGHT) {
 			if (McCompat.currentScreen(Minecraft.getInstance()) == null) {
 				String message = activeTool.getTool()
 					.handleRightClick();

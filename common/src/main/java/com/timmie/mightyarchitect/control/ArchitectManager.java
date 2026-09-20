@@ -36,7 +36,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -316,7 +315,7 @@ public class ArchitectManager {
 	}
 
 	public static void onKeyTyped(int keyCode, int action) {
-		if (keyCode == GLFW.GLFW_KEY_ESCAPE && action == Keyboard.PRESS) {
+		if (keyCode == Keyboard.ESCAPE && action == Keyboard.PRESS) {
 			if (inPhase(ArchitectPhases.Composing) || inPhase(ArchitectPhases.Previewing)) {
 				enterPhase(ArchitectPhases.Paused);
 				menu.setVisible(false);

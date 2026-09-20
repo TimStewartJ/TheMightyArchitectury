@@ -6,7 +6,6 @@ import com.timmie.mightyarchitect.control.design.ThemeStatistics;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 
@@ -35,7 +34,7 @@ public class MoveReshapeTool extends AbstractRoomFaceSelectionTool {
 	@Override
 	public boolean handleMouseWheel(int scroll) {
 		if (selectedRoom != null) {
-			if (Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL)) {
+			if (Keyboard.isKeyDown(Keyboard.LCONTROL)) {
 				// Resize
 				ThemeStatistics statistics = model.getTheme()
 					.getStatistics();

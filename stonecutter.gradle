@@ -52,7 +52,7 @@ tasks.register("unitTestAll") {
         .collect { "${it.path}:test" }
 }
 
-// Publishes all 25 jars to the configured hosting platforms (see buildSrc's mightyarchitect.publish).
+// Publishes every jar to the configured hosting platforms (see buildSrc's mightyarchitect.publish).
 // A dry run unless -PpublishLive=true is passed: each node then writes what it WOULD upload under
 // <loader>/versions/<mc>/build/publishMods/ instead of touching any platform. The release workflow
 // runs the dry run for review and the live run from a version tag.

@@ -85,7 +85,7 @@ def artifact = tasks.named(project.publishArtifactTask.toString(), AbstractArchi
 
 // Proves the listing and the jar agree before anything is uploaded, and writes the resolved
 // metadata for every publication so a dry run leaves something reviewable behind. Wired into
-// `check` so the ordinary CI build exercises it on all 25 targets.
+// `check` so the ordinary CI build exercises it on every target.
 def checkPublishMetadata = tasks.register("checkPublishMetadata") {
     group = "publishing"
     description = "Verifies the listing metadata against the jar's own dependency range."

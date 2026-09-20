@@ -251,7 +251,10 @@ public class DesignExporter {
 		BlockPos signPos = anchor.above();
 		if (worldIn.getBlockState(signPos)
 			.getBlock() == Blocks.SPRUCE_SIGN && worldIn.getBlockEntity(signPos) instanceof SignBlockEntity sign) {
-			//? if >=1.20 {
+			//? if >=26.3 {
+			/*String signedName = sign.getText(net.minecraft.world.level.block.entity.SignTextSlot.FRONT)
+				.getMessages(false).get(1).getString();
+			*///?} else if >=1.20 {
 			String signedName = sign.getFrontText().getMessage(1, false).getString();
 			//?} else {
 			/*String signedName = sign.getMessage(1, false).getString();

@@ -7,7 +7,18 @@ import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 //?} else {
 /*
 *///?}
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+// 26.3 moved the GPU-facing types out of blaze3d and into com.mojang.renderpearl.api.
+//? if >=26.3 {
+/*import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.renderpearl.api.vertex.VertexFormat;
+*///?} else if >=26.2 {
+/*import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.vertex.VertexFormat;
+*///?} else {
+import com.mojang.blaze3d.vertex.VertexFormat;
+//?}
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -22,6 +33,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 
 /**
  * Shims for client API that moved between versions, chiefly in 26.2. Kept in one place so call
@@ -125,13 +137,13 @@ public final class McCompat {
 	}
 	*///?}
 
-	// 26.2 replaced VertexFormat.Mode with com.mojang.blaze3d.PrimitiveTopology, and
+	// 26.2 replaced VertexFormat.Mode with PrimitiveTopology (imported above, per version), and
 	// ByteBufferBuilder does not exist at all before 1.21 - those nodes build their BufferBuilder
 	// directly and never call this. The arms are flat because a guard cannot nest inside a
 	// commented one.
 	//? if >=26.2 {
 	/*public static BufferBuilder quadBuffer(ByteBufferBuilder byteBuffer, VertexFormat format) {
-		return new BufferBuilder(byteBuffer, com.mojang.blaze3d.PrimitiveTopology.QUADS, format);
+		return new BufferBuilder(byteBuffer, PrimitiveTopology.QUADS, format);
 	}
 	*///?} else if >=1.21 {
 	public static BufferBuilder quadBuffer(ByteBufferBuilder byteBuffer, VertexFormat format) {
@@ -174,6 +186,53 @@ public final class McCompat {
 		return player.getInventory().getSelectedSlot();
 		//?} else {
 		/*return player.getInventory().selected;
+		*///?}
+	}
+
+	// 26.3 renamed PoseStack.mulPose(Quaternionfc) to rotate; mulPose only takes matrices there.
+	public static void rotate(PoseStack ms, Quaternionf rotation) {
+		//? if >=26.3 {
+		/*ms.rotate(rotation);
+		*///?} else {
+		ms.mulPose(rotation);
+		//?}
+	}
+
+	// VertexConsumer has a fourth UV channel from 26.3. Nothing in vanilla writes to it yet, but a
+	// consumer that records and replays calls has to pass it on.
+	public static void setUv3(VertexConsumer consumer, float u, float v) {
+		//? if >=26.3 {
+		/*consumer.setUv3(u, v);
+		*///?}
+	}
+
+	// From 26.3 typed characters only exist while SDL text input is switched on, and vanilla switches
+	// it on for a focused text field and nothing else. The mod's screens read their shortcuts from
+	// charTyped with no text field in sight - G, then 1 to pick a theme - so while one is open it
+	// asks for text input itself. It asks again every tick because a text field inside the screen
+	// takes ownership when it gains focus and would switch it off on losing it. Before 26.3
+	// characters always arrive and there is nothing to ask for.
+	public static void keepTextInput(Screen screen) {
+		//? if >=26.3 {
+		/*Minecraft.getInstance().textInputManager().startTextInput(screen);
+		*///?}
+	}
+
+	public static void releaseTextInput(Screen screen) {
+		//? if >=26.3 {
+		/*Minecraft.getInstance().textInputManager().stopTextInput(screen);
+		*///?}
+	}
+
+	// Util moved packages at 1.21.11, and 26.3 took "show this in the file manager" off Util.OS
+	// and gave it to Blaze3D.
+	public static void openFolder(java.nio.file.Path folder) {
+		//? if >=26.3 {
+		/*com.mojang.blaze3d.Blaze3D.openPath(folder);
+		*///?} else if >=1.21.11 {
+		net.minecraft.util.Util.getPlatform().openFile(folder.toFile());
+		//?} else {
+		/*net.minecraft.Util.getPlatform().openFile(folder.toFile());
 		*///?}
 	}
 }

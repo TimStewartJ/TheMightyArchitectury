@@ -86,7 +86,10 @@ public class PlaceSignPacket implements MightyPacket {
 			entityWorld.setBlockAndUpdate(packet.position, Blocks.SPRUCE_SIGN.defaultBlockState());
 
 			if (entityWorld.getBlockEntity(packet.position) instanceof SignBlockEntity sign) {
-				//? if >=1.20 {
+				//? if >=26.3 {
+				/*sign.setText(SignText.EMPTY.asMutable().setLine(0, Component.literal(packet.text1)).setLine(1, Component.literal(packet.text2)).asImmutable(),
+					net.minecraft.world.level.block.entity.SignTextSlot.FRONT);
+				*///?} else if >=1.20 {
 				sign.setText(new SignText().setMessage(0, Component.literal(packet.text1)).setMessage(1, Component.literal(packet.text2)), true);
 				//?} else {
 				/*sign.setMessage(0, Component.literal(packet.text1));

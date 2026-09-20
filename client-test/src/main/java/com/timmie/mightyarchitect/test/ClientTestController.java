@@ -24,6 +24,7 @@ import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import com.timmie.mightyarchitect.control.palette.PaletteStorage;
 import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
 import com.timmie.mightyarchitect.foundation.WrappedWorld;
+import com.timmie.mightyarchitect.foundation.utility.Mouse;
 import com.timmie.mightyarchitect.foundation.utility.ShaderManager;
 import com.timmie.mightyarchitect.foundation.utility.Shaders;
 import com.timmie.mightyarchitect.gui.ArchitectMenuScreen;
@@ -47,6 +48,8 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
@@ -540,7 +543,7 @@ public final class ClientTestController {
     private static PaletteDefinition clickCentre(Screen screen, AbstractWidget widget) {
         double x = widget.getX() + widget.getWidth() / 2.0;
         double y = widget.getY() + widget.getHeight() / 2.0;
-        check(ScreenInput.click(screen, x, y, 0), "click consumed at " + (int) x + "," + (int) y);
+        check(ScreenInput.click(screen, x, y, Mouse.LEFT), "click consumed at " + (int) x + "," + (int) y);
         return ArchitectManager.getModel().getPrimary();
     }
 
@@ -662,7 +665,11 @@ public final class ClientTestController {
         ImageStats blueprint = imageStats(blueprintScreenshot);
         double baselineBlueBias = baseline.blue - (baseline.red + baseline.green) / 2.0;
         double blueprintBlueBias = blueprint.blue - (blueprint.red + blueprint.green) / 2.0;
-        check(blueprintBlueBias > baselineBlueBias + 5.0,
+        // A working chain shifts the bias by +81 to +125: that is every lane of the 2.0.0 build except
+        // the two for Fabric 26.2, which measured +12 and +14 because the mixin that runs the chain
+        // was never registered there. The margin was 5 then, so both passed - two captures of the
+        // same scene differ by more than that on their own.
+        check(blueprintBlueBias > baselineBlueBias + 50.0,
             "blueprint frame has stronger blue bias (" + round(baselineBlueBias) + " -> "
                 + round(blueprintBlueBias) + ")");
         check(Shaders.Blueprint.isActive(), "blueprint post-chain active");
@@ -937,6 +944,15 @@ public final class ClientTestController {
         check(tokenDriftTicks == 0,
             "model generation token stable while resources were untouched (" + tokenDriftTicks
                 + " drifting ticks)");
+
+        // What "Save" in the menu writes. Nothing else in this suite ran it, and from 1.21.6 it threw
+        // on every save (see Schematic.writeToTemplate); only the recorded journey saves a build,
+        // and that runs on one older version.
+        Tag savedBlocks = model.writeToTemplate().save(new CompoundTag()).get("blocks");
+        int savedCount = savedBlocks instanceof ListTag list ? list.size() : 0;
+        check(savedCount == LARGE_SKETCH_ENTRIES,
+            "saving the build as a schematic wrote every block (" + savedCount + " of "
+                + LARGE_SKETCH_ENTRIES + ")");
         advance(Stage.VERIFY_RENDER);
     }
 

@@ -15,7 +15,6 @@ import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.lwjgl.glfw.GLFW;
 
 public class RoomTool extends GroundPlanningToolBase {
 
@@ -173,7 +172,7 @@ public class RoomTool extends GroundPlanningToolBase {
 		int xSize = size.getX();
 		int zSize = size.getZ();
 
-		if (Keyboard.isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL)) {
+		if (Keyboard.isKeyDown(Keyboard.LCONTROL)) {
 			// 5-Grid
 			int xr = (xSize + ((xSize > 0) ? 2 : -2)) % 4;
 			if (xr < 0)

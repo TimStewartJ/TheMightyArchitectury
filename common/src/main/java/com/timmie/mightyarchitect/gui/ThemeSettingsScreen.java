@@ -1,6 +1,7 @@
 package com.timmie.mightyarchitect.gui;
 
 import com.timmie.mightyarchitect.foundation.compat.McCompat;
+import com.timmie.mightyarchitect.foundation.utility.Mouse;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.design.*;
 import com.timmie.mightyarchitect.gui.widgets.IconButton;
@@ -218,9 +219,9 @@ public class ThemeSettingsScreen extends AbstractSimiScreen {
 	/*public boolean mouseClicked(double x, double y, int button) {*///?}
 
 		//? if >=1.21.10 {
-		if (event.button() == 0) {
+		if (event.button() == Mouse.LEFT) {
 		//?} else {
-		/*if (button == 0) {*///?}
+		/*if (button == Mouse.LEFT) {*///?}
 			for (IconButton button2 : toggleButtons) {
 				// Hover, not isHoveredOrFocused. These buttons are in children() now, so they can
 				// hold keyboard focus, and a focused button would otherwise fire on a click

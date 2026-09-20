@@ -1,5 +1,6 @@
 package com.timmie.mightyarchitect.gui;
 
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.timmie.mightyarchitect.gui.widgets.AbstractSimiWidget;
 import net.minecraft.client.Minecraft;
 //? if >=26 {
@@ -44,6 +45,25 @@ public abstract class AbstractSimiScreen extends Screen {
 
 	protected AbstractSimiScreen() {
 		super(Component.literal(""));
+	}
+
+	// These screens close on a typed letter with no text field focused; see McCompat.keepTextInput.
+	@Override
+	protected void init() {
+		super.init();
+		McCompat.keepTextInput(this);
+	}
+
+	@Override
+	public void tick() {
+		super.tick();
+		McCompat.keepTextInput(this);
+	}
+
+	@Override
+	public void removed() {
+		McCompat.releaseTextInput(this);
+		super.removed();
 	}
 
 	protected void setWindowSize(int width, int height) {

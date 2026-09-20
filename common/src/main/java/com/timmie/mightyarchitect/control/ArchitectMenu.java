@@ -6,14 +6,11 @@ import com.timmie.mightyarchitect.control.design.ThemeStorage;
 import com.timmie.mightyarchitect.control.design.ThemeValidator;
 import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
 import com.timmie.mightyarchitect.control.storage.ArchitectPaths;
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import com.timmie.mightyarchitect.gui.ScreenHelper;
 import com.timmie.mightyarchitect.gui.TextInputPromptScreen;
 import com.timmie.mightyarchitect.gui.ThemeSettingsScreen;
-//? if >=1.21.11 {
-import net.minecraft.util.Util;
-//?} else {
-/*import net.minecraft.Util;*///?}
 import net.minecraft.client.Minecraft;
 
 import java.nio.file.Path;
@@ -348,8 +345,7 @@ public class ArchitectMenu {
 	private static void openThemeFolder() {
 		Path themes = ArchitectPaths.themes();
 		FilesHelper.createFolderIfMissing(themes);
-		Util.getPlatform()
-			.openFile(themes.toFile());
+		McCompat.openFolder(themes);
 	}
 
 	public static class KeyBindList {

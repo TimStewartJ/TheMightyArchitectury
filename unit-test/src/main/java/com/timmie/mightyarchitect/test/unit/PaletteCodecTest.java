@@ -7,7 +7,6 @@ import com.timmie.mightyarchitect.control.storage.JsonStorage;
 import com.timmie.mightyarchitect.test.unit.MinecraftBootstrap.Bootstrapped;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -140,22 +139,45 @@ class PaletteCodecTest {
 	}
 
 	/**
-	 * The one assertion that has to hold on all thirteen Minecraft versions rather than just this
-	 * one: {@code BlockState.CODEC} now writes what {@code NbtUtils.writeBlockState} used to, and
-	 * if any version ever disagrees the palette format silently forks.
+	 * The one assertion that has to hold on every Minecraft version rather than just this one. The
+	 * shape is spelled out here and not taken from a vanilla writer, because vanilla's forked: this
+	 * used to compare against {@code NbtUtils.writeBlockState}, which agreed with
+	 * {@code BlockState.CODEC} on thirteen versions and then changed along with it in 26.3.
 	 */
 	@Test
-	@DisplayName("a block state encodes to exactly what the previous writer produced")
+	@DisplayName("a block state encodes to exactly what every previous release wrote")
 	void blockStateEncodingIsUnchanged() {
-		BlockState withProperties = Blocks.OAK_LOG.defaultBlockState()
-			.setValue(BlockStateProperties.AXIS, Direction.Axis.Z);
+		CompoundTag gold = new CompoundTag();
+		gold.putString("Name", "minecraft:gold_block");
 
-		for (BlockState state : new BlockState[] { Blocks.GOLD_BLOCK.defaultBlockState(), withProperties }) {
-			CompoundTag expected = NbtUtils.writeBlockState(state);
-			CompoundTag actual = JsonStorage.toNbt(BlockState.CODEC, state)
-				.orElseThrow();
-			assertEquals(expected, actual, "BlockState.CODEC and NbtUtils.writeBlockState disagree on " + state);
-		}
+		CompoundTag axis = new CompoundTag();
+		axis.putString("axis", "z");
+		CompoundTag log = new CompoundTag();
+		log.putString("Name", "minecraft:oak_log");
+		log.put("Properties", axis);
+
+		BlockState zLog = Blocks.OAK_LOG.defaultBlockState()
+			.setValue(BlockStateProperties.AXIS, Direction.Axis.Z);
+		assertEquals(gold, JsonStorage.toNbt(PaletteDefinition.BLOCK_STATE, Blocks.GOLD_BLOCK.defaultBlockState())
+			.orElseThrow());
+		assertEquals(log, JsonStorage.toNbt(PaletteDefinition.BLOCK_STATE, zLog)
+			.orElseThrow());
+		assertEquals(zLog, JsonStorage.fromNbt(PaletteDefinition.BLOCK_STATE, log, "a block state")
+			.orElseThrow());
+	}
+
+	@Test
+	@DisplayName("a property the block does not have costs that property, not the block")
+	void unknownPropertiesAreSkipped() {
+		CompoundTag properties = new CompoundTag();
+		properties.putString("axis", "z");
+		properties.putString("from_another_version", "true");
+		CompoundTag log = new CompoundTag();
+		log.putString("Name", "minecraft:oak_log");
+		log.put("Properties", properties);
+
+		assertEquals(Blocks.OAK_LOG.defaultBlockState().setValue(BlockStateProperties.AXIS, Direction.Axis.Z),
+			JsonStorage.fromNbt(PaletteDefinition.BLOCK_STATE, log, "a block state").orElseThrow());
 	}
 
 	@Test

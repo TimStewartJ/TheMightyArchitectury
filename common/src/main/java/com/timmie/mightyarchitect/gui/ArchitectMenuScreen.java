@@ -1,6 +1,8 @@
 package com.timmie.mightyarchitect.gui;
 
 import com.timmie.mightyarchitect.foundation.compat.McCompat;
+import com.timmie.mightyarchitect.foundation.utility.Keyboard;
+import com.timmie.mightyarchitect.foundation.utility.Mouse;
 import com.mojang.blaze3d.platform.Window;
 //? if >=1.21.10 {
 //?} else {
@@ -34,7 +36,6 @@ import net.minecraft.client.input.MouseButtonEvent;
 *///?}
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -154,9 +155,9 @@ public class ArchitectMenuScreen extends Screen {
 			ArchitectManager.inPhase(ArchitectPhases.Empty) || ArchitectManager.inPhase(ArchitectPhases.Paused);
 
 		//? if >=1.21.10 {
-		if (event.key() == GLFW.GLFW_KEY_ESCAPE) {
+		if (event.key() == Keyboard.ESCAPE) {
 		//?} else {
-		/*if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+		/*if (keyCode == Keyboard.ESCAPE) {
 		*///?}
 			if (hideOnClose)
 				setVisible(false);
@@ -420,11 +421,11 @@ public class ArchitectMenuScreen extends Screen {
 	@Override
 	//? if >=1.21.10 {
 	public boolean mouseClicked(MouseButtonEvent event, boolean flag) {
-		if (event.button() != 0 || !visible || !focused)
+		if (event.button() != Mouse.LEFT || !visible || !focused)
 			return super.mouseClicked(event, flag);
 	//?} else {
 	/*public boolean mouseClicked(double mouseX, double mouseY, int button) {
-		if (button != 0 || !visible || !focused)
+		if (button != Mouse.LEFT || !visible || !focused)
 			return super.mouseClicked(mouseX, mouseY, button);
 	*///?}
 
@@ -468,7 +469,7 @@ public class ArchitectMenuScreen extends Screen {
 				/*charTyped(new CharacterEvent(key.toLowerCase().charAt(0), 0));
 				*///?} else {
 				/*charTyped(key.toLowerCase()
-					.charAt(0), GLFW.GLFW_PRESS);
+					.charAt(0), Keyboard.PRESS);
 				*///?}
 			}
 		}
@@ -499,8 +500,22 @@ public class ArchitectMenuScreen extends Screen {
 		adjustTarget();
 	}
 
+	// Every shortcut in this menu arrives as a typed character; see McCompat.keepTextInput.
+	@Override
+	protected void init() {
+		super.init();
+		McCompat.keepTextInput(this);
+	}
+
+	@Override
+	public void tick() {
+		super.tick();
+		McCompat.keepTextInput(this);
+	}
+
 	@Override
 	public void removed() {
+		McCompat.releaseTextInput(this);
 		super.removed();
 		setFocused(false);
 	}

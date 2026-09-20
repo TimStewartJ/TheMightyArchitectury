@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.control.compose.planner.Tools;
+import com.timmie.mightyarchitect.foundation.utility.Mouse;
 import com.timmie.mightyarchitect.foundation.utility.ShaderManager;
 import com.timmie.mightyarchitect.foundation.utility.Shaders;
 import com.timmie.mightyarchitect.gui.ToolSelectionScreen;
@@ -69,7 +70,7 @@ public class PhaseComposing extends PhaseBase implements IRenderGameOverlay {
 
 	@Override
 	public void onClick(int button) {
-		if (button != 1)
+		if (button != Mouse.RIGHT)
 			return;
 		String message = activeTool.getTool()
 			.handleRightClick();
