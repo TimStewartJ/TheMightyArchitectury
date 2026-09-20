@@ -236,7 +236,15 @@ function Invoke-ClientTest {
                     $outputSize = $size
                     $lastOutput = Get-Date
                 } elseif ((Test-Path $gameLog) -and ((Get-Date) - $lastOutput).TotalSeconds -ge $ClientStallSeconds) {
-                    $tail = if (Test-Path $gradleStdout) { (Get-Content $gradleStdout -Tail 15) -join "`n" } else { '' }
+                    # A client that crashed and then hung ends in stack frames. The one crash that is
+                    # upstream's and safe to retry (see Test-TestRetryableFailure) is named further
+                    # up, so that line travels with the message; nothing else about a stall is retried.
+                    $tail = ''
+                    if (Test-Path $gradleStdout) {
+                        $upstream = (Select-String -Path $gradleStdout -Pattern 'Duplicate handler name: neoforge:vanilla_filter' |
+                            Select-Object -First 1).Line
+                        $tail = (@($upstream) + @(Get-Content $gradleStdout -Tail 15) | Where-Object { $_ }) -join "`n"
+                    }
                     throw "Client started and then logged nothing for ${ClientStallSeconds}s`n$tail"
                 }
             }
