@@ -258,18 +258,23 @@ jobs:
   # Single aggregated status to use as the required check in branch protection:
   # a PR only passes when every version builds green and its metadata verifies.
   #
-  # A skipped job reports success. So when this run is the duplicate for a same-repository pull
-  # request, the job skips under ANOTHER name: left as "All versions green" it would satisfy the
-  # required check the moment the pull request opened, while the push build that actually decides
-  # it was still running.
+  # A skipped job reports success. So in the duplicate run for a same-repository pull request this
+  # job must not be called "All versions green": it would satisfy the required check the moment
+  # the pull request opened, while the push build that actually decides it was still running. It
+  # also has to RUN there rather than skip, because GitHub only evaluates a job's name when the
+  # job runs - skipped, it is listed as the raw expression.
   all-green:
     name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && 'Covered by the push build' || 'All versions green' }}
     needs: [build, source-shape]
-    if: ${{ always() && !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Fail if any matrix job failed
         run: |
+          if [ "${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}" = "true" ]; then
+            echo "This commit is built by its branch push; that run's 'All versions green' is the required check."
+            exit 0
+          fi
           if [ "${{ needs.source-shape.result }}" != "success" ]; then
             echo "The source-shape gate failed."
             exit 1
