@@ -52,7 +52,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: |
           set -euo pipefail
           declared=$(grep -E '^mod_version=' gradle.properties | cut -d= -f2- | tr -d '\r')
@@ -89,17 +89,17 @@ jobs:
           - { mc: "26.2",    loader2: neoforge }
           - { mc: "26.3",    loader2: neoforge }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: |
             17
             21
             25
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       - name: Dry-run publish ${{ matrix.mc }}
         env:
@@ -125,7 +125,7 @@ jobs:
             done
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: publish-dry-run-${{ matrix.mc }}
           if-no-files-found: error
@@ -162,17 +162,17 @@ jobs:
           - { mc: "26.2",    loader2: neoforge }
           - { mc: "26.3",    loader2: neoforge }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: |
             17
             21
             25
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       - name: Publish ${{ matrix.mc }}
         env:
@@ -187,7 +187,7 @@ jobs:
           fi
           ./gradlew $tasks -PpublishLive=true -Porg.gradle.java.installations.fromEnv=$JDKS --stacktrace
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: publish-result-${{ matrix.mc }}

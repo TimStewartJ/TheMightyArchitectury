@@ -127,7 +127,9 @@ Two launchers sit behind it, because no single one covers every loader:
 HeadlessMc is used purely as an installer and launcher — it installs a real Minecraft plus the
 **pinned** loader build the node targets (`--uid`, so an upstream release cannot change what the
 matrix means) and launches the jars out of a `mods` folder. Nothing it does reaches a shipped
-artifact. Its Minecraft lives in `build/headlessmc` and is cached in CI per version.
+artifact. Its Minecraft lives in `build/headlessmc` and is cached in CI per version; the asset
+objects, which every version and all three launchers share, live in one store beside it
+(`.github/actions/minecraft-assets`).
 
 > **Local caveat.** The Forge-family production lane needs a virtual framebuffer, so it runs on
 > Linux/CI only. HeadlessMc forces its LWJGL stub for offline accounts unless Xvfb is present, and a
@@ -136,7 +138,11 @@ artifact. Its Minecraft lives in `build/headlessmc` and is cached in CI per vers
 >
 > Under Xvfb, Minecraft 26.3 and newer also need `SDL_VIDEO_FORCE_EGL=1` in the environment: the
 > game asks SDL for an sRGB-capable framebuffer, which Xvfb's GLX does not offer and EGL does.
-> Without it the client logs `Couldn't find matching GLX visual` and waits until the timeout.
+> Without it the client logs `Couldn't find matching GLX visual` and never opens a window.
+
+A client that starts and then logs nothing for two minutes (`-ClientStallSeconds`) fails there and
+then rather than at the ten-minute timeout: a healthy one is never quiet for more than ten seconds,
+and one that is has hung on something it will not get past.
 
 The server matrix boots a real dedicated server per target and runs the print-to-world test in
 `server-test/`: a schematic is turned into `InstantPrintPacket`s, round-tripped through the

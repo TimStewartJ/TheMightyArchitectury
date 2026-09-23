@@ -5,6 +5,9 @@ param(
     [string]$Mode = 'dev',
     [int]$Port = 25565,
     [int]$ClientTimeoutSeconds = 600,
+    # How long a client that has started may log nothing before it is given up on. A healthy one
+    # is never quiet for more than 10 seconds (measured over all 54 lanes of a green build).
+    [int]$ClientStallSeconds = 120,
     [switch]$KeepOpen
 )
 
@@ -217,8 +220,33 @@ function Invoke-ClientTest {
             # starts no threads of its own. What this matrix verifies is the verdict, so wait for the
             # verdict first and treat process teardown as a bounded courtesy afterwards.
             $deadline = (Get-Date).AddSeconds($ClientTimeoutSeconds)
+            # A client that starts and then goes silent does not recover: a window that never
+            # opens and an error dialog nobody can dismiss both look like this, and both used to
+            # cost the whole timeout - twenty minutes a job. Armed only once the game itself is
+            # logging, so a slow download before launch is not mistaken for a stall. Never retried:
+            # a deadlock in the mod looks the same, and a retry would turn it into a pass.
+            $gameLog = Join-Path (Join-Path $runDirectory 'logs') 'latest.log'
+            $outputSize = -1
+            $lastOutput = Get-Date
             while ((Get-Date) -lt $deadline -and -not $gradleProcess.HasExited -and -not (Test-Path $resultPath)) {
                 Start-Sleep -Seconds 2
+                $size = (@($gradleStdout, $gradleStderr, $gameLog) | Where-Object { Test-Path $_ } |
+                    ForEach-Object { (Get-Item $_).Length } | Measure-Object -Sum).Sum
+                if ($size -ne $outputSize) {
+                    $outputSize = $size
+                    $lastOutput = Get-Date
+                } elseif ((Test-Path $gameLog) -and ((Get-Date) - $lastOutput).TotalSeconds -ge $ClientStallSeconds) {
+                    # A client that crashed and then hung ends in stack frames. The one crash that is
+                    # upstream's and safe to retry (see Test-TestRetryableFailure) is named further
+                    # up, so that line travels with the message; nothing else about a stall is retried.
+                    $tail = ''
+                    if (Test-Path $gradleStdout) {
+                        $upstream = (Select-String -Path $gradleStdout -Pattern 'Duplicate handler name: neoforge:vanilla_filter' |
+                            Select-Object -First 1).Line
+                        $tail = (@($upstream) + @(Get-Content $gradleStdout -Tail 15) | Where-Object { $_ }) -join "`n"
+                    }
+                    throw "Client started and then logged nothing for ${ClientStallSeconds}s`n$tail"
+                }
             }
 
             $stoppedAfterVerdict = $false

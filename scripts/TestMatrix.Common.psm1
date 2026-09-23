@@ -740,7 +740,11 @@ function Test-TestRetryableFailure {
         # Loom's asset downloader losing its own thread pool mid-run, seen as
         # `:downloadAssets` failing with a RejectedExecutionException.
         'rejected from java\.util\.concurrent\.ThreadPoolExecutor',
-        'HashMap\$Node cannot be cast to class java\.util\.HashMap\$TreeNode'
+        'HashMap\$Node cannot be cast to class java\.util\.HashMap\$TreeNode',
+        # NeoForge adding its own netty handler twice while joining a vanilla server: the client
+        # dies with a network protocol error before the mod has done anything, and then sits on
+        # its crash screen. A race in the loader, gone on a second attempt.
+        'Duplicate handler name: neoforge:vanilla_filter'
     )
 
     foreach ($pattern in $infrastructurePatterns) {

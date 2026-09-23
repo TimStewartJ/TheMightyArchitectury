@@ -1,0 +1,57 @@
+name: Shared Minecraft assets
+description: >
+  Points every launcher's asset directory at one shared store restored from the cache, so a job
+  downloads asset objects once at most instead of once per launcher. With `warm`, brings the store
+  up to date and saves it instead.
+
+# Asset objects are named by hash and shared between versions and launchers, but Loom, NeoForge's
+# runtime and HeadlessMc each keep their own copy, and each copy was cached per Minecraft version:
+# 7.7 GB of assets per launcher against a repository cache limit of 10 GB, so most jobs found
+# nothing cached and asked Mojang's CDN for ~5,000 small files per launcher. The union the project
+# needs is 1.3 GB (scripts/fetch-minecraft-assets.py).
+#
+# The store is an optimisation and nothing more: an object that is missing is downloaded by the
+# launcher that wants it, into the shared directory, exactly as before.
+
+inputs:
+  warm:
+    description: Fill the store and save it instead of linking it. Used by one job per build.
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    # Keyed on the Minecraft versions alone: that is the only thing the union depends on.
+    - id: key
+      shell: bash
+      run: echo "key=mc-assets-$(grep -h '^minecraft_version=' versions/*/gradle.properties | sort | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+    - id: restore
+      uses: actions/cache/restore@v6
+      with:
+        path: ~/mc-assets
+        key: ${{ steps.key.outputs.key }}
+        restore-keys: mc-assets-
+
+    - if: inputs.warm != 'true'
+      shell: bash
+      run: |
+        mkdir -p ~/mc-assets/objects ~/.gradle/caches/fabric-loom ~/.gradle/caches/neoformruntime build/headlessmc/mc
+        for link in ~/.gradle/caches/fabric-loom/assets ~/.gradle/caches/neoformruntime/assets build/headlessmc/mc/assets; do
+          rm -rf "$link"
+          ln -s ~/mc-assets "$link"
+        done
+
+    # Failing to reach Mojang here must not turn a build red, and a partial store is not saved.
+    - id: fetch
+      if: inputs.warm == 'true' && steps.restore.outputs.cache-hit != 'true'
+      continue-on-error: true
+      shell: bash
+      run: python3 scripts/fetch-minecraft-assets.py ~/mc-assets
+
+    # Not from a tag: a cache saved there can only ever be read by that same tag.
+    - if: steps.fetch.outcome == 'success' && github.ref_type != 'tag'
+      uses: actions/cache/save@v6
+      with:
+        path: ~/mc-assets
+        key: ${{ steps.key.outputs.key }}

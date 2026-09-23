@@ -6,11 +6,21 @@ on:
   # which is what lets a throwaway branch serve as a mutation test without opening a PR.
   push:
     branches: ['**']
+  # A pull request from a branch of this repository is already built by that branch's push, and
+  # the required check lands on the same commit either way, so the jobs below skip themselves for
+  # it (see `all-green`). The event stays for forks, whose pushes run nothing here.
   pull_request:
   workflow_call:
+  # Every five days on main. Toolchains, loader builds and Mojang's CDN drift whether or not
+  # anyone pushes, and this finds out before a release does. It also keeps main's caches alive:
+  # GitHub drops a cache nothing has read for seven days, and work here comes in bursts weeks
+  # apart. (GitHub disables schedules after 60 days without repository activity.)
+  schedule:
+    - cron: '17 9 */5 * *'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # The event is part of the group so a scheduled build and a push to main never cancel each other.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
@@ -21,15 +31,29 @@ jobs:
   # declaration a duplicated compilation unit necessarily carries.
   source-shape:
     name: Source shape
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: No whole-file guarded duplicates
         shell: pwsh
         run: ./scripts/check-source-shape.ps1 -Detail
 
+  # Keeps the shared asset store current. Nothing waits for it: a build that runs before the store
+  # exists downloads its assets as it always did, and the next one finds them cached.
+  assets:
+    name: Shared Minecraft assets
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/minecraft-assets
+        with:
+          warm: true
+
   build:
     name: MC ${{ matrix.mc }}
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -58,14 +82,14 @@ jobs:
           - { mc: "26.2",    loader2: neoforge }
           - { mc: "26.3",    loader2: neoforge }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Root build.gradle derives the CI version from `git rev-list --count HEAD`.
           fetch-depth: 0
 
       # Install every toolchain the matrix needs: 1.19.4..1.20.4 target JDK 17, the remaining
       # obf nodes (<=1.21.x) use JDK 21, and the unobfuscated 26.x nodes use JDK 25.
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: |
@@ -73,16 +97,30 @@ jobs:
             21
             25
 
-      - uses: gradle/actions/setup-gradle@v4
+      # Writes its cache from main only, which is the rule every cache in this file follows: a
+      # cache saved from a branch or a tag is invisible to everything else and only crowds out
+      # the ones that are shared. The asset directories are the shared store's, not Gradle's.
+      # (v5, not v6: v6 makes the caching a separately licensed component - a decision, not a bump.)
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-home-cache-excludes: |
+            caches/fabric-loom/assets
+            caches/neoformruntime/assets
 
-      # HeadlessMc installs a full Minecraft plus loader for the production client lane. Cached per
-      # Minecraft version so the assets are downloaded once rather than on every run.
-      - name: Cache HeadlessMc Minecraft
-        uses: actions/cache@v4
+      # HeadlessMc installs a full Minecraft plus loader for the production client lane: the game
+      # jar, its libraries and the installed loader, per Minecraft version. Restored everywhere,
+      # saved from main only (after the production lane, below).
+      - name: Restore HeadlessMc Minecraft
+        id: hmc
+        if: matrix.loader2 != ''
+        uses: actions/cache/restore@v6
         with:
           path: build/headlessmc
-          key: hmc-${{ runner.os }}-${{ matrix.mc }}-${{ hashFiles(format('versions/{0}/gradle.properties', matrix.mc)) }}
-          restore-keys: hmc-${{ runner.os }}-${{ matrix.mc }}-
+          key: hmc2-${{ runner.os }}-${{ matrix.mc }}-${{ hashFiles(format('versions/{0}/gradle.properties', matrix.mc)) }}
+          restore-keys: hmc2-${{ runner.os }}-${{ matrix.mc }}-
+
+      # After both restores, so the links replace whatever an older cache put in their place.
+      - uses: ./.github/actions/minecraft-assets
 
       - name: Build ${{ matrix.mc }}
         env:
@@ -166,7 +204,7 @@ jobs:
           xvfb-run -a -s "-screen 0 1280x720x24" \
             pwsh -NoProfile -File ./scripts/run-client-test-matrix.ps1 -Versions '${{ matrix.mc }}'
 
-      # The same 40-check harness, launched from the *packaged* jars instead of the dev classpath:
+      # The same harness, launched from the *packaged* jars instead of the dev classpath:
       # remapped artifacts, intermediary or SRG names, mods discovered the way a launcher discovers
       # them. Nothing above this step can see that layer, and its first runs found three real
       # defects that only exist there.
@@ -190,9 +228,22 @@ jobs:
           xvfb-run -a -s "-screen 0 1280x720x24" \
             pwsh -NoProfile -File ./scripts/run-client-test-matrix.ps1 -Mode prod -Versions '${{ matrix.mc }}'
 
+      # Restored objects keep the age they were saved with, so anything newer than the start of
+      # this job was downloaded by it. Zero is the normal answer; a number means the store is stale.
+      - name: Asset downloads in this job
+        if: always()
+        run: echo "$(find ~/mc-assets/objects -type f -newer "$GITHUB_EVENT_PATH" | wc -l) of $(find ~/mc-assets/objects -type f | wc -l) asset objects were downloaded by this job"
+
+      - name: Save HeadlessMc Minecraft
+        if: github.ref == 'refs/heads/main' && matrix.loader2 != '' && steps.hmc.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: build/headlessmc
+          key: ${{ steps.hmc.outputs.cache-primary-key }}
+
       - name: Upload runtime test evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mightyarchitect-runtime-tests-${{ matrix.mc }}
           if-no-files-found: warn
@@ -201,7 +252,7 @@ jobs:
             build/prod-client-test-results/${{ matrix.mc }}/
             build/server-test-results/${{ matrix.mc }}/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mightyarchitect-${{ matrix.mc }}
           if-no-files-found: error
@@ -212,14 +263,24 @@ jobs:
 
   # Single aggregated status to use as the required check in branch protection:
   # a PR only passes when every version builds green and its metadata verifies.
+  #
+  # A skipped job reports success. So in the duplicate run for a same-repository pull request this
+  # job must not be called "All versions green": it would satisfy the required check the moment
+  # the pull request opened, while the push build that actually decides it was still running. It
+  # also has to RUN there rather than skip, because GitHub only evaluates a job's name when the
+  # job runs - skipped, it is listed as the raw expression.
   all-green:
-    name: All versions green
+    name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && 'Covered by the push build' || 'All versions green' }}
     needs: [build, source-shape]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Fail if any matrix job failed
         run: |
+          if [ "${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}" = "true" ]; then
+            echo "This commit is built by its branch push; that run's 'All versions green' is the required check."
+            exit 0
+          fi
           if [ "${{ needs.source-shape.result }}" != "success" ]; then
             echo "The source-shape gate failed."
             exit 1
