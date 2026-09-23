@@ -99,13 +99,22 @@ jobs:
 
       # Writes its cache from main only, which is the rule every cache in this file follows: a
       # cache saved from a branch or a tag is invisible to everything else and only crowds out
-      # the ones that are shared. The asset directories are the shared store's, not Gradle's.
-      # (v5, not v6: v6 makes the caching a separately licensed component - a decision, not a bump.)
+      # the ones that are shared. (v5, not v6: v6 makes the caching a separately licensed
+      # component - a decision, not a bump.)
+      #
+      # Loom's and NeoForm's per-version work is not cached. setup-gradle saves one Gradle home per
+      # job and per commit, and the first main build saved 11.2 GB of them - more than the
+      # repository's whole 10 GB, saved last, so least-recently-used eviction would have taken the
+      # shared asset store and the HeadlessMc caches first. Measured in PR #51, per job: Gradle's
+      # own generated files save ~40 s and the dependency cache ~20 s, and both are kept; Loom's
+      # and NeoForm's files would save roughly another 40 s, but they are the largest part of a
+      # home (~470 MB a job) and do not fit beside the rest. The asset store and HeadlessMc save
+      # about a minute a job and thousands of CDN requests, so they get the room.
       - uses: gradle/actions/setup-gradle@v5
         with:
           gradle-home-cache-excludes: |
-            caches/fabric-loom/assets
-            caches/neoformruntime/assets
+            caches/fabric-loom
+            caches/neoformruntime
 
       # HeadlessMc installs a full Minecraft plus loader for the production client lane: the game
       # jar, its libraries and the installed loader, per Minecraft version. Restored everywhere,
@@ -228,11 +237,15 @@ jobs:
           xvfb-run -a -s "-screen 0 1280x720x24" \
             pwsh -NoProfile -File ./scripts/run-client-test-matrix.ps1 -Mode prod -Versions '${{ matrix.mc }}'
 
-      # Restored objects keep the age they were saved with, so anything newer than the start of
-      # this job was downloaded by it. Zero is the normal answer; a number means the store is stale.
+      # Counted against what the store held when it was linked. Not by file age: a downloader may
+      # keep the server's modification time, and the first build on main reported 0 of 5147 that
+      # way while its launchers had fetched every one. Zero is the normal answer on a warm store.
       - name: Asset downloads in this job
         if: always()
-        run: echo "$(find ~/mc-assets/objects -type f -newer "$GITHUB_EVENT_PATH" | wc -l) of $(find ~/mc-assets/objects -type f | wc -l) asset objects were downloaded by this job"
+        run: |
+          before=$(cat "$RUNNER_TEMP/mc-assets-linked" 2>/dev/null || echo 0)
+          after=$(find ~/mc-assets/objects -type f | wc -l)
+          echo "$((after - before)) of $after asset objects were downloaded by this job"
 
       - name: Save HeadlessMc Minecraft
         if: github.ref == 'refs/heads/main' && matrix.loader2 != '' && steps.hmc.outputs.cache-hit != 'true'

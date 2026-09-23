@@ -41,6 +41,7 @@ runs:
           rm -rf "$link"
           ln -s ~/mc-assets "$link"
         done
+        find ~/mc-assets/objects -type f | wc -l > "$RUNNER_TEMP/mc-assets-linked"
 
     # Failing to reach Mojang here must not turn a build red, and a partial store is not saved.
     - id: fetch
