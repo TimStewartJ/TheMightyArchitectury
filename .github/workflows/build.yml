@@ -102,18 +102,19 @@ jobs:
       # the ones that are shared. (v5, not v6: v6 makes the caching a separately licensed
       # component - a decision, not a bump.)
       #
-      # Only the downloads are cached: dependencies and the wrapper. setup-gradle saves one Gradle
-      # home per job and per commit, and the first main build saved 11.2 GB of them - more than the
+      # Loom's and NeoForm's per-version work is not cached. setup-gradle saves one Gradle home per
+      # job and per commit, and the first main build saved 11.2 GB of them - more than the
       # repository's whole 10 GB, saved last, so least-recently-used eviction would have taken the
-      # shared asset store and the HeadlessMc caches first. Most of a home is Loom's and NeoForm's
-      # per-version work and Gradle's own generated files, and rebuilding them costs nothing
-      # measurable here (PR #51: median build step -4 s cold, worst +14 s). The asset store saves
-      # thousands of requests per job, so it gets the room.
+      # shared asset store and the HeadlessMc caches first. Measured in PR #51, per job: Gradle's
+      # own generated files save ~40 s and the dependency cache ~20 s, and both are kept; Loom's
+      # and NeoForm's files would save roughly another 40 s, but they are the largest part of a
+      # home (~470 MB a job) and do not fit beside the rest. The asset store and HeadlessMc save
+      # about a minute a job and thousands of CDN requests, so they get the room.
       - uses: gradle/actions/setup-gradle@v5
         with:
-          gradle-home-cache-includes: |
-            caches/modules-2
-            wrapper/dists
+          gradle-home-cache-excludes: |
+            caches/fabric-loom
+            caches/neoformruntime
 
       # HeadlessMc installs a full Minecraft plus loader for the production client lane: the game
       # jar, its libraries and the installed loader, per Minecraft version. Restored everywhere,
