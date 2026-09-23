@@ -40,10 +40,11 @@ jobs:
         run: ./scripts/check-source-shape.ps1 -Detail
 
   # Keeps the shared asset store current. Nothing waits for it: a build that runs before the store
-  # exists downloads its assets as it always did, and the next one finds them cached.
+  # exists downloads its assets as it always did, and the next one finds them cached. On main only,
+  # like every other cache save here: a store saved from a branch is readable by that branch alone.
   assets:
     name: Shared Minecraft assets
-    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
