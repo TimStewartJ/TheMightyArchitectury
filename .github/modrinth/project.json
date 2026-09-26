@@ -1,0 +1,8 @@
+{
+  "//": "Listing fields synced to https://modrinth.com/mod/the-mighty-architectury by .github/workflows/modrinth-listing.yml. The page body is description.md. Client/server environment is deliberately NOT here: Modrinth stores it per version, and the release pipeline sets it.",
+  "title": "The Mighty Architectury",
+  "summary": "Design elaborate buildings within a minute. A maintained port of simibubi's The Mighty Architect for Fabric, NeoForge and Forge — Minecraft 1.19.4 to 26.3.",
+  "issues_url": "https://github.com/TimStewartJ/TheMightyArchitectury/issues",
+  "source_url": "https://github.com/TimStewartJ/TheMightyArchitectury",
+  "wiki_url": "https://github.com/TimStewartJ/TheMightyArchitectury/blob/main/CHANGELOG.md"
+}
