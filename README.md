@@ -195,3 +195,10 @@ ref stops here). Pushing a `v<mod_version>` tag continues to the live upload fro
 environment, which is where the tokens belong and where a required reviewer makes the upload a
 manual gate. A tag that does not match `mod_version`, or a `CHANGELOG.md` whose top heading is
 still marked unreleased or does not name `mod_version`, refuses to publish.
+
+The Modrinth project page itself - summary, links and body - lives in `.github/modrinth/` and is
+changed by pull request. The pull request shows the exact change against the live page
+(`scripts/sync-modrinth-listing.py`, which needs no token for that); once merged to `main`,
+`.github/workflows/modrinth-listing.yml` applies it from the same `release` environment, so it waits
+for the same approval. The client/server environment is deliberately not part of it: Modrinth keeps
+that per version, and the release pipeline sets it.

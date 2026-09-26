@@ -1,0 +1,49 @@
+name: Modrinth listing
+
+# The Modrinth project page (summary, links, body) lives in .github/modrinth/ and is changed by pull
+# request, like the code. On a pull request this shows the exact change against the live page; it
+# needs no secret and changes nothing. Merged to main, it applies the change - through the same
+# `release` environment as a release, so it waits for the maintainer's approval and uses the same
+# token (which needs the "Write projects" scope as well as version upload).
+
+on:
+  pull_request:
+    paths:
+      - ".github/modrinth/**"
+      - "scripts/sync-modrinth-listing.py"
+      - ".github/workflows/modrinth-listing.yml"
+  push:
+    branches: [main]
+    paths:
+      - ".github/modrinth/**"
+      - "scripts/sync-modrinth-listing.py"
+      - ".github/workflows/modrinth-listing.yml"
+  workflow_dispatch:
+
+# The whole page is applied from the checked-out commit, so the newest run is the one that matters.
+concurrency:
+  group: modrinth-listing-${{ github.event_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  diff:
+    name: Change to the live page
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 scripts/sync-modrinth-listing.py
+
+  apply:
+    name: Apply to Modrinth
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 scripts/sync-modrinth-listing.py --apply
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
