@@ -19,6 +19,8 @@ import json
 import os
 import pathlib
 import sys
+import time
+import uuid
 import urllib.error
 import urllib.request
 
@@ -62,6 +64,13 @@ def desired_state(root):
     return wanted
 
 
+def read_project(ref):
+    # Modrinth answers GET /project from a cache for a while after an edit. A query string it does
+    # not know goes past the cache: the first live apply read the page back straight after the
+    # PATCH, got the old copy, and failed a change that had in fact gone through.
+    return request("GET", f"/project/{ref}?nocache={uuid.uuid4().hex}")
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -70,7 +79,7 @@ def main():
 
     root = pathlib.Path(__file__).resolve().parent.parent / ".github" / "modrinth"
     wanted = desired_state(root)
-    live = request("GET", f"/project/{PROJECT}")
+    live = read_project(PROJECT)
     changed = {field: value for field, value in wanted.items() if normalise(live.get(field)) != value}
 
     lines = [f"Modrinth listing for {PROJECT}: {len(changed)} field(s) differ from the live page."]
@@ -91,8 +100,12 @@ def main():
         sys.exit("--apply needs MODRINTH_TOKEN")
     request("PATCH", f"/project/{live['id']}", token, changed)
 
-    after = request("GET", f"/project/{live['id']}")
-    still = [field for field, value in changed.items() if normalise(after.get(field)) != value]
+    for attempt in range(6):
+        after = read_project(live["id"])
+        still = [field for field, value in changed.items() if normalise(after.get(field)) != value]
+        if not still:
+            break
+        time.sleep(10)
     if still:
         sys.exit(f"Modrinth accepted the change but these fields do not match afterwards: {still}")
     print(f"\nApplied and verified: {', '.join(changed)}")
