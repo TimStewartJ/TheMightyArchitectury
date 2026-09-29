@@ -8,6 +8,11 @@ name: Release
 #   workflow_dispatch  - dry run on any ref: the full matrix must pass, then every node writes what it
 #                        WOULD upload (jar + resolved listing metadata) into a review artifact, and a
 #                        table of every publication lands in the run summary. Nothing is uploaded.
+#   workflow_dispatch with curseforge_backfill = v<version>
+#                      - uploads that already-released tag to CurseForge only, from the `release`
+#                        environment. For a version published before the CurseForge project existed;
+#                        Modrinth is not touched. The tag was verified when it was released, so the
+#                        matrix does not run again.
 #   push of a v* tag   - the same, then the live upload - from the `release` environment, so that
 #                        MODRINTH_TOKEN / CURSEFORGE_TOKEN live there rather than as repository secrets
 #                        a PR build could see, and so a required reviewer on that environment turns
@@ -21,6 +26,11 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      curseforge_backfill:
+        description: "Upload this already-released tag (e.g. v2.1.0) to CurseForge only. Leave empty for a dry run of the chosen ref."
+        required: false
+        default: ""
   pull_request:
     paths:
       - '.github/workflows/release.yml'
@@ -44,7 +54,7 @@ jobs:
   # from build.yml on the same commit, so it is not repeated there.
   verify:
     name: Verify
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && inputs.curseforge_backfill == ''
     uses: ./.github/workflows/build.yml
 
   tag-matches-version:
@@ -67,7 +77,7 @@ jobs:
     name: Dry run ${{ matrix.mc }}
     needs: verify
     # Runs after a successful verify, or directly on a pull request where verify is skipped.
-    if: ${{ !cancelled() && (needs.verify.result == 'success' || needs.verify.result == 'skipped') }}
+    if: ${{ !cancelled() && inputs.curseforge_backfill == '' && (needs.verify.result == 'success' || needs.verify.result == 'skipped') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -191,6 +201,81 @@ jobs:
         if: always()
         with:
           name: publish-result-${{ matrix.mc }}
+          if-no-files-found: warn
+          path: |
+            fabric/versions/${{ matrix.mc }}/build/publishMods/*.json
+            forge/versions/${{ matrix.mc }}/build/publishMods/*.json
+            neoforge/versions/${{ matrix.mc }}/build/publishMods/*.json
+
+  # A version released before the CurseForge project existed, uploaded there after the fact. It builds
+  # the tag's own sources, so the jars match what Modrinth already has, and passes the project id on
+  # the command line because the tag's gradle.properties predates it. Only publishCurseforge runs.
+  curseforge-backfill:
+    name: CurseForge backfill ${{ matrix.mc }}
+    if: github.event_name == 'workflow_dispatch' && startsWith(inputs.curseforge_backfill, 'v')
+    runs-on: ubuntu-latest
+    environment: release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { mc: "1.19.4",  loader2: forge }
+          - { mc: "1.20.1",  loader2: forge }
+          - { mc: "1.20.2",  loader2: "" }
+          - { mc: "1.20.4",  loader2: neoforge }
+          - { mc: "1.20.6",  loader2: neoforge }
+          - { mc: "1.21.1",  loader2: neoforge }
+          - { mc: "1.21.4",  loader2: neoforge }
+          - { mc: "1.21.6",  loader2: neoforge }
+          - { mc: "1.21.8",  loader2: neoforge }
+          - { mc: "1.21.10", loader2: neoforge }
+          - { mc: "1.21.11", loader2: neoforge }
+          - { mc: "26.1",    loader2: neoforge }
+          - { mc: "26.2",    loader2: neoforge }
+          - { mc: "26.3",    loader2: neoforge }
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ inputs.curseforge_backfill }}
+          fetch-depth: 0
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+            25
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: true
+
+      - name: Upload ${{ inputs.curseforge_backfill }} for ${{ matrix.mc }} to CurseForge
+        env:
+          JDKS: JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          CF_PROJECT_ID: "787699"   # same as curseforge_project_id in gradle.properties on main
+        run: |
+          set -euo pipefail
+          declared=$(grep -E '^mod_version=' gradle.properties | cut -d= -f2- | tr -d '\r')
+          if [ "v$declared" != "${{ inputs.curseforge_backfill }}" ]; then
+            echo "::error::${{ inputs.curseforge_backfill }} declares mod_version=$declared"; exit 1
+          fi
+          if [ -z "${CURSEFORGE_TOKEN:-}" ]; then
+            echo "::error::CURSEFORGE_TOKEN is not set in the release environment"; exit 1
+          fi
+          chmod +x ./gradlew
+          tasks=":fabric:${{ matrix.mc }}:checkPublishMetadata :fabric:${{ matrix.mc }}:publishCurseforge"
+          if [ -n "${{ matrix.loader2 }}" ]; then
+            tasks="$tasks :${{ matrix.loader2 }}:${{ matrix.mc }}:checkPublishMetadata :${{ matrix.loader2 }}:${{ matrix.mc }}:publishCurseforge"
+          fi
+          ./gradlew $tasks -PpublishLive=true \
+            -Pcurseforge_project_id="$CF_PROJECT_ID" -Pcurseforge_project_slug=the-mighty-architectury \
+            -Porg.gradle.java.installations.fromEnv=$JDKS --stacktrace
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: curseforge-backfill-${{ matrix.mc }}
           if-no-files-found: warn
           path: |
             fabric/versions/${{ matrix.mc }}/build/publishMods/*.json
