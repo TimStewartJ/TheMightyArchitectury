@@ -8,8 +8,9 @@ the release ships for; version-specific notes say which versions they apply to.
 
 ### Added
 
-- **Minecraft 26.3**, on Fabric and NeoForge. It ships as a beta until it has users behind it; the
-  NeoForge build targets NeoForge 26.3.0.6-beta or newer.
+- **Minecraft 26.3**, on Fabric and NeoForge. Initially shipped as a beta; the existing files were
+  promoted to release on 2026-10-09 without changing their jars. The NeoForge build targets
+  NeoForge 26.3.0.6-beta or newer.
 
 ### Fixed
 

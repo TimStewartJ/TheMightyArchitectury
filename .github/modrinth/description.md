@@ -20,7 +20,7 @@ A maintained port of simibubi's original
 | 1.20.3 – 1.20.6 | ✅ | ✅ | |
 | 1.21.1, 1.21.4, 1.21.6, 1.21.8, 1.21.10, 1.21.11 | ✅ | ✅ | |
 | 26.1, 26.2 | ✅ | ✅ | |
-| 26.3 (beta) | ✅ | ✅ | |
+| 26.3 | ✅ | ✅ | |
 
 Each file lists exactly the Minecraft versions it was built and tested for, and loaders will refuse it
 on anything else — so pick the file that matches your version.
