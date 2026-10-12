@@ -88,6 +88,22 @@ Prefer `compileAll` locally and let CI run the matrices: it validates every vers
 parallel on clean runners, where a full local matrix takes hours and collides with other
 worktrees on ports and Gradle daemons.
 
+Minecraft 26.3 now builds against stable NeoForge 26.3.0.76. ModDevGradle 2.0.148 brings NeoForm
+Runtime 2.0.31 and JavaSourceTransformer 2.0.11, which fixes access transformers on anonymous
+class members. Updating the loader alone still fails to recompile `HolderSet$1.contents()`
+with the old toolchain. The local development build now uses the normal decompile-and-recompile
+path, with no node-specific opt-out. CI verifies that path separately before running the usual
+binary-patched build and both runtime client lanes:
+
+```powershell
+$env:CI = 'false'
+./gradlew :neoforge:26.3:build :neoforge:26.3:clientTestClasses :neoforge:26.3:serverTestClasses --init-script scripts/check-neoforge-recompilation.gradle
+Remove-Item Env:CI
+```
+
+The init script rejects disabled recompilation and disables NeoForm's intermediate cache for this
+check, so success proves a fresh source recompile rather than reuse of binary-patched Minecraft.
+
 Switching rewrites the tree in place, so it leaves a cosmetic diff on files with
 empty guard arms. That churn carries no behaviour and is safe to discard with
 `git checkout -- .`.
@@ -126,7 +142,10 @@ Two launchers sit behind it, because no single one covers every loader:
 
 HeadlessMc is used purely as an installer and launcher — it installs a real Minecraft plus the
 **pinned** loader build the node targets (`--uid`, so an upstream release cannot change what the
-matrix means) and launches the jars out of a `mods` folder. Nothing it does reaches a shipped
+matrix means). Cached installations are reused only when both the Minecraft parent and the exact
+loader-version name match; another build of the same loader does not satisfy the pin. CI regression
+checks exercise stale caches, mixed loader inventories and failed installs without launching a game.
+HeadlessMc launches the jars out of a `mods` folder. Nothing it does reaches a shipped
 artifact. Its Minecraft lives in `build/headlessmc` and is cached in CI per version; the asset
 objects, which every version and all three launchers share, live in one store beside it
 (`.github/actions/minecraft-assets`).
