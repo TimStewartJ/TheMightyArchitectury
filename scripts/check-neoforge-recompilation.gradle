@@ -1,6 +1,10 @@
 // Used with CI=false so ModDevGradle takes the same source path as a local build.
 gradle.projectsEvaluated {
-    gradle.rootProject.project(":neoforge:26.3").tasks.named("createMinecraftArtifacts") {
+    def node = gradle.rootProject.findProject(":neoforge:26.3")
+    if (node == null) {
+        return
+    }
+    node.tasks.named("createMinecraftArtifacts") {
         enableCache.set(false)
         doFirst {
             if (disableRecompilation.get()) {
