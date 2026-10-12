@@ -88,6 +88,19 @@ Prefer `compileAll` locally and let CI run the matrices: it validates every vers
 parallel on clean runners, where a full local matrix takes hours and collides with other
 worktrees on ports and Gradle daemons.
 
+Minecraft 26.3 now builds against stable NeoForge 26.3.0.76. Its local development build uses
+ModDevGradle's normal decompile-and-recompile path, with no node-specific opt-out. CI verifies that
+path separately before running the usual binary-patched build and both runtime client lanes:
+
+```powershell
+$env:CI = 'false'
+./gradlew :neoforge:26.3:build :neoforge:26.3:clientTestClasses :neoforge:26.3:serverTestClasses --init-script scripts/check-neoforge-recompilation.gradle
+Remove-Item Env:CI
+```
+
+The init script rejects disabled recompilation and disables NeoForm's intermediate cache for this
+check, so success proves a fresh source recompile rather than reuse of binary-patched Minecraft.
+
 Switching rewrites the tree in place, so it leaves a cosmetic diff on files with
 empty guard arms. That churn carries no behaviour and is safe to discard with
 `git checkout -- .`.

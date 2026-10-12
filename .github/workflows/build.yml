@@ -132,6 +132,19 @@ jobs:
       # After both restores, so the links replace whatever an older cache put in their place.
       - uses: ./.github/actions/minecraft-assets
 
+      # Ordinary CI uses binary-patched Minecraft. Prove the newest NeoForge node also
+      # decompiles and recompiles for local development, without a cached NeoForm result.
+      - name: Verify NeoForge source recompilation
+        if: matrix.mc == '26.3'
+        env:
+          CI: "false"
+          JDKS: JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :neoforge:26.3:build :neoforge:26.3:clientTestClasses :neoforge:26.3:serverTestClasses \
+            --init-script scripts/check-neoforge-recompilation.gradle \
+            -Porg.gradle.java.installations.fromEnv=$JDKS --stacktrace
+
       - name: Build ${{ matrix.mc }}
         env:
           JDKS: JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64

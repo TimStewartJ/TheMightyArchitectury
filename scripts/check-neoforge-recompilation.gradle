@@ -1,0 +1,11 @@
+// Used with CI=false so ModDevGradle takes the same source path as a local build.
+gradle.projectsEvaluated {
+    gradle.rootProject.project(":neoforge:26.3").tasks.named("createMinecraftArtifacts") {
+        enableCache.set(false)
+        doFirst {
+            if (disableRecompilation.get()) {
+                throw new GradleException("NeoForge 26.3 source recompilation must be enabled")
+            }
+        }
+    }
+}
