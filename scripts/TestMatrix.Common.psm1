@@ -583,13 +583,14 @@ function Initialize-TestHeadlessMcInstance {
         Invoke-TestHeadlessMc -Root $root -Launcher $launcher -Java $java -Command "download $MinecraftVersion" | Out-Null
     }
 
-    $existing = $installed | Where-Object { $_.Parent -eq $MinecraftVersion -and $_.Name -match $Loader }
+    $launchVersion = if ($Loader -eq 'neoforge') { "neoforge-$LoaderUid" } else { "$MinecraftVersion-forge-$LoaderUid" }
+    $existing = $installed | Where-Object { $_.Parent -eq $MinecraftVersion -and $_.Name -eq $launchVersion }
     if (-not $existing) {
         Write-Host "HeadlessMc: installing $Loader $LoaderUid for $MinecraftVersion"
         Invoke-TestHeadlessMc -Root $root -Launcher $launcher -Java $java `
             -Command "$Loader $MinecraftVersion --uid $LoaderUid --java $JavaVersion" | Out-Null
         $installed = Get-TestHeadlessMcVersions -Root $root -Launcher $launcher -Java $java
-        $existing = $installed | Where-Object { $_.Parent -eq $MinecraftVersion -and $_.Name -match $Loader }
+        $existing = $installed | Where-Object { $_.Parent -eq $MinecraftVersion -and $_.Name -eq $launchVersion }
     }
 
     if (-not $existing) {
@@ -691,8 +692,8 @@ function Start-TestHeadlessMcClient {
 
 function Get-TestLoaderUid {
     <#
-        The loader build this node targets, in the form HeadlessMc's --uid wants. NeoForge records
-        it bare (21.8.54); Forge records it prefixed with the Minecraft version (1.20.1-47.3.0).
+        The bare loader build HeadlessMc's --uid wants. Strip the Minecraft prefix from Forge's
+        recorded value when present.
     #>
     param(
         [Parameter(Mandatory = $true)][hashtable]$Properties,

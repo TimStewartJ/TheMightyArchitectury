@@ -142,7 +142,10 @@ Two launchers sit behind it, because no single one covers every loader:
 
 HeadlessMc is used purely as an installer and launcher — it installs a real Minecraft plus the
 **pinned** loader build the node targets (`--uid`, so an upstream release cannot change what the
-matrix means) and launches the jars out of a `mods` folder. Nothing it does reaches a shipped
+matrix means). Cached installations are reused only when both the Minecraft parent and the exact
+loader-version name match; another build of the same loader does not satisfy the pin. CI regression
+checks exercise stale caches, mixed loader inventories and failed installs without launching a game.
+HeadlessMc launches the jars out of a `mods` folder. Nothing it does reaches a shipped
 artifact. Its Minecraft lives in `build/headlessmc` and is cached in CI per version; the asset
 objects, which every version and all three launchers share, live in one store beside it
 (`.github/actions/minecraft-assets`).
