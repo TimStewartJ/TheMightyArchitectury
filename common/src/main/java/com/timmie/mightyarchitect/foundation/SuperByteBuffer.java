@@ -17,8 +17,10 @@ import com.mojang.blaze3d.vertex.VertexFormatElement;
 /*
 *///?}
 import com.timmie.mightyarchitect.foundation.compat.McCompat;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -162,6 +164,10 @@ public class SuperByteBuffer {
 		Matrix4f t = new Matrix4f(input.last().pose());
 		Matrix4f localTransforms = transforms.last().pose();
 		t.mul(localTransforms);
+		//? if >=26 {
+		Matrix3f normalTransform = new Matrix3f(input.last().normal()).mul(transforms.last().normal());
+		Vector3f normal = new Vector3f();
+		//?}
 
 		for (int i = 0; i < vertexCount; i++) {
 			float x = getX(i);
@@ -233,7 +239,16 @@ public class SuperByteBuffer {
 
 			//? if >=26 {
 			if (hasNormal)
-				builder.setNormal(getNX(i), getNY(i), getNZ(i));
+				normal.set(getNX(i), getNY(i), getNZ(i));
+			else if ((i & 3) == 0)
+				quadNormal(i, normal);
+			if (hasNormal || (i & 3) == 0) {
+				normalTransform.transform(normal);
+				if (normal.lengthSquared() > 0)
+					normal.normalize();
+			}
+			// Tick-built BLOCK meshes omit normals, but shader-extended draw buffers require them.
+			builder.setNormal(normal.x, normal.y, normal.z);
 			//?} else if >=1.21 {
 			/*builder.setNormal(getNX(i), getNY(i), getNZ(i));
 			*///?} else {
@@ -245,6 +260,16 @@ public class SuperByteBuffer {
 		shouldShiftUV = false;
 		shouldColor = false;
 		shouldLight = false;
+	}
+
+	private void quadNormal(int firstVertex, Vector3f normal) {
+		float ax = getX(firstVertex + 1) - getX(firstVertex);
+		float ay = getY(firstVertex + 1) - getY(firstVertex);
+		float az = getZ(firstVertex + 1) - getZ(firstVertex);
+		float bx = getX(firstVertex + 2) - getX(firstVertex);
+		float by = getY(firstVertex + 2) - getY(firstVertex);
+		float bz = getZ(firstVertex + 2) - getZ(firstVertex);
+		normal.set(ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx);
 	}
 
 	public SuperByteBuffer translate(double x, double y, double z) {

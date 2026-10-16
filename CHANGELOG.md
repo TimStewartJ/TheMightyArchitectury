@@ -4,6 +4,14 @@ All notable changes to The Mighty Architectury. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One entry covers every Minecraft version
 the release ships for; version-specific notes say which versions they apply to.
 
+## [Unreleased]
+
+### Fixed
+
+- **Minecraft 26.x: building previews supply normals to shader-extended vertex formats.**
+  Cached block meshes no longer crash when replayed into Iris buffers that require normals.
+  Missing normals are derived from each quad and follow the preview's normal transform.
+
 ## [2.1.0] - 2026-09-19
 
 ### Added
