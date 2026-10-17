@@ -25,6 +25,12 @@ plugins {
     id "me.modmuss50.mod-publish-plugin"
 }
 
+tasks.withType(Jar).configureEach {
+    from(rootProject.file("LICENSE")) {
+        into("META-INF")
+    }
+}
+
 def node = rootProject.project(":${stonecutter.current.version}")
 String mcVersion = node.property('minecraft_version').toString()
 List<String> loaders = (project.publishLoaders as List<String>)

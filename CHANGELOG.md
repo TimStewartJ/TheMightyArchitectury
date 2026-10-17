@@ -4,13 +4,24 @@ All notable changes to The Mighty Architectury. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One entry covers every Minecraft version
 the release ships for; version-specific notes say which versions they apply to.
 
-## [Unreleased]
+## [2.1.1] - 2026-10-16
 
 ### Fixed
 
 - **Minecraft 26.x: building previews supply normals to shader-extended vertex formats.**
   Cached block meshes no longer crash when replayed into Iris buffers that require normals.
   Missing normals are derived from each quad and follow the preview's normal transform.
+
+### Changed
+
+- Mod jars include the original MIT license notice.
+
+### Known issues
+
+- **Minecraft 26.3 with Iris on Mesa:** disable Sodium's **Use No Error GL Context**
+  option to avoid a separate upstream shader-startup crash
+  ([IrisShaders/Iris#3367](https://github.com/IrisShaders/Iris/issues/3367)).
+  The Vanilla Architects pack applies this compatibility setting.
 
 ## [2.1.0] - 2026-09-19
 
@@ -152,5 +163,6 @@ jars are built and verified.
   ([#36](https://github.com/TimStewartJ/TheMightyArchitectury/pull/36),
   [#37](https://github.com/TimStewartJ/TheMightyArchitectury/pull/37)).
 
+[2.1.1]: https://github.com/TimStewartJ/TheMightyArchitectury/releases/tag/v2.1.1
 [2.1.0]: https://github.com/TimStewartJ/TheMightyArchitectury/releases/tag/v2.1.0
 [2.0.0]: https://github.com/TimStewartJ/TheMightyArchitectury/releases/tag/v2.0.0
