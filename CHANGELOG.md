@@ -4,9 +4,10 @@ All notable changes to The Mighty Architectury. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One entry covers every Minecraft version
 the release ships for; version-specific notes say which versions they apply to.
 
-## [Unreleased]
+## [3.0.0] - 2026-10-23
 
-Intended as **3.0.0**: worlds that used the old theme-export blocks lose them (see *Removed*).
+A major version because worlds that used the old theme-export blocks lose them (see *Removed*).
+Nothing else about saving, composing or printing changed.
 
 ### Changed
 
