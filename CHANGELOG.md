@@ -4,50 +4,33 @@ All notable changes to The Mighty Architectury. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One entry covers every Minecraft version
 the release ships for; version-specific notes say which versions they apply to.
 
-## [Unreleased]
-
-Intended as **3.0.0**: worlds that used the old theme-export blocks lose them (see *Removed*).
+## [3.0.0] - 2026-10-23
 
 ### Changed
 
-- **A server or LAN world running the mod no longer turns away players who don't have it.** The
-  mod used to register a wand and two marker blocks. On Minecraft 1.21.4 and newer, any registered
-  content makes Fabric refuse players without the mod — *"This server requires Fabric API installed
-  on your client!"*, or *"Received registry entries that are unknown to this client"* — and on
-  older versions those players could join but did not know the mod's items and blocks. The mod now
-  registers nothing at all, so installing it on a server only adds the faster printing route and
-  never locks anyone out.
-- **The theme exporter's tools are vanilla items and blocks.** Press **G** while editing a theme and
-  take the exporter toolkit (key **1**, creative mode) as before. Inside it:
-  - the **Design Exporter** is a named blaze rod. Only the one from the toolkit works; an ordinary
-    blaze rod does nothing;
-  - the **Design Marker** that starts a design is a **lodestone**;
-  - **layer markers** are **glazed terracotta**, one colour per trait: white *Once*, lime
-    *Clone x1*, green *Clone x3*, yellow *Optional*, light blue *Mask above*, blue *Mask below*.
-    Right-click a marker's side to change its trait (sneak to go backwards); the mod labels every
-    marker and Design Marker near you while you edit a theme. As before, a design's markers stand
-    level with its Design Marker, past the design's south-east corner. While you edit a theme, a
-    Design Marker with no markers yet shows an orange box where the design goes, and one with a
-    marker column shows a green outline of exactly what the exporter will scan; clicking one with
-    no markers says where they go instead of doing nothing. Players without the mod just see the
-    vanilla blocks.
-- Changing a layer marker now needs creative mode or operator permission, the same as printing:
-  it goes through the mod's packet on a server that has the mod, and `/setblock` on one that does
-  not. The old marker block let anyone change it.
-- Toolkits are handed out through vanilla's creative inventory, so they work on any server in
-  creative mode, with or without the mod there. Outside creative mode the mod now says so instead of
-  silently doing nothing.
-- Exporting refuses a scanner palette that uses one of the marker blocks, since such a block inside
-  a design would be taken for its marker column. No shipped palette uses glazed terracotta.
+- **Servers running the mod no longer lock out players who don't have it.** The mod used to add a
+  wand and two marker blocks, and Fabric turns away players who are missing a server's blocks
+  ("This server requires Fabric API installed on your client!"). It now adds none, so a server can
+  install it just for faster printing.
+- **The theme-making tools are now vanilla items.** Open the exporter toolkit as before (**G**, edit
+  a theme, then **1**):
+  - **Design Exporter:** a named blaze rod. Plain blaze rods don't work.
+  - **Design Marker:** a lodestone.
+  - **Layer markers:** glazed terracotta. White is *Once*, lime *Clone x1*, green *Clone x3*,
+    yellow *Optional*, light blue *Mask above*, blue *Mask below*. Right-click a side to change it;
+    sneak to go back.
+- While you edit a theme, markers are labelled and each lodestone shows where its design goes: an
+  orange box until it has markers, then a green outline of what will be exported. Clicking a
+  lodestone with no markers tells you where to put them.
+- Changing a marker needs creative mode or operator, like printing. Toolkits work in creative mode
+  on any server.
+- Exporting refuses a scanner palette that contains a marker block.
 
 ### Removed
 
-- The `mightyarchitect:architect_wand` item and the `mightyarchitect:slice_marker` and
-  `mightyarchitect:design_anchor` blocks. **A world that still contains them** loads those blocks as
-  air (Fabric also shows its "missing content" warning once). Rebuild a design's markers with the
-  new toolkit before exporting it again. Exported designs, themes and palettes are separate files
-  and are not affected.
-- The toolkit's `set_hotbar_item` packet, which vanilla's creative inventory replaces.
+- The old wand and marker blocks (`architect_wand`, `slice_marker`, `design_anchor`). **They turn
+  into air in existing worlds**, so replace them with the new tools before exporting again. Your
+  exported designs, themes and palettes are not affected.
 
 ## [2.1.1] - 2026-10-16
 
