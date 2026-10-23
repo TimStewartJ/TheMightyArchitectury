@@ -33,25 +33,22 @@ The mod is client-side: you can design, preview and save schematics on any serve
 
 - **Printing into the world** needs operator permission, the same bar as `/setblock`. On a server
   without the mod it places blocks with ordinary commands, batched and rate-limited.
-- **Servers and LAN hosts can install it too, at no cost to anyone.** Since 3.0.0 the mod adds no
-  blocks or items, so players without it can still join. Printing then uses the mod's own
-  packets — much faster, no command spam — and is allowed for creative-mode players or operators.
-  Every placement is checked against world border, spawn protection, claims, reach and a
-  per-player budget.
+- **Servers and LAN hosts can install it too.** Since 3.0.0, players without the mod can still
+  join. With it on the server, printing is faster, skips the chat spam and also works for players
+  in creative mode. Placements still respect the world border, spawn protection, claims and reach.
 
 > **Server admins: do not run a 0.x build on a server.** Versions before 2.0.0 accepted build packets
 > from any player without checking permissions. Update to 2.0.0 or newer, or simply remove the mod from the
 > server — players lose nothing. If a server ever ran an older build, also check
 > `/gamerule logAdminCommands`.
 
-## Making your own themes
+## Making themes
 
-Press **G**, create or edit a theme, and press **1** for the exporter toolkit (creative mode). The
-tools are plain vanilla items, so worlds stay compatible with players who don't have the mod: the
-**Design Exporter** is a named blaze rod, the **Design Marker** is a lodestone, and **layer markers**
-are glazed terracotta, one colour per trait. While you edit a theme, the mod labels them and shows
-where each design goes. Worlds that still contain the pre-3.0 marker blocks lose them; exported
-designs are unaffected.
+Press **G**, edit a theme, then **1** for the exporter toolkit (creative mode). The tools are
+vanilla items: a blaze rod exports, a lodestone marks each design, and glazed terracotta marks its
+layers. The mod labels them and outlines each design while you work.
+
+Coming from 2.x? The old marker blocks disappear from your worlds. Exported designs are fine.
 
 ## Your themes and palettes
 
