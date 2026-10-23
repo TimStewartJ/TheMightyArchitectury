@@ -72,22 +72,4 @@ public final class PacketWire {
 			return true;
 		}
 	}
-
-	/** Whether the {@link SetHotbarItemPacket} decoder refuses a payload addressing this slot. */
-	public static boolean setHotbarItemRejectsSlot(RegistryAccess registries, int slot) {
-		try {
-			//? if >=1.20.5 {
-			RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registries);
-			buffer.writeInt(slot);
-			AllPackets.SET_HOTBAR_ITEM_CODEC.decode(buffer);
-			//?} else {
-			/*FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
-			buffer.writeInt(slot);
-			AllPackets.SET_HOTBAR_ITEM_DECODER.apply(buffer);
-			*///?}
-			return false;
-		} catch (DecoderException rejected) {
-			return true;
-		}
-	}
 }

@@ -189,6 +189,15 @@ public final class McCompat {
 		*///?}
 	}
 
+	/** Sends a slash command (without the slash) to the server the player is connected to. */
+	public static void sendCommand(LocalPlayer player, String command) {
+		//? if >=1.21.6 {
+		player.connection.sendCommand(command);
+		//?} else {
+		/*player.connection.sendUnsignedCommand(command);
+		*///?}
+	}
+
 	// 26.3 renamed PoseStack.mulPose(Quaternionfc) to rotate; mulPose only takes matrices there.
 	public static void rotate(PoseStack ms, Quaternionf rotation) {
 		//? if >=26.3 {

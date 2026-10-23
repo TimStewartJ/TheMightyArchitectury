@@ -51,7 +51,6 @@ public class MightyClient {
 
 	// Called by the loader on client setup, before it registers the key mappings created here.
 	public static void init() {
-		AllItems.initColorHandlers();
 		//? if >=1.21.10 {
 		COMPOSE = new KeyMapping("key.mightyclient.compose", Keyboard.G, CATEGORY);
 		TOOL_MENU = new KeyMapping("key.mightyclient.toolmenu", Keyboard.LALT, CATEGORY);

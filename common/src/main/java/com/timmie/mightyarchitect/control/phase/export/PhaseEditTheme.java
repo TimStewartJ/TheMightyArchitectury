@@ -6,7 +6,9 @@ import com.timmie.mightyarchitect.AllSpecialTextures;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.control.compose.Cuboid;
 import com.timmie.mightyarchitect.control.design.DesignExporter;
+import com.timmie.mightyarchitect.control.design.DesignSlice.DesignSliceTrait;
 import com.timmie.mightyarchitect.control.design.DesignType;
+import com.timmie.mightyarchitect.control.design.ExportTools;
 import com.timmie.mightyarchitect.control.phase.PhaseBase;
 import com.timmie.mightyarchitect.foundation.utility.BuildingHelper;
 import com.timmie.mightyarchitect.foundation.utility.outliner.AABBOutline;
@@ -14,10 +16,14 @@ import com.timmie.mightyarchitect.foundation.utility.outliner.BlockClusterOutlin
 import com.timmie.mightyarchitect.foundation.utility.outliner.Outline;
 import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 public class PhaseEditTheme extends PhaseBase {
@@ -48,6 +54,7 @@ public class PhaseEditTheme extends PhaseBase {
 	@Override
 	public void update() {
 		tickOutlines();
+		tickToolLabels();
 		if (lastType == DesignExporter.getType())
 			return;
 
@@ -123,14 +130,66 @@ public class PhaseEditTheme extends PhaseBase {
 			.colored(0xffffff);
 	}
 
+	/** How far around the player marker and anchor blocks are labelled. */
+	static final int LABEL_RADIUS = 8;
+	static final int LABEL_REFRESH_TICKS = 10;
+	static final int MAX_LABELS = 64;
+
+	private record ToolLabel(BlockPos pos) {
+	}
+
+	private final Map<BlockPos, String> toolLabels = new HashMap<>();
+	private int labelRefreshTicks;
+
+	/**
+	 * Names the trait of every layer marker near the player, and the Design Marker itself. The
+	 * markers are plain glazed terracotta, so this is the only place their meaning shows up. The
+	 * scan is a few thousand block reads, so it is refreshed twice a second while the labels are
+	 * kept alive every tick.
+	 */
+	private void tickToolLabels() {
+		if (--labelRefreshTicks <= 0) {
+			labelRefreshTicks = LABEL_REFRESH_TICKS;
+			scanToolLabels();
+		}
+		toolLabels.forEach((pos, text) -> MightyClient.outliner
+			.chaseText(new ToolLabel(pos), Vec3.atCenterOf(pos), text)
+			.disableNormals()
+			.colored(0xffdd55));
+	}
+
+	private void scanToolLabels() {
+		toolLabels.clear();
+		Level level = minecraft.level;
+		if (level == null || minecraft.player == null)
+			return;
+		BlockPos centre = minecraft.player.blockPosition();
+		for (BlockPos pos : BlockPos.betweenClosed(centre.offset(-LABEL_RADIUS, -LABEL_RADIUS, -LABEL_RADIUS),
+			centre.offset(LABEL_RADIUS, LABEL_RADIUS, LABEL_RADIUS))) {
+			BlockState state = level.getBlockState(pos);
+			String text = null;
+			DesignSliceTrait trait = ExportTools.traitOf(state);
+			if (trait != null)
+				text = ExportTools.label(trait);
+			else if (ExportTools.isAnchor(state))
+				text = ExportTools.ANCHOR_NAME;
+			if (text == null)
+				continue;
+			toolLabels.put(pos.immutable(), text);
+			if (toolLabels.size() >= MAX_LABELS)
+				return;
+		}
+	}
+
 	@Override
 	public void whenExited() {
-
+		toolLabels.clear();
 	}
 
 	@Override
 	public List<String> getToolTip() {
-		return ImmutableList.of("Right click the origin marker of your designs to scan them.",
+		return ImmutableList.of("Right click a Design Marker (lodestone) with the Exporter to scan.",
+			"Right click the side of a layer marker to change its trait.",
 			"Don't forget to pick the correct traits (type, layer, size) for the next design!");
 	}
 

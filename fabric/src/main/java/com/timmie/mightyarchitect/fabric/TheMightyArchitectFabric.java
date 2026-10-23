@@ -1,10 +1,8 @@
 package com.timmie.mightyarchitect.fabric;
 
 import com.timmie.mightyarchitect.AllPackets;
-import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
 import com.timmie.mightyarchitect.networking.PlaceSignPacket;
-import com.timmie.mightyarchitect.networking.SetHotbarItemPacket;
 import com.timmie.mightyarchitect.platform.PacketContext;
 import net.fabricmc.api.ModInitializer;
 // PayloadTypeRegistry is the 1.20.5+ payload API; before that packets are raw buffers on a channel.
@@ -14,19 +12,15 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 /*
 *///?}
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerPlayer;
 
 public class TheMightyArchitectFabric implements ModInitializer {
 
+	// Packets only: the mod registers no blocks or items, so a server running it never turns away a
+	// player who does not have it. See TheMightyArchitect.
 	@Override
 	public void onInitialize()
 	{
-		TheMightyArchitect.Init(
-			(name, factory) -> Registry.register(BuiltInRegistries.BLOCK, TheMightyArchitect.id(name), factory.get()),
-			(name, factory) -> Registry.register(BuiltInRegistries.ITEM, TheMightyArchitect.id(name), factory.get()));
-
 		registerPackets();
 	}
 
@@ -37,14 +31,11 @@ public class TheMightyArchitectFabric implements ModInitializer {
 		PayloadTypeRegistry<net.minecraft.network.RegistryFriendlyByteBuf> c2s = PayloadTypeRegistry.serverboundPlay();
 		c2s.register(AllPackets.INSTANT_PRINT_TYPE, AllPackets.INSTANT_PRINT_CODEC);
 		c2s.register(AllPackets.PLACE_SIGN_TYPE, AllPackets.PLACE_SIGN_CODEC);
-		c2s.register(AllPackets.SET_HOTBAR_ITEM_TYPE, AllPackets.SET_HOTBAR_ITEM_CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(AllPackets.INSTANT_PRINT_TYPE,
 			(payload, context) -> InstantPrintPacket.handle(payload, wrap(context)));
 		ServerPlayNetworking.registerGlobalReceiver(AllPackets.PLACE_SIGN_TYPE,
 			(payload, context) -> PlaceSignPacket.handle(payload, wrap(context)));
-		ServerPlayNetworking.registerGlobalReceiver(AllPackets.SET_HOTBAR_ITEM_TYPE,
-			(payload, context) -> SetHotbarItemPacket.handle(payload, wrap(context)));
 	}
 
 	private static PacketContext wrap(ServerPlayNetworking.Context context) {
@@ -67,14 +58,11 @@ public class TheMightyArchitectFabric implements ModInitializer {
 		PayloadTypeRegistry<net.minecraft.network.RegistryFriendlyByteBuf> c2s = PayloadTypeRegistry.playC2S();
 		c2s.register(AllPackets.INSTANT_PRINT_TYPE, AllPackets.INSTANT_PRINT_CODEC);
 		c2s.register(AllPackets.PLACE_SIGN_TYPE, AllPackets.PLACE_SIGN_CODEC);
-		c2s.register(AllPackets.SET_HOTBAR_ITEM_TYPE, AllPackets.SET_HOTBAR_ITEM_CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(AllPackets.INSTANT_PRINT_TYPE,
 			(payload, context) -> InstantPrintPacket.handle(payload, wrap(context)));
 		ServerPlayNetworking.registerGlobalReceiver(AllPackets.PLACE_SIGN_TYPE,
 			(payload, context) -> PlaceSignPacket.handle(payload, wrap(context)));
-		ServerPlayNetworking.registerGlobalReceiver(AllPackets.SET_HOTBAR_ITEM_TYPE,
-			(payload, context) -> SetHotbarItemPacket.handle(payload, wrap(context)));
 	}
 
 	private static PacketContext wrap(ServerPlayNetworking.Context context) {
@@ -103,11 +91,6 @@ public class TheMightyArchitectFabric implements ModInitializer {
 			(server, player, handler, buf, responseSender) -> {
 				PlaceSignPacket packet = AllPackets.PLACE_SIGN_DECODER.apply(buf);
 				PlaceSignPacket.handle(packet, wrap(server, player));
-			});
-		ServerPlayNetworking.registerGlobalReceiver(AllPackets.SET_HOTBAR_ITEM_ID,
-			(server, player, handler, buf, responseSender) -> {
-				SetHotbarItemPacket packet = AllPackets.SET_HOTBAR_ITEM_DECODER.apply(buf);
-				SetHotbarItemPacket.handle(packet, wrap(server, player));
 			});
 	}
 

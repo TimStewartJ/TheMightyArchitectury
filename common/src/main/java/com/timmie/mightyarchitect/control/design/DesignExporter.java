@@ -1,8 +1,6 @@
 package com.timmie.mightyarchitect.control.design;
 
-import com.timmie.mightyarchitect.AllBlocks;
 import com.timmie.mightyarchitect.AllPackets;
-import com.timmie.mightyarchitect.block.SliceMarkerBlock;
 import com.timmie.mightyarchitect.control.compose.Cuboid;
 import com.timmie.mightyarchitect.control.design.DesignSlice.DesignSliceTrait;
 import com.timmie.mightyarchitect.control.design.DesignSlice.SliceData;
@@ -107,6 +105,10 @@ public class DesignExporter {
 	}
 
 	private String export(Level worldIn, BlockPos anchor) {
+		String reserved = reservedBlockInPalette(scanningPalette);
+		if (reserved != null)
+			return "The scanner palette uses " + reserved + ", which marks layers. Pick another block.";
+
 		BlockPos layerDefAnchor = anchor;
 		boolean found = false;
 		for (int range = 1; range < 100 && !found; range++) {
@@ -325,13 +327,30 @@ public class DesignExporter {
 	}
 
 	private static boolean isMarker(Level worldIn, BlockPos pos) {
-		return AllBlocks.SLICE_MARKER.typeOf(worldIn.getBlockState(pos));
+		return ExportTools.isMarker(worldIn.getBlockState(pos));
 	}
 
 	private static int markerValueAt(Level worldIn, BlockPos pos) {
-		return worldIn.getBlockState(pos)
-			.getValue(SliceMarkerBlock.VARIANT)
+		return ExportTools.traitOf(worldIn.getBlockState(pos))
 			.ordinal();
+	}
+
+	/**
+	 * The scanner palette may not use a layer-marker block. The search for a design's marker column
+	 * starts inside the design's own footprint, so such a block in the bottom layer would be taken
+	 * for the column itself and export a wrongly sized design without any error.
+	 *
+	 * @return the first conflicting marker block's name, or {@code null} when there is none
+	 */
+	public static String reservedBlockInPalette(PaletteDefinition palette) {
+		for (DesignSliceTrait trait : DesignSliceTrait.values()) {
+			BlockState marker = ExportTools.markerState(trait);
+			if (palette.scan(marker) != null)
+				return marker.getBlock()
+					.getName()
+					.getString();
+		}
+		return null;
 	}
 
 }

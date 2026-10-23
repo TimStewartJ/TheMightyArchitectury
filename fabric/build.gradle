@@ -344,6 +344,42 @@ tasks.withType(ClientProductionRunTask).configureEach {
     jvmArgs.addAll(launcherJvmArgs)
 }
 
+// The other half of "a server running the mod admits players without it": a production client
+// with no mods at all. Fabric Loader on its own registers no channels and answers no handshake, so
+// to a server it is indistinguishable from the vanilla launcher - which is the player this checks
+// for. scripts/run-server-test-matrix.ps1 -JoinTest points it at the server-test run (any loader)
+// and passes only when that server logs the player joining.
+//
+// Loom seeds `mods` with this node's own jar and with productionRuntimeMods in the task's
+// constructor; setFrom() with nothing replaces both.
+def joinTestServer = (System.getenv("MIGHTYARCHITECT_JOIN_TEST_SERVER")
+    ?: project.findProperty("joinTestServer")
+    ?: "127.0.0.1:25565").toString()
+
+tasks.register("runModlessJoinClient", ClientProductionRunTask) {
+    group = "verification"
+    description = "Launches a client with no mods installed and joins the given server."
+
+    mods.setFrom()
+    runDir = layout.projectDirectory.dir("run-join-test")
+
+    programArgs.addAll(
+        "--accessToken", "0",
+        "--version", "mightyarchitect-join-test",
+        "--username", "VanillaJoiner"
+    )
+    // Quick Play arrived in 1.20; before it the client took the server as two arguments.
+    if (stonecutter.eval(stonecutter.current.version, ">=1.20")) {
+        programArgs.addAll("--quickPlayMultiplayer", joinTestServer)
+    } else {
+        def separator = joinTestServer.lastIndexOf(':')
+        programArgs.addAll("--server", joinTestServer.substring(0, separator),
+            "--port", joinTestServer.substring(separator + 1))
+    }
+
+    useXVFB = false
+}
+
 if (unobf) {
     // Unobfuscated 26.1: Loom performs no remap, so the plain jar is the published artifact.
     jar {

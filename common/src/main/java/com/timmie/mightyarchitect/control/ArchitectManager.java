@@ -148,7 +148,7 @@ public class ArchitectManager {
 		enterPhase(ArchitectPhases.PrintingToMultiplayer);
 	}
 
-	private static boolean hasGameMasterPermission() {
+	public static boolean hasGameMasterPermission() {
 		// Numeric permission levels were replaced by named permissions in 1.21.11.
 		//? if >=1.21.11 {
 		return Minecraft.getInstance().player.permissions()

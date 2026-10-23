@@ -1,6 +1,7 @@
 package com.timmie.mightyarchitect.test.server;
 
 import com.timmie.mightyarchitect.TheMightyArchitect;
+import com.timmie.mightyarchitect.foundation.utility.RegistryAudit;
 import com.timmie.mightyarchitect.networking.DetachedServerPlayer;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
 import com.timmie.mightyarchitect.networking.PacketWire;
@@ -38,7 +39,7 @@ import java.util.Map;
  * loaded here at all.
  * <p>
  * The second half of the run covers {@link ServerBuildGuard}: first the parts that need no
- * connected player - the decode-time bounds on both packets, the per-player placement budget
+ * connected player - the decode-time bound on the print packet, the per-player placement budget
  * and the reach test - and then the gate end to end, with a real player, a real packet and real
  * blocks.
  * <p>
@@ -93,12 +94,30 @@ public final class ServerPrintTest {
             verifyPlaced(level, schematic);
             verifyGuards(server);
             verifyLiveGate(server, level);
+            verifyRegistersNothing();
 
             TheMightyArchitect.logger.info("{} RESULT PASS ({} checks)", TAG, passed);
         } catch (Throwable failure) {
             TheMightyArchitect.logger.error("{} RESULT FAIL {}", TAG, failure);
             TheMightyArchitect.logger.error("{} failure detail", TAG, failure);
         }
+    }
+
+    /**
+     * The mod must put nothing into any game registry. One registered block or item is enough for
+     * every server running the mod - a LAN host included - to turn away each player who does not
+     * have it: Fabric's registry sync disconnects them and offers no per-entry opt-out. The
+     * theme exporter's tools are vanilla content for exactly this reason.
+     */
+    private static void verifyRegistersNothing() {
+        List<String> vanilla = RegistryAudit.entriesIn("minecraft");
+        // An audit that sees no registries at all would pass the real assertion vacuously.
+        require(vanilla.size() > 1000, "the registry audit saw only " + vanilla.size() + " vanilla entries");
+
+        List<String> ours = RegistryAudit.entriesIn(TheMightyArchitect.ID);
+        require(ours.isEmpty(), "the mod registered " + ours.size()
+            + " entries, so servers running it would refuse players without it: " + ours);
+        pass("the mod registers nothing in any of the game's registries");
     }
 
     /**
@@ -185,12 +204,6 @@ public final class ServerPrintTest {
         require(PacketWire.instantPrintRejectsSize(registries, -1),
             "InstantPrintPacket accepted a payload declaring a negative block count");
         pass("InstantPrintPacket rejects an out-of-range block count at decode time");
-
-        require(PacketWire.setHotbarItemRejectsSlot(registries, 9),
-            "SetHotbarItemPacket accepted a slot past the end of the hotbar");
-        require(PacketWire.setHotbarItemRejectsSlot(registries, -1),
-            "SetHotbarItemPacket accepted a negative slot");
-        pass("SetHotbarItemPacket rejects an out-of-range hotbar slot at decode time");
 
         ServerBuildGuard.Budget budget = new ServerBuildGuard.Budget(0L);
         require(budget.claim(ServerBuildGuard.BLOCK_BUDGET_BURST, 0L),

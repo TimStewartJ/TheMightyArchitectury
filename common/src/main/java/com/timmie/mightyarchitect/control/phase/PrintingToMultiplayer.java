@@ -3,6 +3,7 @@ package com.timmie.mightyarchitect.control.phase;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.control.ArchitectManager;
+import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import com.timmie.mightyarchitect.foundation.MightyBuffers;
@@ -60,11 +61,7 @@ public class PrintingToMultiplayer extends PhaseBase {
 			if (current.isEmpty())
 				continue;
 
-			//? if >=1.21.6 {
-			Minecraft.getInstance().player.connection.sendCommand(current.get(0).text());
-			//?} else {
-			/*Minecraft.getInstance().player.connection.sendUnsignedCommand(current.get(0).text());
-			*///?}
+			McCompat.sendCommand(Minecraft.getInstance().player, current.get(0).text());
 			sent++;
 		}
 	}

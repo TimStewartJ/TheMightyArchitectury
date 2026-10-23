@@ -6,6 +6,7 @@ run-client-test-*/
 run-prod-client-test/
 run-prod-client-test-*/
 run-server-test/
+run-join-test/
 *.iws
 out/
 *.iml

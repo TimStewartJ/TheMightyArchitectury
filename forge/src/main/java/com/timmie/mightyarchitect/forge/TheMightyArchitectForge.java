@@ -4,22 +4,15 @@ import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
 import com.timmie.mightyarchitect.networking.PlaceSignPacket;
-import com.timmie.mightyarchitect.networking.SetHotbarItemPacket;
 import com.timmie.mightyarchitect.platform.MightyPacket;
 import com.timmie.mightyarchitect.platform.PacketContext;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
-import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
-import net.minecraftforge.registries.DeferredRegister;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -43,22 +36,9 @@ public class TheMightyArchitectForge {
 	private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
 		TheMightyArchitect.id("main"), () -> PROTOCOL, ignored -> true, ignored -> true);
 
-	private static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(Registries.BLOCK, ID);
-	private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(Registries.ITEM, ID);
-
+	// Packets only: the mod registers no blocks or items, so a server running it never turns away a
+	// player who does not have it. See TheMightyArchitect.
 	public TheMightyArchitectForge() {
-		IEventBus modEventBus = FMLJavaModLoadingContext.get()
-			.getModEventBus();
-
-		// DeferredRegister.register returns a RegistryObject; the shared registrar contract is
-		// void, so the handle is simply discarded - the mod reads its blocks back through
-		// AllBlocks, which the factories populate when Forge runs them.
-		TheMightyArchitect.Init(
-			(name, factory) -> BLOCKS.register(name, factory::get),
-			(name, factory) -> ITEMS.register(name, factory::get));
-		BLOCKS.register(modEventBus);
-		ITEMS.register(modEventBus);
-
 		registerPackets();
 	}
 
@@ -68,8 +48,6 @@ public class TheMightyArchitectForge {
 			InstantPrintPacket::handle);
 		register(index++, PlaceSignPacket.class, AllPackets.PLACE_SIGN_DECODER,
 			PlaceSignPacket::handle);
-		register(index++, SetHotbarItemPacket.class, AllPackets.SET_HOTBAR_ITEM_DECODER,
-			SetHotbarItemPacket::handle);
 	}
 
 	public static boolean canSendToServer(Connection connection) {
