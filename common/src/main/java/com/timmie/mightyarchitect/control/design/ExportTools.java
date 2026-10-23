@@ -22,9 +22,9 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
  * The theme exporter's in-world tools, made entirely of vanilla content.
  * <p>
  * The mod used to register a wand item and two marker blocks for this. Any registered block or item
- * makes a server - or a LAN host - turn away every player who does not have the mod: Fabric's
- * registry sync disconnects them, and there is no per-entry way to opt out. So the tools are
- * vanilla things the mod recognises instead:
+ * makes a server - or a LAN host - turn away every player who does not have it: from 1.21.4,
+ * Fabric's registry sync disconnects them, and there is no per-entry way to opt out. So the tools
+ * are vanilla things the mod recognises instead:
  * <ul>
  * <li>the <b>Design Exporter</b> is a blaze rod carrying a hidden tag; an ordinary blaze rod does
  * nothing,</li>

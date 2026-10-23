@@ -104,10 +104,11 @@ public final class ServerPrintTest {
     }
 
     /**
-     * The mod must put nothing into any game registry. One registered block or item is enough for
-     * every server running the mod - a LAN host included - to turn away each player who does not
-     * have it: Fabric's registry sync disconnects them and offers no per-entry opt-out. The
-     * theme exporter's tools are vanilla content for exactly this reason.
+     * The mod must put nothing into any game registry. From 1.21.4 one registered block or item is
+     * enough for every Fabric server running the mod - a LAN host included - to turn away each
+     * player who does not have it, with no per-entry opt-out; on older versions those players join
+     * without knowing the content. The join test only catches the first case, so this audit is the
+     * gate on every version.
      */
     private static void verifyRegistersNothing() {
         List<String> vanilla = RegistryAudit.entriesIn("minecraft");
@@ -116,7 +117,7 @@ public final class ServerPrintTest {
 
         List<String> ours = RegistryAudit.entriesIn(TheMightyArchitect.ID);
         require(ours.isEmpty(), "the mod registered " + ours.size()
-            + " entries, so servers running it would refuse players without it: " + ours);
+            + " entries; players without the mod cannot use servers running it: " + ours);
         pass("the mod registers nothing in any of the game's registries");
     }
 

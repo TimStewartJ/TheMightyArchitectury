@@ -11,10 +11,12 @@ Intended as **3.0.0**: worlds that used the old theme-export blocks lose them (s
 ### Changed
 
 - **A server or LAN world running the mod no longer turns away players who don't have it.** The
-  mod used to register a wand and two marker blocks, and any registered content makes Fabric refuse
-  players without the mod — *"This server requires Fabric Loader and Fabric API"*, or *"Received
-  registry entries that are unknown to this client"*. The mod now registers nothing at all, so
-  installing it on a server only adds the faster printing route and never locks anyone out.
+  mod used to register a wand and two marker blocks. On Minecraft 1.21.4 and newer, any registered
+  content makes Fabric refuse players without the mod — *"This server requires Fabric API installed
+  on your client!"*, or *"Received registry entries that are unknown to this client"* — and on
+  older versions those players could join but did not know the mod's items and blocks. The mod now
+  registers nothing at all, so installing it on a server only adds the faster printing route and
+  never locks anyone out.
 - **The theme exporter's tools are vanilla items and blocks.** Press **G** while editing a theme and
   take the exporter toolkit (key **1**, creative mode) as before. Inside it:
   - the **Design Exporter** is a named blaze rod. Only the one from the toolkit works; an ordinary

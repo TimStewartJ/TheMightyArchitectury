@@ -52,11 +52,13 @@ Everything else that genuinely differs between loaders (networking, key mappings
 events) is behind the small interfaces in `common/.../platform` and implemented in each loader
 module.
 
-The mod registers **no blocks or items**, on any loader. One registered entry is enough for every
-server or LAN host running the mod to refuse players who do not have it (Fabric's registry sync has
-no per-entry opt-out), so the theme exporter's tools are vanilla items and blocks the client
-recognises — see `control/design/ExportTools`. The server test and the join test below fail if
-anything is ever registered again.
+The mod registers **no blocks or items**, on any loader. From Minecraft 1.21.4 one registered entry
+is enough for Fabric's registry sync to make every server or LAN host running the mod refuse
+players who do not have it (there is no per-entry opt-out), and on older versions such players join
+without knowing the content. So the theme exporter's tools are vanilla items and blocks the client
+recognises — see `control/design/ExportTools`. The server, client and join tests below fail if
+anything is ever registered again (mutation-tested: the join test catches it from 1.21.4, the
+registry audits everywhere).
 
 Note that the shared source is compiled against the *NeoForge-patched* Minecraft in the NeoForge
 module, so a handful of vanilla signatures NeoForge widens (for example `Level#dragonParts`) have to
