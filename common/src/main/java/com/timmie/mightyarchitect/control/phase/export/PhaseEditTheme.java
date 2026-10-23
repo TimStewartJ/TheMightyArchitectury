@@ -189,6 +189,7 @@ public class PhaseEditTheme extends PhaseBase {
 	@Override
 	public List<String> getToolTip() {
 		return ImmutableList.of("Right click a Design Marker (lodestone) with the Exporter to scan.",
+			"Layer markers go level with it, past the design's south-east corner.",
 			"Right click the side of a layer marker to change its trait.",
 			"Don't forget to pick the correct traits (type, layer, size) for the next design!");
 	}

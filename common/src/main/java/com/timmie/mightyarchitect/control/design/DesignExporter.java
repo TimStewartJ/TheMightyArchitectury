@@ -100,6 +100,13 @@ public class DesignExporter {
 		get().changed = true;
 	}
 
+	/**
+	 * The layer-marker column is searched for only towards positive X and Z (south-east), level with
+	 * the Design Marker: a design's facade is its south side, so the layout cannot be mirrored.
+	 */
+	public static final String NO_MARKERS_FOUND =
+		"No layer markers found: put them level with this lodestone, to its south-east (+X, +Z).";
+
 	public static String exportDesign(Level worldIn, BlockPos anchor) {
 		return get().export(worldIn, anchor);
 	}
@@ -125,9 +132,10 @@ public class DesignExporter {
 			}
 		}
 
-		if (!found) {
-			return "";
-		}
+		// Clicking used to do nothing at all here, which reads as a broken tool now that the markers
+		// are ordinary blocks; the search only ever looks one way, so say which.
+		if (!found)
+			return NO_MARKERS_FOUND;
 
 		// Collect information
 		int height = 0;

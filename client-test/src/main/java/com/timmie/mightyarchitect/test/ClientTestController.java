@@ -1065,6 +1065,15 @@ public final class ClientTestController {
                 check(minecraft.level.getBlockState(pos).isAir(), "export test area is empty at " + pos);
             BlockState marker = ExportTools.markerState(DesignSliceTrait.Standard);
             minecraft.level.setBlock(anchor, ExportTools.anchorBlock().defaultBlockState(), 3);
+            // Markers on the wrong side are not markers: the search looks south-east only, and an
+            // empty result used to make the click do nothing at all.
+            BlockPos wrongSide = anchor.offset(-4, 0, -2);
+            BlockState wrongSideBefore = minecraft.level.getBlockState(wrongSide);
+            minecraft.level.setBlock(wrongSide, marker, 3);
+            String lonely = DesignExporter.exportDesign(minecraft.level, anchor);
+            minecraft.level.setBlock(wrongSide, wrongSideBefore, 3);
+            check(DesignExporter.NO_MARKERS_FOUND.equals(lonely),
+                "a Design Marker with no markers to its south-east says why (" + lonely + ")");
             minecraft.level.setBlock(columnBottom, marker, 3);
             minecraft.level.setBlock(columnTop, marker, 3);
             ArchitectManager.editTheme(ThemeStorage.getIncluded().get(0));
