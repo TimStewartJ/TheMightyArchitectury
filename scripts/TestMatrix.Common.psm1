@@ -745,7 +745,11 @@ function Test-TestRetryableFailure {
         # NeoForge adding its own netty handler twice while joining a vanilla server: the client
         # dies with a network protocol error before the mod has done anything, and then sits on
         # its crash screen. A race in the loader, gone on a second attempt.
-        'Duplicate handler name: neoforge:vanilla_filter'
+        'Duplicate handler name: neoforge:vanilla_filter',
+        # The server matrix's join test: a client that loads no mods at all hanging in window
+        # creation under Xvfb, before it connects (1.20.4, run 39988585684). Nothing of the mod's
+        # runs in that process, so it cannot hide a mod bug.
+        'The client without mods hung opening its window before connecting'
     )
 
     foreach ($pattern in $infrastructurePatterns) {

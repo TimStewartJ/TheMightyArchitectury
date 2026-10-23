@@ -5,7 +5,8 @@ param(
     # After the print test passes, keep that modded server up and join it with a client that has no
     # mods at all - the player a server running the mod must not turn away. Needs a display.
     [switch]$JoinTest,
-    [int]$JoinTimeoutSeconds = 480
+    [int]$JoinTimeoutSeconds = 480,
+    [int]$JoinStallSeconds = 120
 )
 
 $ErrorActionPreference = 'Stop'
@@ -103,6 +104,9 @@ function Invoke-ModlessJoin {
 
     $script:JoinStarted = $true
     $deadline = (Get-Date).AddSeconds($JoinTimeoutSeconds)
+    $clientLog = Join-Path (Join-Path $runDirectory 'logs') 'latest.log'
+    $outputSize = -1
+    $lastOutput = Get-Date
     try {
         while ((Get-Date) -lt $deadline) {
             $lines = @(Get-Content $ServerLog -ErrorAction SilentlyContinue | Select-Object -Skip $skip)
@@ -121,6 +125,22 @@ function Invoke-ModlessJoin {
             if ($client.HasExited) {
                 $tail = if (Test-Path $clientStdout) { (Get-Content $clientStdout -Tail 30) -join "`n" } else { '' }
                 throw "The client without mods exited before joining (code $($client.ExitCode))`n$tail"
+            }
+            # Same rule as the client lanes: a client that has started logging and then goes quiet
+            # does not recover.
+            $size = (@($clientStdout, $clientStderr, $clientLog) | Where-Object { Test-Path $_ } |
+                ForEach-Object { (Get-Item $_).Length } | Measure-Object -Sum).Sum
+            if ($size -ne $outputSize) {
+                $outputSize = $size
+                $lastOutput = Get-Date
+            } elseif ((Test-Path $clientLog) -and ((Get-Date) - $lastOutput).TotalSeconds -ge $JoinStallSeconds) {
+                $last = (Get-Content $clientLog -Tail 1)
+                # This client loads no mods at all, so a hang before its window exists cannot be
+                # the mod's; seen once on 1.20.4 under Xvfb, the line names it for the retry.
+                if ($last -match 'Backend library: LWJGL') {
+                    throw "The client without mods hung opening its window before connecting: $last"
+                }
+                throw "The client without mods logged nothing for ${JoinStallSeconds}s; last line: $last"
             }
             Start-Sleep -Seconds 2
         }
