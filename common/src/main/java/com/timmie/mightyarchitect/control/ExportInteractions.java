@@ -51,6 +51,8 @@ public final class ExportInteractions {
 			return null;
 		BlockPos pos = hit.getBlockPos();
 		if (ExportTools.isWand(player.getItemInHand(hand))) {
+			if (!wandReady(level))
+				return InteractionResult.SUCCESS;
 			if (player.isShiftKeyDown())
 				ArchitectWandClient.openGui();
 			else
@@ -83,8 +85,26 @@ public final class ExportInteractions {
 			return null;
 		if (!ExportTools.isWand(player.getItemInHand(hand)))
 			return null;
-		ArchitectWandClient.handleRightClick(player);
+		Level level = Minecraft.getInstance().level;
+		if (level != null && wandReady(level))
+			ArchitectWandClient.handleRightClick(player);
 		return InteractionResult.SUCCESS;
+	}
+
+	/**
+	 * Vanilla repeats a held right-click every four ticks, and the exporter's first click only
+	 * shows a design's outline - the second one writes it. The old wand item sat on a five-tick
+	 * cooldown so a slightly long press could not do both; this is that cooldown.
+	 */
+	static final int WAND_COOLDOWN_TICKS = 5;
+	private static long lastWandUse = Long.MIN_VALUE;
+
+	private static boolean wandReady(Level level) {
+		long now = level.getGameTime();
+		if (lastWandUse != Long.MIN_VALUE && now >= lastWandUse && now - lastWandUse < WAND_COOLDOWN_TICKS)
+			return false;
+		lastWandUse = now;
+		return true;
 	}
 
 	/**

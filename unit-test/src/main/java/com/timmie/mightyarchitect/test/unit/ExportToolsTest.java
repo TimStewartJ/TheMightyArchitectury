@@ -11,9 +11,6 @@ import com.timmie.mightyarchitect.control.storage.ArchitectResources;
 import com.timmie.mightyarchitect.control.storage.JsonStorage;
 import com.timmie.mightyarchitect.test.unit.MinecraftBootstrap.Bootstrapped;
 import net.minecraft.core.Direction;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -33,27 +30,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The theme exporter's tools are vanilla content the mod recognises, so recognition is the whole
- * feature: a wand that is not told apart from a blaze rod, or two traits sharing a block, would
+ * feature: two traits sharing a block, or a marker that does not read back as its own trait, would
  * export wrong designs with no error at all.
+ * <p>
+ * Only block states here. An {@code ItemStack} cannot be made in this bootstrap on 26.x - item
+ * components are bound when the game loads its data, which a unit test never does - so the wand and
+ * the toolkit items are checked in the client test instead.
  */
 @Bootstrapped
 @DisplayName("ExportTools")
 class ExportToolsTest {
-
-	@Test
-	@DisplayName("the Design Exporter is recognised by its tag, and an ordinary blaze rod is not")
-	void wandIsRecognisedByItsTag() {
-		ItemStack wand = ExportTools.createWand();
-
-		assertTrue(ExportTools.isWand(wand), "the exporter did not recognise its own wand");
-		assertTrue(ExportTools.isWand(wand.copy()), "a copy of the wand lost its tag");
-		assertSame(Items.BLAZE_ROD, wand.getItem());
-		assertFalse(ExportTools.isWand(new ItemStack(Items.BLAZE_ROD)), "an untagged blaze rod acted as the wand");
-		assertFalse(ExportTools.isWand(ItemStack.EMPTY));
-		assertFalse(ExportTools.isWand(null));
-		assertEquals(ExportTools.WAND_NAME, wand.getHoverName()
-			.getString());
-	}
 
 	@Test
 	@DisplayName("every trait has its own marker block, and reads back as that trait")
@@ -109,20 +95,6 @@ class ExportToolsTest {
 
 		assertSame(DesignSliceTrait.MaskAbove, ExportTools.traitOf(next));
 		assertEquals(Direction.EAST, next.getValue(BlockStateProperties.HORIZONTAL_FACING));
-	}
-
-	@Test
-	@DisplayName("toolkit items place the blocks the exporter reads")
-	void toolkitItemsPlaceTheRightBlocks() {
-		for (DesignSliceTrait trait : DesignSliceTrait.values()) {
-			ItemStack stack = ExportTools.createMarker(trait);
-			assertSame(ExportTools.markerBlock(trait), ((BlockItem) stack.getItem()).getBlock());
-			assertTrue(stack.getHoverName()
-				.getString()
-				.contains(ExportTools.label(trait)));
-		}
-		assertSame(ExportTools.anchorBlock(), ((BlockItem) ExportTools.createAnchor()
-			.getItem()).getBlock());
 	}
 
 	@Test

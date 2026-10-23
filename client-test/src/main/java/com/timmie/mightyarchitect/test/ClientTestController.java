@@ -57,6 +57,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
@@ -351,6 +352,15 @@ public final class ClientTestController {
             "Design Exporter recognised by its tag");
         check(!ExportTools.isWand(new ItemStack(Items.BLAZE_ROD)),
             "an ordinary blaze rod is not the Design Exporter");
+        ItemStack wand = ExportTools.createWand();
+        check(ExportTools.isWand(wand.copy()) && ExportTools.WAND_NAME.equals(wand.getHoverName().getString()),
+            "the Design Exporter keeps its tag when copied and carries its name");
+        boolean toolkitBlocksMatch = ExportTools.createAnchor().getItem() instanceof BlockItem anchorItem
+            && anchorItem.getBlock() == ExportTools.anchorBlock();
+        for (DesignSliceTrait trait : DesignSliceTrait.values())
+            toolkitBlocksMatch &= ExportTools.createMarker(trait).getItem() instanceof BlockItem markerItem
+                && markerItem.getBlock() == ExportTools.markerBlock(trait);
+        check(toolkitBlocksMatch, "every toolkit marker item places the block the exporter reads");
         InstantPrintPacket printProbe = InstantPrintPacket.sendSchematic(
             Map.of(BlockPos.ZERO, Blocks.STONE.defaultBlockState()), BlockPos.ZERO).get(0);
         check(!AllPackets.canSendToServer(printProbe),

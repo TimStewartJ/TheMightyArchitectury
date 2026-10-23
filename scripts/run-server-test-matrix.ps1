@@ -101,6 +101,7 @@ function Invoke-ModlessJoin {
         @hiddenWindow `
         -PassThru
 
+    $script:JoinStarted = $true
     $deadline = (Get-Date).AddSeconds($JoinTimeoutSeconds)
     try {
         while ((Get-Date) -lt $deadline) {
@@ -127,17 +128,29 @@ function Invoke-ModlessJoin {
     } finally {
         Stop-TestProcessTree -Process $client
         Remove-Item Env:MIGHTYARCHITECT_JOIN_TEST_SERVER -ErrorAction SilentlyContinue
-        $target = Join-Path (Join-Path (Join-Path $ResultsRoot $Version) $Loader) 'join-test'
-        New-Item -ItemType Directory -Force -Path $target | Out-Null
-        foreach ($file in @($clientStdout, $clientStderr)) {
-            if (Test-Path $file) {
-                Copy-Item $file $target
-            }
+    }
+}
+
+# Called after Copy-ServerArtifacts, which replaces this loader's whole results folder.
+function Copy-JoinArtifacts {
+    param(
+        [string]$Version,
+        [string]$Loader
+    )
+
+    $fabricProject = Join-Path (Join-Path (Join-Path $RepoRoot 'fabric') 'versions') $Version
+    $target = Join-Path (Join-Path (Join-Path $ResultsRoot $Version) $Loader) 'join-test'
+    New-Item -ItemType Directory -Force -Path $target | Out-Null
+    $outputDirectory = Join-Path (Join-Path $fabricProject 'build') 'join-test'
+    foreach ($name in @('gradle.stdout.log', 'gradle.stderr.log')) {
+        $file = Join-Path $outputDirectory $name
+        if (Test-Path $file) {
+            Copy-Item $file $target
         }
-        $clientLog = Join-Path (Join-Path $runDirectory 'logs') 'latest.log'
-        if (Test-Path $clientLog) {
-            Copy-Item $clientLog (Join-Path $target 'client.log')
-        }
+    }
+    $clientLog = Join-Path (Join-Path (Join-Path $fabricProject 'run-join-test') 'logs') 'latest.log'
+    if (Test-Path $clientLog) {
+        Copy-Item $clientLog (Join-Path $target 'client.log')
     }
 }
 
@@ -148,6 +161,7 @@ function Invoke-ServerTest {
     )
 
     Write-Host "=== SERVER TEST $Version / $Loader ==="
+    $script:JoinStarted = $false
     $projectDirectory = Join-Path (Join-Path (Join-Path $RepoRoot $Loader) 'versions') $Version
     $runDirectory = Join-Path $projectDirectory 'run-server-test'
     $outputDirectory = Join-Path (Join-Path $projectDirectory 'build') 'server-test'
@@ -227,6 +241,9 @@ function Invoke-ServerTest {
     } finally {
         Stop-TestProcessTree -Process $process
         Copy-ServerArtifacts $Version $Loader $runDirectory $gradleStdout $gradleStderr
+        if ($script:JoinStarted) {
+            Copy-JoinArtifacts $Version $Loader
+        }
     }
 }
 
