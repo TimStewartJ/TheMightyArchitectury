@@ -26,8 +26,10 @@ Intended as **3.0.0**: worlds that used the old theme-export blocks lose them (s
     *Clone x1*, green *Clone x3*, yellow *Optional*, light blue *Mask above*, blue *Mask below*.
     Right-click a marker's side to change its trait (sneak to go backwards); the mod labels every
     marker and Design Marker near you while you edit a theme. As before, a design's markers stand
-    level with its Design Marker, past the design's south-east corner; clicking a Design Marker with
-    none there now says so instead of doing nothing. Players without the mod just see the
+    level with its Design Marker, past the design's south-east corner. While you edit a theme, a
+    Design Marker with no markers yet shows an orange box where the design goes, and one with a
+    marker column shows a green outline of exactly what the exporter will scan; clicking one with
+    no markers says where they go instead of doing nothing. Players without the mod just see the
     vanilla blocks.
 - Changing a layer marker now needs creative mode or operator permission, the same as printing:
   it goes through the mod's packet on a server that has the mod, and `/setblock` on one that does

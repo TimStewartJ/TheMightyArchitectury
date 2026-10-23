@@ -111,30 +111,52 @@ public class DesignExporter {
 		return get().export(worldIn, anchor);
 	}
 
+	/** How far from a Design Marker its layer-marker column is looked for. */
+	public static final int MARKER_SEARCH_RANGE = 100;
+
+	/**
+	 * The bottom of a Design Marker's layer-marker column: the nearest marker level with it and
+	 * towards positive X and Z, or {@code null} when there is none. Shared by the export and the
+	 * in-world guide, so the guide never shows a design the export would not scan.
+	 */
+	public static BlockPos findMarkerColumn(Level worldIn, BlockPos anchor) {
+		for (int range = 1; range < MARKER_SEARCH_RANGE; range++) {
+			for (int i = 0; i <= range; i++) {
+				if (isMarker(worldIn, anchor.offset(range, 0, i)))
+					return anchor.offset(range, 0, i);
+				if (isMarker(worldIn, anchor.offset(i, 0, range)))
+					return anchor.offset(i, 0, range);
+			}
+		}
+		return null;
+	}
+
+	/** The column's height in markers. */
+	public static int markerColumnHeight(Level worldIn, BlockPos columnBottom) {
+		int height = 0;
+		for (BlockPos pos = columnBottom; isMarker(worldIn, pos); pos = pos.above())
+			height++;
+		return height;
+	}
+
+	/** The volume a design spans: from beside its Design Marker to beside its marker column. */
+	public static Cuboid designBounds(BlockPos anchor, BlockPos columnBottom, int height) {
+		BlockPos size = columnBottom.west()
+			.subtract(anchor.east())
+			.offset(1, height, 1);
+		return new Cuboid(anchor.east(), size);
+	}
+
 	private String export(Level worldIn, BlockPos anchor) {
 		String reserved = reservedBlockInPalette(scanningPalette);
 		if (reserved != null)
 			return "The scanner palette uses " + reserved + ", which marks layers. Pick another block.";
 
-		BlockPos layerDefAnchor = anchor;
-		boolean found = false;
-		for (int range = 1; range < 100 && !found; range++) {
-			for (int i = 0; i <= range; i++) {
-				if (isMarker(worldIn, anchor.offset(range, 0, i))) {
-					layerDefAnchor = anchor.offset(range, 0, i);
-					found = true;
-					break;
-				} else if (isMarker(worldIn, anchor.offset(i, 0, range))) {
-					layerDefAnchor = anchor.offset(i, 0, range);
-					found = true;
-					break;
-				}
-			}
-		}
+		BlockPos layerDefAnchor = findMarkerColumn(worldIn, anchor);
 
 		// Clicking used to do nothing at all here, which reads as a broken tool now that the markers
 		// are ordinary blocks; the search only ever looks one way, so say which.
-		if (!found)
+		if (layerDefAnchor == null)
 			return NO_MARKERS_FOUND;
 
 		// Collect information
@@ -151,12 +173,9 @@ public class DesignExporter {
 			changed = true;
 		}
 
-		BlockPos size = layerDefAnchor.west()
-			.subtract(anchor.east())
-			.offset(1, height, 1);
-
 		boolean visualizing = PhaseEditTheme.isVisualizing();
-		Cuboid bounds = new Cuboid(anchor.east(), size);
+		Cuboid bounds = designBounds(anchor, layerDefAnchor, height);
+		BlockPos size = bounds.getSize();
 		boolean boundsChanged = visualizing && !PhaseEditTheme.selectedDesign.equals(bounds) || changed;
 
 		changed = false;

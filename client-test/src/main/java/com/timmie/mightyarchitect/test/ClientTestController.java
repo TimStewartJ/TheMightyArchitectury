@@ -1071,6 +1071,8 @@ public final class ClientTestController {
             BlockState wrongSideBefore = minecraft.level.getBlockState(wrongSide);
             minecraft.level.setBlock(wrongSide, marker, 3);
             String lonely = DesignExporter.exportDesign(minecraft.level, anchor);
+            check(PhaseEditTheme.guideDesign(minecraft.level, anchor) == null,
+                "a Design Marker with markers only on the wrong side shows the placement hint, not a design");
             minecraft.level.setBlock(wrongSide, wrongSideBefore, 3);
             check(DesignExporter.NO_MARKERS_FOUND.equals(lonely),
                 "a Design Marker with no markers to its south-east says why (" + lonely + ")");
@@ -1088,6 +1090,8 @@ public final class ClientTestController {
                 "the design was measured from the lodestone to the terracotta column ("
                     + PhaseEditTheme.selectedDesign + ")");
             check(PhaseEditTheme.effectiveHeight == 2, "both layer markers were counted");
+            check(PhaseEditTheme.selectedDesign.equals(PhaseEditTheme.guideDesign(minecraft.level, anchor)),
+                "the in-world guide outlines exactly what the Design Exporter scans");
             check(sent.isEmpty(), "the Design Exporter sent nothing to the server");
             PhaseEditTheme.resetVisualization();
 

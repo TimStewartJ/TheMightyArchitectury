@@ -18,6 +18,7 @@ import com.timmie.mightyarchitect.foundation.MightyBuffers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -130,15 +131,29 @@ public class PhaseEditTheme extends PhaseBase {
 			.colored(0xffffff);
 	}
 
-	/** How far around the player marker and anchor blocks are labelled. */
-	static final int LABEL_RADIUS = 8;
+	/** How far around the player marker and anchor blocks are labelled and guided. */
+	static final int LABEL_RADIUS = 12;
 	static final int LABEL_REFRESH_TICKS = 10;
 	static final int MAX_LABELS = 64;
+	static final int MAX_GUIDES = 4;
+	/** Size of the hint drawn beside a Design Marker that has no marker column yet. */
+	static final int GUIDE_HINT_SIZE = 4;
 
 	private record ToolLabel(BlockPos pos) {
 	}
 
+	private record GuideBox(BlockPos anchor) {
+	}
+
+	private record GuideText(BlockPos anchor) {
+	}
+
+	/** A Design Marker near the player, and the design it would scan, if it has a column yet. */
+	private record Guide(BlockPos anchor, Cuboid design) {
+	}
+
 	private final Map<BlockPos, String> toolLabels = new HashMap<>();
+	private final List<Guide> guides = new ArrayList<>();
 	private int labelRefreshTicks;
 
 	/**
@@ -146,6 +161,10 @@ public class PhaseEditTheme extends PhaseBase {
 	 * markers are plain glazed terracotta, so this is the only place their meaning shows up. The
 	 * scan is a few thousand block reads, so it is refreshed twice a second while the labels are
 	 * kept alive every tick.
+	 * <p>
+	 * Each Design Marker also gets a guide, because the layout has a direction nothing in the world
+	 * shows: without a marker column, a box on its south-east side where the design goes; with one,
+	 * the outline of exactly what the Design Exporter will scan.
 	 */
 	private void tickToolLabels() {
 		if (--labelRefreshTicks <= 0) {
@@ -156,14 +175,41 @@ public class PhaseEditTheme extends PhaseBase {
 			.chaseText(new ToolLabel(pos), Vec3.atCenterOf(pos), text)
 			.disableNormals()
 			.colored(0xffdd55));
+		for (Guide guide : guides) {
+			if (guide.design() != null) {
+				// The confirm-click outline already shows this one.
+				if (guide.design()
+					.equals(selectedDesign))
+					continue;
+				MightyClient.outliner.chaseAABB(new GuideBox(guide.anchor()), guide.design()
+					.toAABB())
+					.colored(0x66dd66)
+					.lineWidth(1 / 16f);
+				continue;
+			}
+			BlockPos corner = guide.anchor()
+				.offset(1, 0, 1);
+			MightyClient.outliner.chaseAABB(new GuideBox(guide.anchor()), new AABB(Vec3.atLowerCornerOf(corner),
+				Vec3.atLowerCornerOf(corner.offset(GUIDE_HINT_SIZE, 1, GUIDE_HINT_SIZE))))
+				.colored(0xffaa33)
+				.lineWidth(1 / 16f);
+			MightyClient.outliner.chaseText(new GuideText(guide.anchor()), Vec3.atLowerCornerOf(corner)
+				.add(GUIDE_HINT_SIZE / 2.0, 1.5, GUIDE_HINT_SIZE / 2.0), HINT_TEXT)
+				.disableNormals()
+				.colored(0xffaa33);
+		}
 	}
+
+	static final String HINT_TEXT = "Design goes here; layer markers past its far corner";
 
 	private void scanToolLabels() {
 		toolLabels.clear();
+		guides.clear();
 		Level level = minecraft.level;
 		if (level == null || minecraft.player == null)
 			return;
 		BlockPos centre = minecraft.player.blockPosition();
+		List<BlockPos> anchors = new ArrayList<>();
 		for (BlockPos pos : BlockPos.betweenClosed(centre.offset(-LABEL_RADIUS, -LABEL_RADIUS, -LABEL_RADIUS),
 			centre.offset(LABEL_RADIUS, LABEL_RADIUS, LABEL_RADIUS))) {
 			BlockState state = level.getBlockState(pos);
@@ -171,19 +217,32 @@ public class PhaseEditTheme extends PhaseBase {
 			DesignSliceTrait trait = ExportTools.traitOf(state);
 			if (trait != null)
 				text = ExportTools.label(trait);
-			else if (ExportTools.isAnchor(state))
+			else if (ExportTools.isAnchor(state)) {
 				text = ExportTools.ANCHOR_NAME;
+				if (anchors.size() < MAX_GUIDES)
+					anchors.add(pos.immutable());
+			}
 			if (text == null)
 				continue;
-			toolLabels.put(pos.immutable(), text);
-			if (toolLabels.size() >= MAX_LABELS)
-				return;
+			if (toolLabels.size() < MAX_LABELS)
+				toolLabels.put(pos.immutable(), text);
 		}
+		for (BlockPos anchor : anchors)
+			guides.add(new Guide(anchor, guideDesign(level, anchor)));
+	}
+
+	/** What the exporter would scan from this Design Marker, or {@code null} with no column yet. */
+	public static Cuboid guideDesign(Level level, BlockPos anchor) {
+		BlockPos column = DesignExporter.findMarkerColumn(level, anchor);
+		if (column == null)
+			return null;
+		return DesignExporter.designBounds(anchor, column, DesignExporter.markerColumnHeight(level, column));
 	}
 
 	@Override
 	public void whenExited() {
 		toolLabels.clear();
+		guides.clear();
 	}
 
 	@Override
