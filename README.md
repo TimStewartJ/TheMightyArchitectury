@@ -48,9 +48,17 @@ one buildscript per loader, each using that loader's own moddev plugin.
 
 Client tick, HUD and raw input hooks live in `common/.../mixin` as Mixins on vanilla classes, which
 both loaders support - so there is one implementation rather than one per loader per version.
-Everything else that genuinely differs between loaders (registration, networking, key mappings,
-world render events) is behind the small interfaces in `common/.../platform` and implemented in each
-loader module.
+Everything else that genuinely differs between loaders (networking, key mappings, world render
+events) is behind the small interfaces in `common/.../platform` and implemented in each loader
+module.
+
+The mod registers **no blocks or items**, on any loader. From Minecraft 1.21.4 one registered entry
+is enough for Fabric's registry sync to make every server or LAN host running the mod refuse
+players who do not have it (there is no per-entry opt-out), and on older versions such players join
+without knowing the content. So the theme exporter's tools are vanilla items and blocks the client
+recognises — see `control/design/ExportTools`. The server, client and join tests below fail if
+anything is ever registered again (mutation-tested: the join test catches it from 1.21.4, the
+registry audits everywhere).
 
 Note that the shared source is compiled against the *NeoForge-patched* Minecraft in the NeoForge
 module, so a handful of vanilla signatures NeoForge widens (for example `Level#dragonParts`) have to
@@ -169,9 +177,20 @@ registered stream codec, applied to a real `ServerLevel`, and the resulting bloc
 against the schematic. Booting alone is not a pass — the runner waits for the test's verdict.
 
 The same run covers the serverbound authorization gate in `ServerBuildGuard`: the decode-time
-bounds on both packets, the per-player placement budget and the reach test, and then the gate end
+bound on the print packet, the per-player placement budget and the reach test, and then the gate end
 to end — a real packet handed to the real handler with a real `ServerPlayer`, asserting that an
-authorised sender's build lands and that an out-of-reach or unauthorised one does not.
+authorised sender's build lands and that an out-of-reach or unauthorised one does not. It ends by
+failing if anything in the `mightyarchitect` namespace is in any of the game's registries.
+
+`-JoinTest` adds the property that check exists for: after the print test passes, the modded server
+stays up and a client with **no mods at all** (`:fabric:<version>:runModlessJoinClient` — Fabric
+Loader alone, which a server cannot tell from vanilla) joins it. It passes only when the server logs
+that player joining, and reports the disconnect reason otherwise. It opens a game window, so CI runs
+it under Xvfb; locally it needs a desktop session.
+
+```powershell
+pwsh -File scripts/run-server-test-matrix.ps1 -Versions 1.21.1 -JoinTest
+```
 
 For manual testing, add `-KeepOpen` — in either mode. The target runs the full automated suite
 first and then stays connected in-world with the composer active. `-Mode prod -KeepOpen` is the way

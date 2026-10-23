@@ -1,8 +1,8 @@
 package com.timmie.mightyarchitect.item;
 
-import com.timmie.mightyarchitect.AllBlocks;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.design.DesignExporter;
+import com.timmie.mightyarchitect.control.design.ExportTools;
 import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
 import com.timmie.mightyarchitect.control.phase.export.PhaseEditTheme;
 import com.timmie.mightyarchitect.gui.DesignExporterScreen;
@@ -23,7 +23,7 @@ public final class ArchitectWandClient {
 	}
 
 	public static void handleUseOnDesignAnchor(Player player, Level world, BlockPos anchor, BlockState blockState) {
-		if (AllBlocks.DESIGN_ANCHOR.typeOf(blockState)) {
+		if (ExportTools.isAnchor(blockState)) {
 			if (!ArchitectManager.inPhase(ArchitectPhases.EditingThemes))
 				return;
 

@@ -206,14 +206,24 @@ jobs:
           grep -qF "\"minecraft\": \">=$mc_min <$mc_max\"" /tmp/fb.json \
             || { echo "::error::fabric minecraft depend is not >=$mc_min <$mc_max"; exit 1; }
 
-      - name: Dedicated server smoke
-        shell: pwsh
-        run: ./scripts/run-server-test-matrix.ps1 -Versions '${{ matrix.mc }}'
-
       - name: Install virtual display
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb libgl1 libgl1-mesa-dri libegl1 libegl-mesa0 mesa-utils
+
+      # The print-to-world test against a real dedicated server per loader, which also fails if the
+      # mod registers anything at all. Each server is then joined by a client with no mods - Fabric
+      # Loader alone, which a server cannot tell from vanilla - and passes only when the server logs
+      # that player joining. That is the property 3.0 exists for: a server or LAN host running the
+      # mod turns nobody away. The client needs the same display and GL settings as the lanes below.
+      - name: Dedicated server smoke and unmodded player join
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          SDL_VIDEO_FORCE_EGL: "1"
+          ALSOFT_DRIVERS: "null"
+        run: |
+          xvfb-run -a -s "-screen 0 1280x720x24" \
+            pwsh -NoProfile -File ./scripts/run-server-test-matrix.ps1 -Versions '${{ matrix.mc }}' -JoinTest
 
       - name: Automated client feature tests
         env:

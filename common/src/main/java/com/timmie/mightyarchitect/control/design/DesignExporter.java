@@ -1,8 +1,6 @@
 package com.timmie.mightyarchitect.control.design;
 
-import com.timmie.mightyarchitect.AllBlocks;
 import com.timmie.mightyarchitect.AllPackets;
-import com.timmie.mightyarchitect.block.SliceMarkerBlock;
 import com.timmie.mightyarchitect.control.compose.Cuboid;
 import com.timmie.mightyarchitect.control.design.DesignSlice.DesignSliceTrait;
 import com.timmie.mightyarchitect.control.design.DesignSlice.SliceData;
@@ -102,30 +100,64 @@ public class DesignExporter {
 		get().changed = true;
 	}
 
+	/**
+	 * The layer-marker column is searched for only towards positive X and Z (south-east), level with
+	 * the Design Marker: a design's facade is its south side, so the layout cannot be mirrored.
+	 */
+	public static final String NO_MARKERS_FOUND =
+		"No layer markers found: put them level with this lodestone, to its south-east (+X, +Z).";
+
 	public static String exportDesign(Level worldIn, BlockPos anchor) {
 		return get().export(worldIn, anchor);
 	}
 
-	private String export(Level worldIn, BlockPos anchor) {
-		BlockPos layerDefAnchor = anchor;
-		boolean found = false;
-		for (int range = 1; range < 100 && !found; range++) {
+	/** How far from a Design Marker its layer-marker column is looked for. */
+	public static final int MARKER_SEARCH_RANGE = 100;
+
+	/**
+	 * The bottom of a Design Marker's layer-marker column: the nearest marker level with it and
+	 * towards positive X and Z, or {@code null} when there is none. Shared by the export and the
+	 * in-world guide, so the guide never shows a design the export would not scan.
+	 */
+	public static BlockPos findMarkerColumn(Level worldIn, BlockPos anchor) {
+		for (int range = 1; range < MARKER_SEARCH_RANGE; range++) {
 			for (int i = 0; i <= range; i++) {
-				if (isMarker(worldIn, anchor.offset(range, 0, i))) {
-					layerDefAnchor = anchor.offset(range, 0, i);
-					found = true;
-					break;
-				} else if (isMarker(worldIn, anchor.offset(i, 0, range))) {
-					layerDefAnchor = anchor.offset(i, 0, range);
-					found = true;
-					break;
-				}
+				if (isMarker(worldIn, anchor.offset(range, 0, i)))
+					return anchor.offset(range, 0, i);
+				if (isMarker(worldIn, anchor.offset(i, 0, range)))
+					return anchor.offset(i, 0, range);
 			}
 		}
+		return null;
+	}
 
-		if (!found) {
-			return "";
-		}
+	/** The column's height in markers. */
+	public static int markerColumnHeight(Level worldIn, BlockPos columnBottom) {
+		int height = 0;
+		for (BlockPos pos = columnBottom; isMarker(worldIn, pos); pos = pos.above())
+			height++;
+		return height;
+	}
+
+	/** The volume a design spans: from beside its Design Marker to beside its marker column. */
+	public static Cuboid designBounds(BlockPos anchor, BlockPos columnBottom, int height) {
+		BlockPos size = columnBottom.west()
+			.subtract(anchor.east())
+			.offset(1, height, 1);
+		return new Cuboid(anchor.east(), size);
+	}
+
+	private String export(Level worldIn, BlockPos anchor) {
+		String reserved = reservedBlockInPalette(scanningPalette);
+		if (reserved != null)
+			return "The scanner palette uses " + reserved + ", which marks layers. Pick another block.";
+
+		BlockPos layerDefAnchor = findMarkerColumn(worldIn, anchor);
+
+		// Clicking used to do nothing at all here, which reads as a broken tool now that the markers
+		// are ordinary blocks; the search only ever looks one way, so say which.
+		if (layerDefAnchor == null)
+			return NO_MARKERS_FOUND;
 
 		// Collect information
 		int height = 0;
@@ -141,12 +173,9 @@ public class DesignExporter {
 			changed = true;
 		}
 
-		BlockPos size = layerDefAnchor.west()
-			.subtract(anchor.east())
-			.offset(1, height, 1);
-
 		boolean visualizing = PhaseEditTheme.isVisualizing();
-		Cuboid bounds = new Cuboid(anchor.east(), size);
+		Cuboid bounds = designBounds(anchor, layerDefAnchor, height);
+		BlockPos size = bounds.getSize();
 		boolean boundsChanged = visualizing && !PhaseEditTheme.selectedDesign.equals(bounds) || changed;
 
 		changed = false;
@@ -325,13 +354,30 @@ public class DesignExporter {
 	}
 
 	private static boolean isMarker(Level worldIn, BlockPos pos) {
-		return AllBlocks.SLICE_MARKER.typeOf(worldIn.getBlockState(pos));
+		return ExportTools.isMarker(worldIn.getBlockState(pos));
 	}
 
 	private static int markerValueAt(Level worldIn, BlockPos pos) {
-		return worldIn.getBlockState(pos)
-			.getValue(SliceMarkerBlock.VARIANT)
+		return ExportTools.traitOf(worldIn.getBlockState(pos))
 			.ordinal();
+	}
+
+	/**
+	 * The scanner palette may not use a layer-marker block. The search for a design's marker column
+	 * starts inside the design's own footprint, so such a block in the bottom layer would be taken
+	 * for the column itself and export a wrongly sized design without any error.
+	 *
+	 * @return the first conflicting marker block's name, or {@code null} when there is none
+	 */
+	public static String reservedBlockInPalette(PaletteDefinition palette) {
+		for (DesignSliceTrait trait : DesignSliceTrait.values()) {
+			BlockState marker = ExportTools.markerState(trait);
+			if (palette.scan(marker) != null)
+				return marker.getBlock()
+					.getName()
+					.getString();
+		}
+		return null;
 	}
 
 }

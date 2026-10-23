@@ -2,8 +2,14 @@ package com.timmie.mightyarchitect.platform;
 
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.control.ArchitectManager;
+import com.timmie.mightyarchitect.control.ExportInteractions;
 import com.timmie.mightyarchitect.foundation.utility.ShaderManager;
 import com.timmie.mightyarchitect.gui.ScreenHelper;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.BlockHitResult;
 // DeltaTracker replaced the raw partial-tick float in 1.21, and GuiGraphics itself only exists
 // from 1.20 - before that the HUD is drawn straight onto a PoseStack, which the mod's own
 // GuiGraphics stand-in wraps.
@@ -70,5 +76,15 @@ public final class ClientHooks {
 
 	public static void keyPressed(int keyCode, int action) {
 		ArchitectManager.onKeyTyped(keyCode, action);
+	}
+
+	/** @return the result to report instead of vanilla's, or null to let vanilla handle it. */
+	public static InteractionResult useItemOn(LocalPlayer player, InteractionHand hand, BlockHitResult hit) {
+		return ExportInteractions.useItemOn(player, hand, hit);
+	}
+
+	/** @return the result to report instead of vanilla's, or null to let vanilla handle it. */
+	public static InteractionResult useItem(Player player, InteractionHand hand) {
+		return ExportInteractions.useItem(player, hand);
 	}
 }

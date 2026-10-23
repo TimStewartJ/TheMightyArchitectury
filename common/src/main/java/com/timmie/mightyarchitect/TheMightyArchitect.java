@@ -1,16 +1,20 @@
 package com.timmie.mightyarchitect;
 
-import com.timmie.mightyarchitect.platform.ModRegistrar;
 //? if >=1.21.11 {
 import net.minecraft.resources.Identifier;
 //?} else {
 /*import net.minecraft.resources.ResourceLocation;
 *///?}
-import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Deliberately registers nothing. Any block or item in a vanilla registry makes Fabric's registry
+ * sync (from 1.21.4) turn away players without the mod from every server or LAN host running it,
+ * with no per-entry opt-out, so the theme exporter's tools are vanilla content instead - see
+ * {@code ExportTools}. The server and client tests fail if anything in this namespace is ever
+ * registered, and the join test if a player without the mod is refused.
+ */
 public class TheMightyArchitect {
 
 	public static final String ID = "mightyarchitect";
@@ -37,12 +41,4 @@ public class TheMightyArchitect {
 	}
 
 	*///?}
-	// Registers the mod's content through whatever registration mechanism the loader handed in.
-	// Blocks go first: the block item factories read the block instances the block factories build.
-	public static void Init(ModRegistrar<Block> blocks, ModRegistrar<Item> items)
-	{
-		AllBlocks.registerBlocks(blocks);
-		AllItems.registerItems(items);
-		AllBlocks.registerItemBlocks(items);
-	}
 }

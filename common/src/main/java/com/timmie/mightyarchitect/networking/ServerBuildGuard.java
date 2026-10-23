@@ -142,15 +142,6 @@ public final class ServerBuildGuard {
 		return false;
 	}
 
-	/**
-	 * Whether this player may have items put into their hotbar by the mod. Deliberately stricter
-	 * than {@link #mayBuild}: handing out items is not building, and an operator in survival should
-	 * not get free items out of it.
-	 */
-	public static boolean mayReceiveHotbarKit(ServerPlayer player) {
-		return player != null && player.isCreative();
-	}
-
 	/** Records that a packet was refused, without giving a client a way to spam the server log. */
 	public static void reportDenied(ServerPlayer player, String action) {
 		if (TheMightyArchitect.logger.isDebugEnabled())

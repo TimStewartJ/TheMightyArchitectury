@@ -6,15 +6,17 @@ import com.timmie.mightyarchitect.foundation.compat.ScreenInput;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.timmie.mightyarchitect.AllBlocks;
-import com.timmie.mightyarchitect.AllItems;
 import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.ArchitectManager;
+import com.timmie.mightyarchitect.control.ExportInteractions;
 import com.timmie.mightyarchitect.control.Schematic;
+import com.timmie.mightyarchitect.control.compose.Cuboid;
+import com.timmie.mightyarchitect.control.design.DesignSlice.DesignSliceTrait;
 import com.timmie.mightyarchitect.control.design.DesignTheme;
 import com.timmie.mightyarchitect.control.design.DesignExporter;
+import com.timmie.mightyarchitect.control.design.ExportTools;
 import com.timmie.mightyarchitect.control.design.Sketch;
 import com.timmie.mightyarchitect.control.design.ThemeStorage;
 import com.timmie.mightyarchitect.control.palette.BlockOrientation;
@@ -23,8 +25,10 @@ import com.timmie.mightyarchitect.control.palette.PaletteBlockInfo;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import com.timmie.mightyarchitect.control.palette.PaletteStorage;
 import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
+import com.timmie.mightyarchitect.control.phase.export.PhaseEditTheme;
 import com.timmie.mightyarchitect.foundation.WrappedWorld;
 import com.timmie.mightyarchitect.foundation.utility.Mouse;
+import com.timmie.mightyarchitect.foundation.utility.RegistryAudit;
 import com.timmie.mightyarchitect.foundation.utility.ShaderManager;
 import com.timmie.mightyarchitect.foundation.utility.Shaders;
 import com.timmie.mightyarchitect.gui.ArchitectMenuScreen;
@@ -47,13 +51,20 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 import javax.imageio.ImageIO;
@@ -98,6 +109,7 @@ public final class ClientTestController {
         BUILD_LARGE_SKETCH,
         VERIFY_REDRAW_BUDGET,
         VERIFY_RENDER,
+        VERIFY_EXPORT_TOOLS,
         FINISHED
     }
 
@@ -262,6 +274,7 @@ public final class ClientTestController {
                 case BUILD_LARGE_SKETCH -> buildLargeSketch(minecraft);
                 case VERIFY_REDRAW_BUDGET -> verifyRedrawBudget(minecraft);
                 case VERIFY_RENDER -> verifyRender(minecraft);
+                case VERIFY_EXPORT_TOOLS -> verifyExportTools(minecraft);
                 case FINISHED -> {
                 }
             }
@@ -333,14 +346,21 @@ public final class ClientTestController {
         if (stageTicks < 40)
             return;
 
-        check(AllItems.ARCHITECT_WAND != null && AllItems.ARCHITECT_WAND.get() != null,
-            "architect_wand registered");
-        check(AllBlocks.DESIGN_ANCHOR != null && AllBlocks.DESIGN_ANCHOR.get() != null,
-            "design_anchor registered");
-        check(AllBlocks.SLICE_MARKER != null && AllBlocks.SLICE_MARKER.get() != null,
-            "slice_marker registered");
-        check(AllItems.ARCHITECT_WAND.typeOf(new ItemStack(AllItems.ARCHITECT_WAND.get())),
-            "architect_wand identity recognized");
+        check(RegistryAudit.entriesIn(TheMightyArchitect.ID).isEmpty(),
+            "the mod registers nothing, so servers running it admit players without it");
+        check(ExportTools.isWand(ExportTools.createWand()),
+            "Design Exporter recognised by its tag");
+        check(!ExportTools.isWand(new ItemStack(Items.BLAZE_ROD)),
+            "an ordinary blaze rod is not the Design Exporter");
+        ItemStack wand = ExportTools.createWand();
+        check(ExportTools.isWand(wand.copy()) && ExportTools.WAND_NAME.equals(wand.getHoverName().getString()),
+            "the Design Exporter keeps its tag when copied and carries its name");
+        boolean toolkitBlocksMatch = ExportTools.createAnchor().getItem() instanceof BlockItem anchorItem
+            && anchorItem.getBlock() == ExportTools.anchorBlock();
+        for (DesignSliceTrait trait : DesignSliceTrait.values())
+            toolkitBlocksMatch &= ExportTools.createMarker(trait).getItem() instanceof BlockItem markerItem
+                && markerItem.getBlock() == ExportTools.markerBlock(trait);
+        check(toolkitBlocksMatch, "every toolkit marker item places the block the exporter reads");
         InstantPrintPacket printProbe = InstantPrintPacket.sendSchematic(
             Map.of(BlockPos.ZERO, Blocks.STONE.defaultBlockState()), BlockPos.ZERO).get(0);
         check(!AllPackets.canSendToServer(printProbe),
@@ -1003,7 +1023,123 @@ public final class ClientTestController {
         check(hudRenderFrames > 0, "HUD dispatch executed (" + hudRenderFrames + " frames)");
         check(composerOverlayFrames > 0,
             "composer overlay rendered (" + composerOverlayFrames + " frames)");
-        if (!KEEP_OPEN)
+        advance(Stage.VERIFY_EXPORT_TOOLS);
+    }
+
+    /**
+     * The theme exporter's tools, driven through the real {@code MultiPlayerGameMode.useItemOn} so
+     * the mixin that gives them their behaviour is what is under test, in the packaged jars too.
+     * Runs after every screenshot because it puts status text on screen. The tools are vanilla
+     * blocks set in the client's own world: nothing here touches the server's world, and the one
+     * click that is meant to fall through to vanilla is the last thing it does.
+     */
+    private static void verifyExportTools(Minecraft minecraft) {
+        if (stageTicks < 2)
+            return;
+
+        net.minecraft.client.player.LocalPlayer player = minecraft.player;
+        BlockPos anchor = player.blockPosition().offset(3, 3, 3);
+        BlockPos columnBottom = anchor.offset(4, 0, 2);
+        BlockPos columnTop = columnBottom.above();
+        List<BlockPos> placed = List.of(anchor, columnBottom, columnTop);
+        Map<BlockPos, BlockState> before = new HashMap<>();
+        for (BlockPos pos : placed)
+            before.put(pos, minecraft.level.getBlockState(pos));
+        ItemStack heldBefore = player.getMainHandItem().copy();
+        GameType modeBefore = minecraft.gameMode.getPlayerMode();
+        List<MightyPacket> sent = new ArrayList<>();
+        PacketSender actual = AllPackets.setSender(new PacketSender() {
+            @Override
+            public boolean canSendToServer(MightyPacket packet) {
+                return true;
+            }
+
+            @Override
+            public void sendToServer(MightyPacket packet) {
+                sent.add(packet);
+            }
+        });
+
+        try {
+            for (BlockPos pos : placed)
+                check(minecraft.level.getBlockState(pos).isAir(), "export test area is empty at " + pos);
+            BlockState marker = ExportTools.markerState(DesignSliceTrait.Standard);
+            minecraft.level.setBlock(anchor, ExportTools.anchorBlock().defaultBlockState(), 3);
+            // Markers on the wrong side are not markers: the search looks south-east only, and an
+            // empty result used to make the click do nothing at all.
+            BlockPos wrongSide = anchor.offset(-4, 0, -2);
+            BlockState wrongSideBefore = minecraft.level.getBlockState(wrongSide);
+            minecraft.level.setBlock(wrongSide, marker, 3);
+            String lonely = DesignExporter.exportDesign(minecraft.level, anchor);
+            check(PhaseEditTheme.guideDesign(minecraft.level, anchor) == null,
+                "a Design Marker with markers only on the wrong side shows the placement hint, not a design");
+            minecraft.level.setBlock(wrongSide, wrongSideBefore, 3);
+            check(DesignExporter.NO_MARKERS_FOUND.equals(lonely),
+                "a Design Marker with no markers to its south-east says why (" + lonely + ")");
+            minecraft.level.setBlock(columnBottom, marker, 3);
+            minecraft.level.setBlock(columnTop, marker, 3);
+            ArchitectManager.editTheme(ThemeStorage.getIncluded().get(0));
+            PhaseEditTheme.resetVisualization();
+
+            player.setItemInHand(InteractionHand.MAIN_HAND, ExportTools.createWand());
+            InteractionResult wandClick = minecraft.gameMode.useItemOn(player, InteractionHand.MAIN_HAND,
+                new BlockHitResult(Vec3.atCenterOf(anchor), Direction.UP, anchor, false));
+            check(wandClick.consumesAction(), "the Design Exporter's click on a Design Marker was handled");
+            check(PhaseEditTheme.isVisualizing(), "the Design Exporter found the vanilla layer markers");
+            check(new Cuboid(anchor.east(), new BlockPos(3, 2, 3)).equals(PhaseEditTheme.selectedDesign),
+                "the design was measured from the lodestone to the terracotta column ("
+                    + PhaseEditTheme.selectedDesign + ")");
+            check(PhaseEditTheme.effectiveHeight == 2, "both layer markers were counted");
+            check(PhaseEditTheme.selectedDesign.equals(PhaseEditTheme.guideDesign(minecraft.level, anchor)),
+                "the in-world guide outlines exactly what the Design Exporter scans");
+            check(sent.isEmpty(), "the Design Exporter sent nothing to the server");
+            PhaseEditTheme.resetVisualization();
+
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            minecraft.gameMode.setLocalMode(GameType.CREATIVE);
+            InteractionResult markerClick = minecraft.gameMode.useItemOn(player, InteractionHand.MAIN_HAND,
+                new BlockHitResult(Vec3.atCenterOf(columnBottom), Direction.NORTH, columnBottom, false));
+            check(markerClick.consumesAction(), "a click on a layer marker's side was handled");
+            check(sent.size() == 1 && sent.get(0) instanceof InstantPrintPacket,
+                "cycling a marker sent one print packet to a modded server (" + sent.size() + " sent)");
+            if (!sent.isEmpty() && sent.get(0) instanceof InstantPrintPacket print)
+                check(Map.of(columnBottom, ExportTools.cycledMarker(marker, false)).equals(print.blocks()),
+                    "the packet carries the next trait's block at the marker (" + print.blocks() + ")");
+
+            AllPackets.setSender(actual);
+            minecraft.gameMode.setLocalMode(GameType.SURVIVAL);
+            check(!ExportInteractions.cycleMarker(player, columnBottom, marker, false),
+                "without the mod on the server, a player who is not an operator cannot change markers");
+
+            // Last, because vanilla sends this one and the server answers with the real blocks.
+            AllPackets.setSender(new PacketSender() {
+                @Override
+                public boolean canSendToServer(MightyPacket packet) {
+                    return true;
+                }
+
+                @Override
+                public void sendToServer(MightyPacket packet) {
+                    sent.add(packet);
+                }
+            });
+            minecraft.gameMode.setLocalMode(GameType.CREATIVE);
+            int sentBefore = sent.size();
+            minecraft.gameMode.useItemOn(player, InteractionHand.MAIN_HAND,
+                new BlockHitResult(Vec3.atCenterOf(columnTop), Direction.UP, columnTop, false));
+            check(sent.size() == sentBefore, "the top of a marker is left to vanilla, for stacking");
+        } finally {
+            AllPackets.setSender(actual);
+            minecraft.gameMode.setLocalMode(modeBefore);
+            player.setItemInHand(InteractionHand.MAIN_HAND, heldBefore);
+            for (BlockPos pos : placed)
+                minecraft.level.setBlock(pos, before.get(pos), 3);
+            PhaseEditTheme.resetVisualization();
+        }
+
+        if (KEEP_OPEN)
+            ArchitectManager.enterPhase(ArchitectPhases.Composing);
+        else
             ArchitectManager.unload();
         pass(minecraft);
     }

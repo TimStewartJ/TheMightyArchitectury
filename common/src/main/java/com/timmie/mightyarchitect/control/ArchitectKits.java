@@ -1,11 +1,9 @@
 package com.timmie.mightyarchitect.control;
 
-import com.timmie.mightyarchitect.AllBlocks;
-import com.timmie.mightyarchitect.AllItems;
-import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.control.design.DesignExporter;
+import com.timmie.mightyarchitect.control.design.DesignSlice.DesignSliceTrait;
+import com.timmie.mightyarchitect.control.design.ExportTools;
 import com.timmie.mightyarchitect.control.palette.Palette;
-import com.timmie.mightyarchitect.networking.SetHotbarItemPacket;
 import net.minecraft.ChatFormatting;
 // Item display names moved from NBT hover-name to a data component in 1.20.5.
 //? if >=1.20.5 {
@@ -13,18 +11,20 @@ import net.minecraft.core.component.DataComponents;
 //?} else {
 /*
 *///?}
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.Item;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class ArchitectKits {
 
 	public static void ExporterToolkit() {
-		setHotbarItem(0, AllItems.ARCHITECT_WAND.get());
-		setHotbarBlock(1, AllBlocks.DESIGN_ANCHOR.get());
-		setHotbarBlock(2, AllBlocks.SLICE_MARKER.get());
+		if (!mayHandOutKit())
+			return;
+		setHotbarItem(0, ExportTools.createWand());
+		setHotbarItem(1, ExportTools.createAnchor());
+		setHotbarItem(2, ExportTools.createMarker(DesignSliceTrait.Standard));
 		clearHotbarItem(3);
 		setHotbarBlock(4, Palette.CLEAR);
 		setHotbarBlock(5, Palette.FLOOR);
@@ -34,6 +34,8 @@ public class ArchitectKits {
 	}
 
 	public static void FoundationToolkit() {
+		if (!mayHandOutKit())
+			return;
 		setHotbarBlock(0, Palette.HEAVY_POST);
 		setHotbarBlock(1, Palette.HEAVY_PRIMARY);
 		setHotbarBlock(2, Palette.HEAVY_SECONDARY);
@@ -46,6 +48,8 @@ public class ArchitectKits {
 	}
 
 	public static void RegularToolkit() {
+		if (!mayHandOutKit())
+			return;
 		setHotbarBlock(0, Palette.FLOOR);
 		setHotbarBlock(1, Palette.INNER_PRIMARY);
 		setHotbarBlock(2, Palette.INNER_DETAIL);
@@ -58,6 +62,8 @@ public class ArchitectKits {
 	}
 
 	public static void RoofingToolkit() {
+		if (!mayHandOutKit())
+			return;
 		setHotbarBlock(0, Palette.ROOF_PRIMARY);
 		setHotbarBlock(1, Palette.ROOF_DETAIL);
 		setHotbarBlock(2, Palette.ROOF_SLAB);
@@ -73,16 +79,27 @@ public class ArchitectKits {
 		setHotbarItem(slot, ItemStack.EMPTY);
 	}
 
-	private static void setHotbarItem(int slot, Item item) {
-		setHotbarItem(slot, new ItemStack(item));
+	/**
+	 * Toolkits are handed out the way vanilla's creative inventory does it: set the slot locally and
+	 * report it to the server, which accepts that from a creative player on any server, modded or
+	 * not. Nothing else would accept it, so outside creative mode there is nothing to try.
+	 */
+	private static boolean mayHandOutKit() {
+		Minecraft minecraft = Minecraft.getInstance();
+		if (minecraft.player == null || minecraft.gameMode == null)
+			return false;
+		if (minecraft.gameMode.getPlayerMode()
+			.isCreative())
+			return true;
+		ArchitectManager.status(ChatFormatting.RED + "Toolkits are only handed out in creative mode.");
+		return false;
 	}
 
 	private static void setHotbarItem(int slot, ItemStack stack) {
-		AllPackets.sendToServer(new SetHotbarItemPacket(slot, stack));
-	}
-
-	private static void setHotbarBlock(int slot, Block block) {
-		setHotbarItem(slot, block.asItem());
+		Minecraft minecraft = Minecraft.getInstance();
+		minecraft.player.getInventory()
+			.setItem(slot, stack);
+		minecraft.gameMode.handleCreativeModeItemAdd(stack, InventoryMenu.USE_ROW_SLOT_START + slot);
 	}
 
 	private static void setHotbarBlock(int slot, Palette palette) {

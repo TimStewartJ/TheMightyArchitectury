@@ -1,15 +1,10 @@
 package com.timmie.mightyarchitect.forge;
 
 import com.timmie.mightyarchitect.AllPackets;
-import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
 import com.timmie.mightyarchitect.networking.PlaceSignPacket;
-import com.timmie.mightyarchitect.networking.SetHotbarItemPacket;
 import com.timmie.mightyarchitect.platform.PacketContext;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 // NeoForge reworked payload registration in 20.5: the event, the registrar and the registration
@@ -23,24 +18,16 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.IPayloadRegistrar;
 *///?}
-import net.neoforged.neoforge.registries.DeferredRegister;
 
 @Mod(TheMightyArchitectForge.ID)
 public class TheMightyArchitectForge {
 
 	public static final String ID = "mightyarchitect";
 
-	private static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(Registries.BLOCK, ID);
-	private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(Registries.ITEM, ID);
-
 	public TheMightyArchitectForge(IEventBus modEventBus)
 	{
-		// The suppliers run when NeoForge fires RegisterEvent, and vanilla processes the block
-		// registry before the item registry, so the block items still see their blocks.
-		TheMightyArchitect.Init(BLOCKS::register, ITEMS::register);
-		BLOCKS.register(modEventBus);
-		ITEMS.register(modEventBus);
-
+		// Packets only: the mod registers no blocks or items, so a server running it never turns away
+		// a player who does not have it. See TheMightyArchitect.
 		modEventBus.addListener(TheMightyArchitectForge::registerPackets);
 
 		// 20.4's @Mod cannot declare a dist, so the client half is started from here. The class is
@@ -62,8 +49,6 @@ public class TheMightyArchitectForge {
 			(payload, context) -> InstantPrintPacket.handle(payload, wrap(context)));
 		registrar.playToServer(AllPackets.PLACE_SIGN_TYPE, AllPackets.PLACE_SIGN_CODEC,
 			(payload, context) -> PlaceSignPacket.handle(payload, wrap(context)));
-		registrar.playToServer(AllPackets.SET_HOTBAR_ITEM_TYPE, AllPackets.SET_HOTBAR_ITEM_CODEC,
-			(payload, context) -> SetHotbarItemPacket.handle(payload, wrap(context)));
 	}
 	//?} else {
 	/*private static void registerPackets(RegisterPayloadHandlerEvent event) {
@@ -76,8 +61,6 @@ public class TheMightyArchitectForge {
 			(payload, context) -> InstantPrintPacket.handle(payload, wrap(context)));
 		registrar.play(AllPackets.PLACE_SIGN_ID, AllPackets.PLACE_SIGN_DECODER::apply,
 			(payload, context) -> PlaceSignPacket.handle(payload, wrap(context)));
-		registrar.play(AllPackets.SET_HOTBAR_ITEM_ID, AllPackets.SET_HOTBAR_ITEM_DECODER::apply,
-			(payload, context) -> SetHotbarItemPacket.handle(payload, wrap(context)));
 	}
 	*///?}
 
