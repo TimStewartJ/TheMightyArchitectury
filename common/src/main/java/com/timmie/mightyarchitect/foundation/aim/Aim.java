@@ -6,13 +6,14 @@ import net.minecraft.world.phys.Vec3;
 import java.util.Objects;
 
 /**
- * A ray the composer tools trace along: where it starts, which way it points, and the entity whose
- * collision rules apply to it.
+ * A ray the composer tools trace along: where it starts, which way it points, and the entity it is
+ * cast from.
  *
  * @param origin    where the ray starts, normally an entity's eyes
  * @param direction which way the ray points; any non-zero length, normalized on construction
- * @param source    the entity the ray is traced on behalf of; it decides collision shapes that depend
- *                  on who is asking, such as scaffolding and powder snow
+ * @param source    the entity the ray is cast from, normally the camera entity. It identifies the
+ *                  viewpoint only: block shapes are judged as the player meets them (see
+ *                  {@code RaycastHelper}), because a free camera's own collision is switched off
  */
 public record Aim(Vec3 origin, Vec3 direction, Entity source) {
 

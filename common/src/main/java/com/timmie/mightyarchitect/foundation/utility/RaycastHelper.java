@@ -1,9 +1,11 @@
 package com.timmie.mightyarchitect.foundation.utility;
 
 import com.timmie.mightyarchitect.foundation.aim.Aim;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.ClipContext.Block;
 import net.minecraft.world.level.ClipContext.Fluid;
@@ -18,6 +20,11 @@ import java.util.function.Predicate;
  * Traces the composer tools' rays. Every trace takes an {@link Aim}, normally
  * {@code ArchitectAim.current()}, so no tool can quietly aim from the player's body while the view
  * is somewhere else.
+ * <p>
+ * The ray starts wherever the aim does, but block shapes are always judged as the local player
+ * would meet them, never as the entity the ray is cast from. Free-camera entities pass through the
+ * world: Freecam empties every block's collision shape for its {@code FreeCamera}
+ * ({@code BlockStateBaseMixin}), so a trace made on its behalf would hit nothing at all.
  */
 public class RaycastHelper {
 
@@ -26,7 +33,8 @@ public class RaycastHelper {
 	public static BlockHitResult rayTraceRange(Level worldIn, @Nullable Aim aim, double range) {
 		if (aim == null)
 			return null;
-		ClipContext context = new ClipContext(aim.origin(), aim.at(range), Block.COLLIDER, Fluid.NONE, aim.source());
+		Entity collider = Minecraft.getInstance().player != null ? Minecraft.getInstance().player : aim.source();
+		ClipContext context = new ClipContext(aim.origin(), aim.at(range), Block.COLLIDER, Fluid.NONE, collider);
 		return worldIn.clip(context);
 	}
 
