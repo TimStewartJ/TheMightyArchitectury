@@ -51,6 +51,7 @@ import com.timmie.mightyarchitect.platform.MightyPacket;
 import com.timmie.mightyarchitect.platform.PacketSender;
 import com.timmie.mightyarchitect.test.mixin.ArchitectManagerAccessor;
 import com.timmie.mightyarchitect.test.mixin.GroundPlanningToolAccessor;
+import com.timmie.mightyarchitect.test.mixin.RoomToolAccessor;
 import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
@@ -850,6 +851,18 @@ public final class ClientTestController {
                 "room tool targets the block under a detached camera (" + selectedBy(Tools.Room) + ")");
             check(probe.expectedSelection().equals(selectionAfterUpdate(Tools.Cylinder)),
                 "cylinder tool targets the block under a detached camera (" + selectedBy(Tools.Cylinder) + ")");
+
+            // With a first corner marked in the air above the probe, the camera looking straight down
+            // must select on that corner's level, not on the stone below it.
+            BlockPos level = probe.expectedSelection().above(2);
+            for (Tools tool : List.of(Tools.Room, Tools.Cylinder)) {
+                tool.getTool().init();
+                ((RoomToolAccessor) tool.getTool()).setFirstPosition(level);
+                tool.getTool().updateSelection();
+                check(level.equals(selectedBy(tool)), tool.name().toLowerCase()
+                    + " tool aims its second corner on the first corner's level, not the terrain ("
+                    + selectedBy(tool) + ")");
+            }
 
             minecraft.setCameraEntity(player);
             check(!probe.expectedSelection().equals(selectionAfterUpdate(Tools.Room)),

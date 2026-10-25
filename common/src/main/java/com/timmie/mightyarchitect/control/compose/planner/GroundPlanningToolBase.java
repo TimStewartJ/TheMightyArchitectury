@@ -27,6 +27,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 public abstract class GroundPlanningToolBase extends ComposerToolBase {
 
 	protected BlockPos selectedPosition;
@@ -46,6 +48,8 @@ public abstract class GroundPlanningToolBase extends ComposerToolBase {
 		transparentStacks.clear();
 
 		Aim aim = ArchitectAim.current();
+		if (selectOnCornerLevel(aim))
+			return;
 		BlockHitResult trace = RaycastHelper.rayTraceRange(Minecraft.getInstance().level, aim, 75);
 		if (trace != null && trace.getType() == Type.BLOCK) {
 
@@ -73,6 +77,37 @@ public abstract class GroundPlanningToolBase extends ComposerToolBase {
 			selectedPosition = null;
 		}
 
+	}
+
+	/**
+	 * The world height the next corner is placed on, or null to place it on whatever block the
+	 * crosshair hits. Tools drawing a shape from two corners answer with the first corner's height:
+	 * the shape is drawn flat at that height, so the second corner has to be aimed on it too.
+	 * Following the terrain instead puts the corner somewhere other than under the crosshair -
+	 * badly so from a camera high above - and lets the terrain's height leak into the shape.
+	 */
+	@Nullable
+	protected Integer cornerLevel() {
+		return null;
+	}
+
+	/**
+	 * Selects where the aim crosses {@link #cornerLevel()}, when there is one.
+	 *
+	 * @return whether the selection was made here; false leaves it to the terrain trace
+	 */
+	protected boolean selectOnCornerLevel(@Nullable Aim aim) {
+		Integer level = cornerLevel();
+		if (level == null)
+			return false;
+		BlockPos hit = RaycastHelper.rayTraceLevel(aim, level, 75);
+		if (hit == null) {
+			selectedPosition = null;
+			return true;
+		}
+		makeStacksTransparent(aim, hit);
+		selectedPosition = model.getAnchor() == null ? hit : hit.subtract(model.getAnchor());
+		return true;
 	}
 
 	protected void makeStacksTransparent(Aim aim, BlockPos hit) {

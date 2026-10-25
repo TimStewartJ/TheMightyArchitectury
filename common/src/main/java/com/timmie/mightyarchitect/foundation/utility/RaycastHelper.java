@@ -45,6 +45,28 @@ public class RaycastHelper {
 		return result == null ? new PredicateTraceResult() : result;
 	}
 
+	/**
+	 * The block on height {@code levelY} that the ray points at, ignoring terrain: where it crosses
+	 * the plane at the bottom of that block layer.
+	 *
+	 * @return null when there is no ray, it runs parallel to the level or away from it, or it
+	 *         reaches the level beyond {@code range}
+	 */
+	@Nullable
+	public static BlockPos rayTraceLevel(@Nullable Aim aim, int levelY, double range) {
+		return aim == null ? null : rayTraceLevel(aim.origin(), aim.direction(), levelY, range);
+	}
+
+	@Nullable
+	public static BlockPos rayTraceLevel(Vec3 origin, Vec3 direction, int levelY, double range) {
+		if (Math.abs(direction.y) < 1e-6)
+			return null;
+		double t = (levelY - origin.y) / direction.y;
+		if (t <= 0 || t * direction.length() > range)
+			return null;
+		return new BlockPos(Mth.floor(origin.x + direction.x * t), levelY, Mth.floor(origin.z + direction.z * t));
+	}
+
 	private static PredicateTraceResult rayTraceUntil(Vec3 start, Vec3 end, Predicate<BlockPos> predicate) {
 		if (Double.isNaN(start.x) || Double.isNaN(start.y) || Double.isNaN(start.z))
 			return null;

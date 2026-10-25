@@ -35,6 +35,8 @@ public class CylinderRoomTool extends RoomTool {
 		transparentStacks.clear();
 
 		Aim aim = ArchitectAim.current();
+		if (selectOnCornerLevel(aim))
+			return;
 		BlockHitResult trace = RaycastHelper.rayTraceRange(Minecraft.getInstance().level, aim, 75);
 		if (trace != null && trace.getType() == Type.BLOCK) {
 

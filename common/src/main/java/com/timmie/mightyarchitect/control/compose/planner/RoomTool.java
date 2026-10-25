@@ -39,6 +39,14 @@ public class RoomTool extends GroundPlanningToolBase {
 	}
 
 	@Override
+	protected Integer cornerLevel() {
+		if (firstPosition == null)
+			return null;
+		BlockPos anchor = model.getAnchor();
+		return firstPosition.getY() + (anchor == null ? 0 : anchor.getY());
+	}
+
+	@Override
 	public String handleRightClick() {
 		super.handleRightClick();
 
