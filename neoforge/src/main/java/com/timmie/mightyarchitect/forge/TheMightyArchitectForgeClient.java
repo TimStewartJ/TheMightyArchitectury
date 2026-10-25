@@ -79,5 +79,6 @@ public class TheMightyArchitectForgeClient {
 		*///?}
 		event.register(MightyClient.COMPOSE);
 		event.register(MightyClient.TOOL_MENU);
+		event.register(MightyClient.TOGGLE_BLUEPRINT);
 	}
 }

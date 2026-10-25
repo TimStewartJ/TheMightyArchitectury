@@ -10,6 +10,7 @@ import com.timmie.mightyarchitect.AllPackets;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.ArchitectManager;
+import com.timmie.mightyarchitect.control.ArchitectMenu;
 import com.timmie.mightyarchitect.control.ExportInteractions;
 import com.timmie.mightyarchitect.control.Schematic;
 import com.timmie.mightyarchitect.control.compose.Cuboid;
@@ -27,6 +28,7 @@ import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
 import com.timmie.mightyarchitect.control.palette.PaletteStorage;
 import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
 import com.timmie.mightyarchitect.control.phase.export.PhaseEditTheme;
+import com.timmie.mightyarchitect.control.storage.ClientSettings;
 import com.timmie.mightyarchitect.foundation.WrappedWorld;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import com.timmie.mightyarchitect.foundation.utility.Mouse;
@@ -463,10 +465,29 @@ public final class ClientTestController {
         ArchitectManager.compose(theme);
         check(ArchitectManager.inPhase(ArchitectPhases.Composing), "composer phase entered");
         check(ShaderManager.getActiveShader() == Shaders.Blueprint, "blueprint shader selected");
+        checkBlueprintViewToggle();
         ArchitectManager.getModel().setSketch(new Sketch());
         check(ArchitectManager.getModel().getPrimary() != null
             && ArchitectManager.getModel().getSecondary() != null, "model palettes initialized");
         advance(Stage.OPEN_PALETTE);
+    }
+
+    /**
+     * The composer menu's B entry turns the blueprint view off and on again, the choice is
+     * remembered, and re-entering the composer while it is off leaves the world untinted.
+     * Ends with the view back on, which the blueprint capture later in the run relies on.
+     */
+    private static void checkBlueprintViewToggle() {
+        check(ArchitectMenu.getKeybinds().get("B").endsWith("On"), "menu offers Blueprint View, on");
+        ArchitectMenu.handleMenuInput('b');
+        check(!ClientSettings.blueprintView(), "blueprint view toggled off from the menu");
+        check(ShaderManager.getActiveShader() == Shaders.None, "blueprint shader cleared when toggled off");
+        check(ArchitectMenu.getKeybinds().get("B").endsWith("Off"), "menu shows Blueprint View off");
+        ArchitectManager.enterPhase(ArchitectPhases.Composing);
+        check(ShaderManager.getActiveShader() == Shaders.None, "composer re-entered with blueprint view off");
+        ArchitectMenu.handleMenuInput('b');
+        check(ClientSettings.blueprintView(), "blueprint view toggled back on from the menu");
+        check(ShaderManager.getActiveShader() == Shaders.Blueprint, "blueprint shader selected after toggling on");
     }
 
     private static void openPalette(Minecraft minecraft) {

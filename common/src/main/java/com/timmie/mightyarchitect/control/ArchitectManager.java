@@ -15,8 +15,11 @@ import com.timmie.mightyarchitect.control.phase.IArchitectPhase;
 import com.timmie.mightyarchitect.control.phase.IDrawBlockHighlights;
 import com.timmie.mightyarchitect.control.phase.IRenderGameOverlay;
 import com.timmie.mightyarchitect.control.storage.ArchitectPaths;
+import com.timmie.mightyarchitect.control.storage.ClientSettings;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
+import com.timmie.mightyarchitect.foundation.utility.ShaderManager;
+import com.timmie.mightyarchitect.foundation.utility.Shaders;
 import com.timmie.mightyarchitect.gui.*;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
 import net.minecraft.ChatFormatting;
@@ -208,6 +211,20 @@ public class ArchitectManager {
 		/*Minecraft.getInstance().player.displayClientMessage(Component.literal(message), true);*///?}
 	}
 
+	/** Flips the blueprint tint (and the night vision that comes with it) and remembers the choice. */
+	public static void toggleBlueprintView() {
+		boolean enabled = !ClientSettings.blueprintView();
+		ClientSettings.setBlueprintView(enabled);
+		if (inPhase(ArchitectPhases.Composing)) {
+			if (enabled)
+				ShaderManager.setActiveShader(Shaders.Blueprint);
+			else
+				ShaderManager.stopUsingShaders();
+		}
+		menu.updateContents();
+		status("Blueprint View " + (enabled ? "on" : "off"));
+	}
+
 	public static void pickPalette() {
 		if (getModel().getSketch() == null)
 			return;
@@ -325,6 +342,10 @@ public class ArchitectManager {
 		if (MightyClient.COMPOSE.consumeClick()) {
 			if (!menu.isFocused())
 				openMenu();
+			return;
+		}
+		if (MightyClient.TOGGLE_BLUEPRINT.consumeClick()) {
+			toggleBlueprintView();
 			return;
 		}
 

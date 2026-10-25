@@ -6,6 +6,13 @@ the release ships for; version-specific notes say which versions they apply to.
 
 ## [Unreleased]
 
+### Added
+
+- **The blueprint view can be turned off.** While you compose, the world is tinted blue and you
+  get night vision. Press **B** in the architect menu (**G**) to switch both off or back on. The
+  choice is remembered in `mightyarchitect/settings.json`. Controls also has a *Toggle Blueprint
+  View* key, unbound by default.
+
 ### Changed
 
 - **Esc now cancels what you are in the middle of** instead of opening the pause menu. A hint beside
