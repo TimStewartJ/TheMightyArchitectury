@@ -26,4 +26,11 @@ public abstract class ClientHooksProbeMixin {
     private static void mightyarchitectTest$recordKey(int key, int action, CallbackInfo callback) {
         PlayerJourneyController.recordKey(key, action);
     }
+
+    // RETURN, for the verdict: an Esc the mod keeps never reaches keyPressed above.
+    @Inject(method = "keyPressedBeforeVanilla", at = @At("RETURN"), remap = false)
+    private static void mightyarchitectTest$recordEarlyKey(int key, int action,
+                                                           CallbackInfoReturnable<Boolean> callback) {
+        PlayerJourneyController.recordKeyBeforeVanilla(key, action, callback.getReturnValueZ());
+    }
 }

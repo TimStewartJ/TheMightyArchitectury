@@ -134,6 +134,24 @@ public class PhaseComposing extends PhaseBase implements IRenderGameOverlay {
 	public void render(PoseStack ms, MightyBuffers buffer) {}
 
 	@Override
+	public String cancellableAction() {
+		return activeTool.getTool()
+			.cancellableAction();
+	}
+
+	// The open tool wheel comes first, though the hint does not offer it: the wheel is held open with
+	// Alt, and Alt+Esc belongs to the window manager on some desktops.
+	@Override
+	public boolean cancelAction() {
+		if (toolSelection.focused) {
+			toolSelection.cancel();
+			return true;
+		}
+		return activeTool.getTool()
+			.cancelAction();
+	}
+
+	@Override
 	public void whenExited() {
 		ShaderManager.stopUsingShaders();
 	}

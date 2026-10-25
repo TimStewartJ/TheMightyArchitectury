@@ -30,6 +30,11 @@ public class CylinderRoomTool extends RoomTool {
 	}
 
 	@Override
+	protected String shapeName() {
+		return "tower";
+	}
+
+	@Override
 	public void updateSelection() {
 		LocalPlayer player = Minecraft.getInstance().player;
 		transparentStacks.clear();

@@ -24,9 +24,11 @@ public class PrintingToMultiplayer extends PhaseBase {
 	private static final int POSITION_CHECKS_PER_TICK = 8_192;
 
 	private Deque<MultiplayerPrintCommands.Command> remaining;
+	private boolean finished;
 
 	@Override
 	public void whenEntered() {
+		finished = false;
 		// Printing deliberately does NOT touch the server's gamerules. It used to turn off
 		// sendCommandFeedback and logAdminCommands and turn them back on afterwards, which
 		// silently disabled the server's admin-command audit log for everyone, and left it
@@ -49,6 +51,7 @@ public class PrintingToMultiplayer extends PhaseBase {
 		while (sent < COMMANDS_PER_TICK && checked < POSITION_CHECKS_PER_TICK) {
 			MultiplayerPrintCommands.Command queued = remaining.pollFirst();
 			if (queued == null) {
+				finished = true;
 				ArchitectManager.unload();
 				break;
 			}
@@ -79,7 +82,26 @@ public class PrintingToMultiplayer extends PhaseBase {
 	}
 
 	@Override
+	public String cancellableAction() {
+		return "Stop printing";
+	}
+
+	/**
+	 * Stops sending commands and goes back to the preview. Printing again finishes the job: every
+	 * command is re-checked against the world before it is sent, so blocks already placed are skipped.
+	 */
+	@Override
+	public boolean cancelAction() {
+		remaining.clear();
+		ArchitectManager.enterPhase(ArchitectPhases.Previewing);
+		ArchitectManager.status("Printing stopped. Print again to place the rest.");
+		return true;
+	}
+
+	@Override
 	public void whenExited() {
+		if (!finished)
+			return;
 		//? if >=26 {
 		Minecraft.getInstance().player.sendSystemMessage(Component.literal(ChatFormatting.GREEN + "Finished Printing, enjoy!"));
 		//?} else {
@@ -91,7 +113,8 @@ public class PrintingToMultiplayer extends PhaseBase {
 	@Override
 	public List<String> getToolTip() {
 		return ImmutableList.of("Please be patient while your building is being transferred.",
-			"Your server will report each command batch as it is placed.");
+			"Your server will report each command batch as it is placed.",
+			"Press [ESC] to stop; printing again places only what is missing.");
 	}
 
 }

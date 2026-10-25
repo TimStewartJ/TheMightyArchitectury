@@ -223,6 +223,22 @@ public class CopyDesignTool extends WallDecorationToolBase {
 		return super.handleRightClick();
 	}
 
+	@Override
+	public String cancellableAction() {
+		return copiedDesign == null ? null : "Clear copied " + copiedDesignType.getDisplayName();
+	}
+
+	@Override
+	public boolean cancelAction() {
+		if (copiedDesign == null)
+			return false;
+		String name = copiedDesignType.getDisplayName();
+		copiedDesign = null;
+		copiedDesignType = null;
+		status("Cleared copied " + name);
+		return true;
+	}
+
 	private String pasteSuccessful() {
 		ArchitectManager.reAssemble();
 		return "Applied " + ChatFormatting.GREEN + copiedDesignType.getDisplayName();

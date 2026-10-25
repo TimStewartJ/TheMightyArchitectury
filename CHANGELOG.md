@@ -4,6 +4,25 @@ All notable changes to The Mighty Architectury. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One entry covers every Minecraft version
 the release ships for; version-specific notes say which versions they apply to.
 
+## [Unreleased]
+
+### Changed
+
+- **Esc now cancels what you are in the middle of** instead of opening the pause menu. A hint beside
+  the crosshair shows what it will cancel, for example **[ESC] Cancel room**:
+  - a room or tower you have clicked the first corner of;
+  - a design copied with *Reuse Patterns*;
+  - printing to a server without the mod. Printing again later places only the blocks still
+    missing;
+  - a design the exporter has outlined and is waiting for a second click to export;
+  - the tool wheel while it is held open, which closes without changing tools.
+
+  When nothing is in progress, Esc opens the pause menu as usual, so a second press always gets
+  you there.
+- **Esc no longer pauses the architect.** It used to switch the composer or preview to *Paused*
+  and hide it, even when Esc only closed your inventory or the architect menu. Your build now
+  stays on screen through the pause menu. Leaving the world still pauses it, as before.
+
 ## [3.0.0] - 2026-10-23
 
 ### Changed
