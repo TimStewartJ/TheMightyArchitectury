@@ -8,6 +8,10 @@ the release ships for; version-specific notes say which versions they apply to.
 
 ### Added
 
+- **The blueprint view can be turned off.** While you compose, the world is tinted blue and you
+  get night vision. Press **B** in the architect menu (**G**) to switch both off or back on. The
+  choice is remembered in `mightyarchitect/settings.json`. Controls also has a *Toggle Blueprint
+  View* key, unbound by default.
 - **Draft from a detached camera.** The composer tools now aim from wherever the camera is, not
   from your character. Spectating a mob or using a free-camera mod (Freecam, Tweakeroo) lets you
   draw rooms and towers from above or far away, in survival too. Placing blocks is unchanged:
