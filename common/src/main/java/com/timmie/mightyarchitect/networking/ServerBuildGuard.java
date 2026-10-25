@@ -107,10 +107,30 @@ public final class ServerBuildGuard {
 	 * Measured to the centre of the block.
 	 */
 	public static boolean withinReach(double x, double y, double z, BlockPos pos) {
+		return distanceSqr(x, y, z, pos) <= (double) MAX_BUILD_DISTANCE * MAX_BUILD_DISTANCE;
+	}
+
+	/** Squared distance from a point to the centre of a block - the measure {@link #withinReach} bounds. */
+	public static double distanceSqr(double x, double y, double z, BlockPos pos) {
 		double dx = pos.getX() + 0.5 - x;
 		double dy = pos.getY() + 0.5 - y;
 		double dz = pos.getZ() + 0.5 - z;
-		return dx * dx + dy * dy + dz * dz <= (double) MAX_BUILD_DISTANCE * MAX_BUILD_DISTANCE;
+		return dx * dx + dy * dy + dz * dz;
+	}
+
+	/**
+	 * How far the farthest of these blocks is from a point, measured as {@link #withinReach} measures,
+	 * so a client can tell before sending anything whether this gate would drop part of a build.
+	 *
+	 * @param offset added to every position, for blocks held relative to an anchor
+	 * @return the distance in blocks, or 0 when there are none
+	 */
+	public static double farthestDistance(double x, double y, double z, Iterable<BlockPos> positions,
+		BlockPos offset) {
+		double farthestSqr = 0;
+		for (BlockPos pos : positions)
+			farthestSqr = Math.max(farthestSqr, distanceSqr(x - offset.getX(), y - offset.getY(), z - offset.getZ(), pos));
+		return Math.sqrt(farthestSqr);
 	}
 
 	/**

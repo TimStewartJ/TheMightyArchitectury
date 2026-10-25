@@ -16,6 +16,10 @@ the release ships for; version-specific notes say which versions they apply to.
   from your character. Spectating a mob or using a free-camera mod (Freecam, Tweakeroo) lets you
   draw rooms and towers from above or far away, in survival too. Placing blocks is unchanged:
   printing is still checked against your character's position and permissions.
+- **Printing tells you when a build is out of range.** A server running the mod only places printed
+  blocks within 256 blocks of you. Printing a build that reaches farther now refuses and says how
+  far it reaches, instead of leaving part of it unbuilt. The build stays loaded, so you can move
+  closer and print again. The preview warns as soon as the build goes out of range.
 - **Freecam compatibility.** In Freecam's player-control and "interact from player" modes, the
   tools aim from your character, like Freecam's own crosshair. Freecam is optional.
 - **Aim sources for other camera mods.** A camera mod can tell the tools where to aim by

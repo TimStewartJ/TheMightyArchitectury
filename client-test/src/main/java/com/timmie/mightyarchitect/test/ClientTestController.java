@@ -12,6 +12,7 @@ import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.ArchitectMenu;
 import com.timmie.mightyarchitect.control.ExportInteractions;
+import com.timmie.mightyarchitect.control.PrintRange;
 import com.timmie.mightyarchitect.control.Schematic;
 import com.timmie.mightyarchitect.control.compose.Cuboid;
 import com.timmie.mightyarchitect.control.compose.planner.Tools;
@@ -45,6 +46,7 @@ import com.timmie.mightyarchitect.gui.widgets.Indicator;
 import com.timmie.mightyarchitect.gui.widgets.Label;
 import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
+import com.timmie.mightyarchitect.networking.ServerBuildGuard;
 import com.timmie.mightyarchitect.platform.MightyPacket;
 import com.timmie.mightyarchitect.platform.PacketSender;
 import com.timmie.mightyarchitect.test.mixin.ArchitectManagerAccessor;
@@ -397,6 +399,7 @@ public final class ClientTestController {
         check(!ThemeStorage.getIncluded().isEmpty(), "included themes loaded");
 
         checkModdedServerPrintRoute();
+        checkPrintRange(minecraft);
         checkPaletteRoundTrip();
 
         // WrappedWorld overrides methods NeoForge adds to Level that vanilla does not have. Those
@@ -446,6 +449,61 @@ public final class ClientTestController {
             if (!ArchitectManager.inPhase(ArchitectPhases.Empty))
                 ArchitectManager.unload();
         }
+    }
+
+    /**
+     * A server running the mod drops printed blocks beyond {@link ServerBuildGuard#MAX_BUILD_DISTANCE}
+     * of the player, and the composer can now be aimed from a camera much farther away than that. So
+     * printing refuses a build that reaches out of range - sending nothing and keeping it loaded to
+     * print again from closer - while one just inside the range still prints.
+     */
+    private static void checkPrintRange(Minecraft minecraft) {
+        int[] sent = { 0 };
+        PacketSender actual = AllPackets.setSender(new PacketSender() {
+            @Override
+            public boolean canSendToServer(MightyPacket packet) {
+                return true;
+            }
+
+            @Override
+            public void sendToServer(MightyPacket packet) {
+                sent[0]++;
+            }
+        });
+        GameType previousMode = minecraft.gameMode.getPlayerMode();
+        BlockPos feet = minecraft.player.blockPosition();
+        try {
+            minecraft.gameMode.setLocalMode(GameType.CREATIVE);
+            previewCubeAt(feet.offset(ServerBuildGuard.MAX_BUILD_DISTANCE + 40, 0, 0));
+            double far = PrintRange.farthest(minecraft.player, ArchitectManager.getModel());
+            check(PrintRange.isOutOfReach(far), "a build drafted past the server's reach is out of printing range ("
+                + round(far) + " blocks)");
+            ArchitectManager.print();
+            check(sent[0] == 0, "printing an out-of-range build sends nothing");
+            check(ArchitectManager.inPhase(ArchitectPhases.Previewing),
+                "an out-of-range build stays loaded, to print again from closer");
+
+            ArchitectManager.unload();
+            previewCubeAt(feet.offset(ServerBuildGuard.MAX_BUILD_DISTANCE - 40, 0, 0));
+            double near = PrintRange.farthest(minecraft.player, ArchitectManager.getModel());
+            check(!PrintRange.isOutOfReach(near), "a build inside the server's reach is in printing range ("
+                + round(near) + " blocks)");
+            ArchitectManager.print();
+            check(sent[0] > 0 && ArchitectManager.inPhase(ArchitectPhases.Empty),
+                "a build inside printing range still prints");
+        } finally {
+            minecraft.gameMode.setLocalMode(previousMode);
+            AllPackets.setSender(actual);
+            if (!ArchitectManager.inPhase(ArchitectPhases.Empty))
+                ArchitectManager.unload();
+        }
+    }
+
+    private static void previewCubeAt(BlockPos anchor) {
+        ArchitectManager.compose(ThemeStorage.getIncluded().get(0));
+        ArchitectManager.getModel().setAnchor(anchor);
+        ArchitectManager.getModel().setSketch(new FixedSketch(solidCube(2, Palette.HEAVY_PRIMARY)));
+        ArchitectManager.enterPhase(ArchitectPhases.Previewing);
     }
 
     /**
