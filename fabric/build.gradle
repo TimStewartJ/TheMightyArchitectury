@@ -190,6 +190,19 @@ if (freecamClientTest) {
     dependencies {
         clientTestRuntimeOnly("maven.modrinth:freecam:${freecamClientTest}") { transitive = false }
     }
+    // Freecam 1.5.1 refuses MixinExtras older than 0.5.5, which Fabric Loader bundles only from
+    // 0.19.5. The node builds against an older loader on purpose - it is the mod's declared
+    // minimum - so only this run swaps in the newer MixinExtras, as a player's launcher would.
+    // The run's classpath also carries main's runtime classpath as plain files, so the bundled
+    // jar is filtered out rather than left for Fabric Loader to find twice.
+    def mixinExtras = node.findProperty('freecam_client_test_mixinextras')
+    if (mixinExtras) {
+        def mixinExtrasRun = configurations.detachedConfiguration(
+            dependencies.create("io.github.llamalad7:mixinextras-fabric:${mixinExtras}") { transitive = false })
+        tasks.named("runAutomatedClientTest") {
+            classpath = classpath.filter { !it.name.startsWith("mixinextras-fabric-") } + mixinExtrasRun
+        }
+    }
     loom.runs.named("automatedClientTest") {
         property "mightyarchitect.clientTest.freecam", "required"
     }
