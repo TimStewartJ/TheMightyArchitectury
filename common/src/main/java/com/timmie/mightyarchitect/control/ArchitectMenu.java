@@ -6,6 +6,7 @@ import com.timmie.mightyarchitect.control.design.ThemeStorage;
 import com.timmie.mightyarchitect.control.design.ThemeValidator;
 import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
 import com.timmie.mightyarchitect.control.storage.ArchitectPaths;
+import com.timmie.mightyarchitect.control.storage.ClientSettings;
 import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.timmie.mightyarchitect.foundation.utility.FilesHelper;
 import com.timmie.mightyarchitect.gui.ScreenHelper;
@@ -31,6 +32,10 @@ public class ArchitectMenu {
 			case 'f':
 				ArchitectManager.design();
 				return true;
+
+			case 'b':
+				ArchitectManager.toggleBlueprintView();
+				return false;
 
 			case 'u':
 				ArchitectManager.unload();
@@ -249,6 +254,7 @@ public class ArchitectMenu {
 
 		case Composing:
 			keybinds.put("F", "Finish");
+			keybinds.put("B", "Blueprint View: " + (ClientSettings.blueprintView() ? "On" : "Off"));
 			keybinds.lineBreak();
 			keybinds.put("U", "Unload");
 			break;

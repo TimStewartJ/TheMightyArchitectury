@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.control.compose.planner.Tools;
+import com.timmie.mightyarchitect.control.storage.ClientSettings;
 import com.timmie.mightyarchitect.foundation.utility.Mouse;
 import com.timmie.mightyarchitect.foundation.utility.ShaderManager;
 import com.timmie.mightyarchitect.foundation.utility.Shaders;
@@ -46,7 +47,8 @@ public class PhaseComposing extends PhaseBase implements IRenderGameOverlay {
 			groundPlanningTools.remove(Tools.Cylinder);
 
 		toolSelection = new ToolSelectionScreen(groundPlanningTools, this::equipTool);
-		ShaderManager.setActiveShader(Shaders.Blueprint);
+		if (ClientSettings.blueprintView())
+			ShaderManager.setActiveShader(Shaders.Blueprint);
 	}
 
 	private void equipTool(Tools tool) {

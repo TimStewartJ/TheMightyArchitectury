@@ -34,6 +34,7 @@ public class MightyClient {
 
 	public static KeyMapping COMPOSE;
 	public static KeyMapping TOOL_MENU;
+	public static KeyMapping TOGGLE_BLUEPRINT;
 
 	//? if >=1.21.11 {
 	public static final KeyMapping.Category CATEGORY = new KeyMapping.Category(Identifier.fromNamespaceAndPath(TheMightyArchitect.ID, "keys"));
@@ -54,10 +55,12 @@ public class MightyClient {
 		//? if >=1.21.10 {
 		COMPOSE = new KeyMapping("key.mightyclient.compose", Keyboard.G, CATEGORY);
 		TOOL_MENU = new KeyMapping("key.mightyclient.toolmenu", Keyboard.LALT, CATEGORY);
+		TOGGLE_BLUEPRINT = new KeyMapping("key.mightyclient.toggleblueprint", Keyboard.UNBOUND, CATEGORY);
 		//?} else {
 		/*String modName = TheMightyArchitect.NAME;
 		COMPOSE = new KeyMapping("key.mightyclient.compose", Keyboard.G, modName);
 		TOOL_MENU = new KeyMapping("key.mightyclient.toolmenu", Keyboard.LALT, modName);
+		TOGGLE_BLUEPRINT = new KeyMapping("key.mightyclient.toggleblueprint", Keyboard.UNBOUND, modName);
 		*///?}
 	}
 

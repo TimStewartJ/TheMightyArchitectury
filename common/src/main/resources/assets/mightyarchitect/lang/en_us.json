@@ -1,4 +1,5 @@
 {
 	"key.mightyclient.compose": "Start Composing",
-	"key.mightyclient.toolmenu": "Tool Menu"
+	"key.mightyclient.toolmenu": "Tool Menu",
+	"key.mightyclient.toggleblueprint": "Toggle Blueprint View"
 }
