@@ -83,6 +83,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -113,6 +114,7 @@ public final class ClientTestController {
         VERIFY_SCROLL_ROUTING,
         CAPTURE_BLUEPRINT,
         VERIFY_CAMERA_AIM,
+        VERIFY_FREECAM,
         CAPTURE_HUD_VISIBLE,
         CAPTURE_HUD_HIDDEN,
         CAPTURE_ALIGN_BASELINE,
@@ -155,6 +157,11 @@ public final class ClientTestController {
     private static final int CAMERA_SHADER_WAIT_TICKS = 20 * 15;
     /** Height of the cleared column the stand-in camera hovers in above its probe block. */
     private static final int CAMERA_PROBE_HEIGHT = 5;
+    /** Set by nodes that put the real Freecam on the client run; its absence then fails the run. */
+    private static final boolean FREECAM_REQUIRED =
+        "required".equals(System.getProperty("mightyarchitect.clientTest.freecam"));
+    /** Long enough for an action-bar message (60 ticks plus its fade) to clear before HUD capture. */
+    private static final int FREECAM_MESSAGE_FADE_TICKS = 100;
     /** Distance in front of the camera at which the probe outline is placed. */
     private static final double PROBE_DISTANCE = 8.0;
     private static final double PROBE_RADIUS = 1.5;
@@ -283,6 +290,7 @@ public final class ClientTestController {
                 case VERIFY_SCROLL_ROUTING -> verifyScrollRouting(minecraft);
                 case CAPTURE_BLUEPRINT -> captureBlueprint(minecraft);
                 case VERIFY_CAMERA_AIM -> verifyCameraAim(minecraft);
+                case VERIFY_FREECAM -> verifyFreecam(minecraft);
                 case CAPTURE_HUD_VISIBLE -> captureHudVisible(minecraft);
                 case CAPTURE_HUD_HIDDEN -> captureHudHidden(minecraft);
                 case CAPTURE_ALIGN_BASELINE -> captureAlignBaseline(minecraft);
@@ -725,7 +733,7 @@ public final class ClientTestController {
      * for the blueprint view: before 1.21.4 vanilla's setCameraEntity closes the post effect the
      * view lives in, which is what toggling a free-camera mod does mid-composition.
      */
-    private static void verifyCameraAim(Minecraft minecraft) {
+    private static void verifyCameraAim(Minecraft minecraft) throws Exception {
         if (stageTicks == 1) {
             aimAtProbeFromStandInCamera(minecraft);
             return;
@@ -739,17 +747,146 @@ public final class ClientTestController {
         check(minecraft.getCameraEntity() == minecraft.player, "camera entity restored to the player");
         check(Shaders.Blueprint.isActive(),
             "blueprint view survives the camera entity changing (active again after " + stageTicks + " ticks)");
-        advance(Stage.CAPTURE_HUD_VISIBLE);
+        advance(Stage.VERIFY_FREECAM);
     }
 
-    private static void aimAtProbeFromStandInCamera(Minecraft minecraft) {
+    private static void aimAtProbeFromStandInCamera(Minecraft minecraft) throws Exception {
+        withAimProbe(minecraft, probe -> {
+            LocalPlayer player = minecraft.player;
+            BlockHitResult fromBody = RaycastHelper.rayTraceRange(minecraft.level, Aim.fromEyes(player), 75);
+            check(fromBody == null || fromBody.getType() != HitResult.Type.BLOCK
+                    || !fromBody.getBlockPos().equals(probe.block()),
+                "the player's own line of sight misses the probe, so the aim checks discriminate");
+            check(!probe.expectedSelection().equals(selectionAfterUpdate(Tools.Room)),
+                "with the player as camera, the room tool does not target the probe");
+
+            RemotePlayer camera = new RemotePlayer(minecraft.level, new GameProfile(UUID.randomUUID(), "AimProbeCamera"));
+            placeEyesAt(camera, probe.eyesAbove());
+            lookAt(camera, 90.0F, 0.0F);
+            minecraft.setCameraEntity(camera);
+            Aim aim = ArchitectAim.current();
+            check(aim != null && aim.source() == camera && aim.origin().equals(camera.getEyePosition(1.0F)),
+                "tools aim from the camera entity's eyes when the camera is detached");
+            check(probe.expectedSelection().equals(selectionAfterUpdate(Tools.Room)),
+                "room tool targets the block under a detached camera (" + selectedBy(Tools.Room) + ")");
+            check(probe.expectedSelection().equals(selectionAfterUpdate(Tools.Cylinder)),
+                "cylinder tool targets the block under a detached camera (" + selectedBy(Tools.Cylinder) + ")");
+
+            minecraft.setCameraEntity(player);
+            check(!probe.expectedSelection().equals(selectionAfterUpdate(Tools.Room)),
+                "room tool returns to the player's line of sight with the camera reattached");
+
+            // A registered source overrides the camera entity, and one that throws is switched off
+            // without breaking the resolution the others still make.
+            List<ArchitectAim.Registration> registrations = new ArrayList<>();
+            try {
+                registrations.add(ArchitectAim.register("mightyarchitect-test:over-probe", 0,
+                    (cameraEntity, localPlayer) -> new Aim(probe.eyesAbove(), new Vec3(0, -1, 0), localPlayer)));
+                ArchitectAim.Registration broken = ArchitectAim.register("mightyarchitect-test:broken", 10,
+                    (cameraEntity, localPlayer) -> {
+                        throw new IllegalStateException("deliberately broken aim source");
+                    });
+                registrations.add(broken);
+                check(probe.expectedSelection().equals(selectionAfterUpdate(Tools.Room)),
+                    "a registered aim source steers the tools while the camera is the player");
+                check(broken.isDisabled(), "an aim source that throws is switched off instead of failing the tool");
+            } finally {
+                for (ArchitectAim.Registration registration : registrations)
+                    registration.unregister();
+            }
+            check(!probe.expectedSelection().equals(selectionAfterUpdate(Tools.Room)),
+                "unregistering the source hands aiming back to the camera entity");
+        });
+    }
+
+    /**
+     * Drives the real Freecam (MinecraftFreecam/Freecam) on the nodes that put it on the client run
+     * (see {@code freecam_client_test_version}), through its public API: {@code toggle()} swaps in
+     * its {@code FreeCamera} entity exactly as its key binding does, and {@code switchControls()} is
+     * its player-control mode, where its crosshair goes back to the player. Bound by name, so this
+     * source still compiles on every node; where Freecam is not present the stage does nothing,
+     * unless the node said it would be.
+     * <p>
+     * Toggling it puts Freecam's own "enabled" text in the action bar, so the stage then waits for
+     * that to fade before the HUD frames are captured.
+     */
+    private static void verifyFreecam(Minecraft minecraft) throws Exception {
+        if (stageTicks > 1) {
+            if (stageTicks >= FREECAM_MESSAGE_FADE_TICKS)
+                advance(Stage.CAPTURE_HUD_VISIBLE);
+            return;
+        }
+        Class<?> freecam;
+        try {
+            freecam = Class.forName("net.xolt.freecam.Freecam");
+        } catch (ClassNotFoundException absent) {
+            if (FREECAM_REQUIRED)
+                throw new AssertionError("this node puts Freecam on the client run, but it is not loaded");
+            advance(Stage.CAPTURE_HUD_VISIBLE);
+            return;
+        }
+        Method toggle = freecam.getMethod("toggle");
+        Method switchControls = freecam.getMethod("switchControls");
+        Method isEnabled = freecam.getMethod("isEnabled");
+        Method isPlayerControlEnabled = freecam.getMethod("isPlayerControlEnabled");
+        Method getFreeCamera = freecam.getMethod("getFreeCamera");
+        LocalPlayer player = minecraft.player;
+        check(!(boolean) isEnabled.invoke(null), "Freecam is loaded and starts disabled");
+
+        withAimProbe(minecraft, probe -> {
+            toggle.invoke(null);
+            try {
+                Entity freeCamera = (Entity) getFreeCamera.invoke(null);
+                check((boolean) isEnabled.invoke(null) && freeCamera != null
+                    && minecraft.getCameraEntity() == freeCamera, "Freecam swaps in its own camera entity");
+                placeEyesAt(freeCamera, probe.eyesAbove());
+                lookAt(freeCamera, 90.0F, 0.0F);
+                Aim aim = ArchitectAim.current();
+                check(aim != null && aim.source() == freeCamera, "with Freecam on, the tools aim from its camera");
+                check(probe.expectedSelection().equals(selectionAfterUpdate(Tools.Room)),
+                    "room tool drafts from Freecam's camera while the player looks away ("
+                        + selectedBy(Tools.Room) + ")");
+
+                switchControls.invoke(null);
+                check((boolean) isPlayerControlEnabled.invoke(null), "Freecam player control switched on");
+                aim = ArchitectAim.current();
+                check(aim != null && aim.source() == player,
+                    "in Freecam's player-control mode the tools follow the player, as its crosshair does");
+                check(!probe.expectedSelection().equals(selectionAfterUpdate(Tools.Room)),
+                    "room tool stops drafting from Freecam's camera in player-control mode");
+            } finally {
+                if ((boolean) isPlayerControlEnabled.invoke(null))
+                    switchControls.invoke(null);
+                if ((boolean) isEnabled.invoke(null))
+                    toggle.invoke(null);
+            }
+        });
+        check(!(boolean) isEnabled.invoke(null) && minecraft.getCameraEntity() == player,
+            "turning Freecam off hands the camera back to the player");
+    }
+
+    /** A block to aim at, what a ground-planning tool marks on it, and a point straight above it. */
+    private record AimProbe(BlockPos block, BlockPos expectedSelection, Vec3 eyesAbove) {
+    }
+
+    @FunctionalInterface
+    private interface AimProbeCheck {
+        void run(AimProbe probe) throws Exception;
+    }
+
+    /**
+     * Puts a stone block in an empty column four blocks from the player, turns the player to look
+     * straight up so its own line of sight can never reach the block, and runs the check. Blocks,
+     * rotation, camera entity and tool state are all put back before returning, whatever the check
+     * did, so no frame is ever drawn from anything the check set up.
+     */
+    private static void withAimProbe(Minecraft minecraft, AimProbeCheck check) throws Exception {
         LocalPlayer player = minecraft.player;
         ClientLevel level = minecraft.level;
-        BlockPos probe = player.blockPosition().offset(-4, 3, -4);
-        BlockPos expected = probe.above();
+        BlockPos block = player.blockPosition().offset(-4, 3, -4);
         List<BlockPos> column = new ArrayList<>();
         for (int i = 0; i <= CAMERA_PROBE_HEIGHT; i++)
-            column.add(probe.above(i));
+            column.add(block.above(i));
         Map<BlockPos, BlockState> before = new HashMap<>();
         for (BlockPos pos : column)
             before.put(pos, level.getBlockState(pos));
@@ -757,69 +894,17 @@ public final class ClientTestController {
         float playerYRot = player.getYRot();
         float playerXRotO = player.xRotO;
         float playerYRotO = player.yRotO;
-
-        RemotePlayer camera = new RemotePlayer(level, new GameProfile(UUID.randomUUID(), "AimProbeCamera"));
-        double cameraX = probe.getX() + 0.5;
-        double cameraY = probe.getY() + CAMERA_PROBE_HEIGHT - 2.0;
-        double cameraZ = probe.getZ() + 0.5;
-        camera.setPos(cameraX, cameraY, cameraZ);
-        camera.xo = cameraX;
-        camera.yo = cameraY;
-        camera.zo = cameraZ;
-        lookAt(camera, 90.0F, 0.0F);
-
-        GroundPlanningToolAccessor room = (GroundPlanningToolAccessor) Tools.Room.getTool();
-        GroundPlanningToolAccessor cylinder = (GroundPlanningToolAccessor) Tools.Cylinder.getTool();
         BlockPos anchor = ArchitectManager.getModel().getAnchor();
-        BlockPos expectedSelection = anchor == null ? expected : expected.subtract(anchor);
-        List<ArchitectAim.Registration> registrations = new ArrayList<>();
+        BlockPos marked = block.above();
+        AimProbe probe = new AimProbe(block, anchor == null ? marked : marked.subtract(anchor),
+            new Vec3(block.getX() + 0.5, block.getY() + CAMERA_PROBE_HEIGHT - 0.5, block.getZ() + 0.5));
         try {
             for (BlockPos pos : column)
                 check(level.getBlockState(pos).isAir(), "camera-aim probe column is empty at " + pos);
-            level.setBlock(probe, Blocks.STONE.defaultBlockState(), 3);
+            level.setBlock(block, Blocks.STONE.defaultBlockState(), 3);
             lookAt(player, -90.0F, playerYRot);
-
-            BlockHitResult fromBody = RaycastHelper.rayTraceRange(level, Aim.fromEyes(player), 75);
-            check(fromBody == null || fromBody.getType() != HitResult.Type.BLOCK
-                    || !fromBody.getBlockPos().equals(probe),
-                "the player's own line of sight misses the probe, so the aim checks discriminate");
-            check(!expectedSelection.equals(selectionAfterUpdate(Tools.Room)),
-                "with the player as camera, the room tool does not target the probe");
-
-            minecraft.setCameraEntity(camera);
-            Aim aim = ArchitectAim.current();
-            check(aim != null && aim.source() == camera && aim.origin().equals(camera.getEyePosition(1.0F)),
-                "tools aim from the camera entity's eyes when the camera is detached");
-            check(expectedSelection.equals(selectionAfterUpdate(Tools.Room)),
-                "room tool targets the block under a detached camera (" + room.getSelectedPosition() + ")");
-            check(expectedSelection.equals(selectionAfterUpdate(Tools.Cylinder)),
-                "cylinder tool targets the block under a detached camera (" + cylinder.getSelectedPosition() + ")");
-
-            minecraft.setCameraEntity(player);
-            check(!expectedSelection.equals(selectionAfterUpdate(Tools.Room)),
-                "room tool returns to the player's line of sight with the camera reattached");
-
-            // A registered source overrides the camera entity, and one that throws is switched off
-            // without breaking the resolution the others still make.
-            Vec3 overProbe = new Vec3(cameraX, cameraY + 1.62, cameraZ);
-            registrations.add(ArchitectAim.register("mightyarchitect-test:over-probe", 0,
-                (cameraEntity, localPlayer) -> new Aim(overProbe, new Vec3(0, -1, 0), localPlayer)));
-            ArchitectAim.Registration broken = ArchitectAim.register("mightyarchitect-test:broken", 10,
-                (cameraEntity, localPlayer) -> {
-                    throw new IllegalStateException("deliberately broken aim source");
-                });
-            registrations.add(broken);
-            check(expectedSelection.equals(selectionAfterUpdate(Tools.Room)),
-                "a registered aim source steers the tools while the camera is the player");
-            check(broken.isDisabled(), "an aim source that throws is switched off instead of failing the tool");
-            for (ArchitectAim.Registration registration : registrations)
-                registration.unregister();
-            registrations.clear();
-            check(!expectedSelection.equals(selectionAfterUpdate(Tools.Room)),
-                "unregistering the source hands aiming back to the camera entity");
+            check.run(probe);
         } finally {
-            for (ArchitectAim.Registration registration : registrations)
-                registration.unregister();
             if (minecraft.getCameraEntity() != player)
                 minecraft.setCameraEntity(player);
             player.setXRot(playerXRot);
@@ -837,7 +922,19 @@ public final class ClientTestController {
     private static BlockPos selectionAfterUpdate(Tools tool) {
         tool.getTool().init();
         tool.getTool().updateSelection();
+        return selectedBy(tool);
+    }
+
+    private static BlockPos selectedBy(Tools tool) {
         return ((GroundPlanningToolAccessor) tool.getTool()).getSelectedPosition();
+    }
+
+    private static void placeEyesAt(Entity entity, Vec3 eyes) {
+        double y = eyes.y - entity.getEyeHeight();
+        entity.setPos(eyes.x, y, eyes.z);
+        entity.xo = eyes.x;
+        entity.yo = y;
+        entity.zo = eyes.z;
     }
 
     private static void lookAt(Entity entity, float xRot, float yRot) {

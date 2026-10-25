@@ -171,6 +171,30 @@ tasks.named("runAutomatedServerTest") {
     dependsOn tasks.named("serverTestClasses")
 }
 
+// A real camera mod on the automated (dev) client run, for the nodes that name one: the client
+// test then drives Freecam's own camera entity and player-control mode against the composer tools
+// (ClientTestController.verifyFreecam). Never part of a built or published jar, and the production
+// lane stays without it. The dependency is the Modrinth version id, which pins one exact file; a
+// non-transitive fetch, because Freecam's only external requirement is Fabric API, already on this
+// classpath. Unobfuscated nodes only - an obfuscated one would need a remapped configuration.
+def freecamClientTest = node.findProperty('freecam_client_test_version')
+if (freecamClientTest) {
+    if (!unobf)
+        throw new GradleException("freecam_client_test_version is only supported on unobfuscated nodes")
+    repositories {
+        exclusiveContent {
+            forRepository { maven { url "https://api.modrinth.com/maven" } }
+            filter { includeGroup "maven.modrinth" }
+        }
+    }
+    dependencies {
+        clientTestRuntimeOnly("maven.modrinth:freecam:${freecamClientTest}") { transitive = false }
+    }
+    loom.runs.named("automatedClientTest") {
+        property "mightyarchitect.clientTest.freecam", "required"
+    }
+}
+
 // The unit suite runs on this node's own toolchain and mappings. `test` is already wired into
 // `check` -> `build`, so every node's CI job runs it without a workflow change, and locally a
 // single node's suite is the seconds-long inner loop the CI matrix cannot be.
