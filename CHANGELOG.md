@@ -28,6 +28,11 @@ the release ships for; version-specific notes say which versions they apply to.
 
 ### Fixed
 
+- **The second corner of a room or tower lands under your crosshair.** The outline is drawn at the
+  first corner's height, but the second corner used to follow the terrain under the crosshair. On
+  hills, or from a camera high above, the corner looked shifted, and the terrain's height changed
+  the shape: a lower second click moved the whole room down, and towers came out wider. The second
+  corner is now aimed on the first corner's level.
 - **Minecraft 1.19.4 to 1.21.1: the blueprint view comes back after the camera changes.** These
   versions drop the screen effect whenever the camera entity changes, for example when a
   free-camera mod is toggled while composing. The mod now puts it back on the next tick.
