@@ -7,6 +7,8 @@ import com.timmie.mightyarchitect.control.compose.GroundPlan;
 import com.timmie.mightyarchitect.control.compose.Room;
 import com.timmie.mightyarchitect.control.compose.Stack;
 import com.timmie.mightyarchitect.control.design.DesignType;
+import com.timmie.mightyarchitect.foundation.aim.Aim;
+import com.timmie.mightyarchitect.foundation.aim.ArchitectAim;
 import com.timmie.mightyarchitect.foundation.utility.RaycastHelper;
 import com.timmie.mightyarchitect.foundation.utility.outliner.Outline.OutlineParams;
 import net.minecraft.client.Minecraft;
@@ -43,17 +45,13 @@ public abstract class GroundPlanningToolBase extends ComposerToolBase {
 		LocalPlayer player = Minecraft.getInstance().player;
 		transparentStacks.clear();
 
-		// Entity.level() replaced the public level field in 1.20.
-		//? if >=1.20 {
-		BlockHitResult trace = RaycastHelper.rayTraceRange(player.level(), player, 75);
-		//?} else {
-		/*BlockHitResult trace = RaycastHelper.rayTraceRange(player.level, player, 75);
-		*///?}
+		Aim aim = ArchitectAim.current();
+		BlockHitResult trace = RaycastHelper.rayTraceRange(Minecraft.getInstance().level, aim, 75);
 		if (trace != null && trace.getType() == Type.BLOCK) {
 
 			var hitVec = trace.getLocation();
 			BlockPos hit = new BlockPos(Mth.floor(hitVec.x), Mth.floor(hitVec.y), Mth.floor(hitVec.z));
-			makeStacksTransparent(player, hit);
+			makeStacksTransparent(aim, hit);
 
 			//? if >=1.20 {
 			boolean replaceable = player.level().getBlockState(hit)
@@ -77,11 +75,11 @@ public abstract class GroundPlanningToolBase extends ComposerToolBase {
 
 	}
 
-	protected void makeStacksTransparent(LocalPlayer player, BlockPos hit) {
+	protected void makeStacksTransparent(Aim aim, BlockPos hit) {
 		if (!model.getGroundPlan()
 			.isEmpty()) {
 			final BlockPos target = hit;
-			RaycastHelper.rayTraceUntil(player, 75, pos -> {
+			RaycastHelper.rayTraceUntil(aim, 75, pos -> {
 
 				BlockPos localPos = pos.subtract(model.getAnchor());
 				model.getGroundPlan()

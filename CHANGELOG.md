@@ -4,6 +4,26 @@ All notable changes to The Mighty Architectury. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One entry covers every Minecraft version
 the release ships for; version-specific notes say which versions they apply to.
 
+## [Unreleased]
+
+### Added
+
+- **Draft from a detached camera.** The composer tools now aim from wherever the camera is, not
+  from your character. Spectating a mob or using a free-camera mod (Freecam, Tweakeroo) lets you
+  draw rooms and towers from above or far away, in survival too. Placing blocks is unchanged:
+  printing is still checked against your character's position and permissions.
+- **Freecam compatibility.** In Freecam's player-control and "interact from player" modes, the
+  tools aim from your character, like Freecam's own crosshair. Freecam is optional.
+- **Aim sources for other camera mods.** A camera mod can tell the tools where to aim by
+  registering an `AimSource` with `ArchitectAim.register`. A source that throws an error is
+  switched off and logged, and the tools keep working.
+
+### Fixed
+
+- **Minecraft 1.19.4 to 1.21.1: the blueprint view comes back after the camera changes.** These
+  versions drop the screen effect whenever the camera entity changes, for example when a
+  free-camera mod is toggled while composing. The mod now puts it back on the next tick.
+
 ## [3.0.0] - 2026-10-23
 
 ### Changed

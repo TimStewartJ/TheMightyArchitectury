@@ -1,9 +1,9 @@
 package com.timmie.mightyarchitect.foundation.utility;
 
+import com.timmie.mightyarchitect.foundation.aim.Aim;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.ClipContext.Block;
 import net.minecraft.world.level.ClipContext.Fluid;
@@ -11,43 +11,30 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
+import javax.annotation.Nullable;
 import java.util.function.Predicate;
 
+/**
+ * Traces the composer tools' rays. Every trace takes an {@link Aim}, normally
+ * {@code ArchitectAim.current()}, so no tool can quietly aim from the player's body while the view
+ * is somewhere else.
+ */
 public class RaycastHelper {
 
-	public static BlockHitResult rayTraceRange(Level worldIn, Player playerIn, double range) {
-		Vec3 origin = getTraceOrigin(playerIn);
-		Vec3 target = getTraceTarget(playerIn, range, origin);
-		ClipContext context = new ClipContext(origin, target, Block.COLLIDER, Fluid.NONE, playerIn);
+	/** The first block the ray hits within range, or null when there is no ray to trace. */
+	@Nullable
+	public static BlockHitResult rayTraceRange(Level worldIn, @Nullable Aim aim, double range) {
+		if (aim == null)
+			return null;
+		ClipContext context = new ClipContext(aim.origin(), aim.at(range), Block.COLLIDER, Fluid.NONE, aim.source());
 		return worldIn.clip(context);
 	}
 
-	public static PredicateTraceResult rayTraceUntil(Player playerIn, double range, Predicate<BlockPos> predicate) {
-		Vec3 origin = getTraceOrigin(playerIn);
-		Vec3 target = getTraceTarget(playerIn, range, origin);
-		return rayTraceUntil(origin, target, predicate);
-	}
-
-	private static Vec3 getTraceTarget(Player playerIn, double range, Vec3 origin) {
-		float f = playerIn.getXRot();
-		float f1 = playerIn.getYRot();
-		float f2 = Mth.cos(-f1 * 0.017453292F - (float) Math.PI);
-		float f3 = Mth.sin(-f1 * 0.017453292F - (float) Math.PI);
-		float f4 = -Mth.cos(-f * 0.017453292F);
-		float f5 = Mth.sin(-f * 0.017453292F);
-		float f6 = f3 * f4;
-		float f7 = f2 * f4;
-		double d3 = range;
-		Vec3 Vector3d1 = origin.add((double) f6 * d3, (double) f5 * d3, (double) f7 * d3);
-		return Vector3d1;
-	}
-
-	private static Vec3 getTraceOrigin(Player playerIn) {
-		double d0 = playerIn.getX();
-		double d1 = playerIn.getY() + (double) playerIn.getEyeHeight();
-		double d2 = playerIn.getZ();
-		Vec3 Vector3d = new Vec3(d0, d1, d2);
-		return Vector3d;
+	public static PredicateTraceResult rayTraceUntil(@Nullable Aim aim, double range, Predicate<BlockPos> predicate) {
+		if (aim == null)
+			return new PredicateTraceResult();
+		PredicateTraceResult result = rayTraceUntil(aim.origin(), aim.at(range), predicate);
+		return result == null ? new PredicateTraceResult() : result;
 	}
 
 	private static PredicateTraceResult rayTraceUntil(Vec3 start, Vec3 end, Predicate<BlockPos> predicate) {

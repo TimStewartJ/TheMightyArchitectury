@@ -11,9 +11,10 @@ import com.timmie.mightyarchitect.control.design.DesignLayer;
 import com.timmie.mightyarchitect.control.design.DesignTheme;
 import com.timmie.mightyarchitect.control.design.DesignType;
 import com.timmie.mightyarchitect.control.design.ThemeStatistics;
+import com.timmie.mightyarchitect.foundation.aim.Aim;
+import com.timmie.mightyarchitect.foundation.aim.ArchitectAim;
 import com.timmie.mightyarchitect.foundation.utility.RaycastHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -31,19 +32,14 @@ public class CylinderRoomTool extends RoomTool {
 
 	@Override
 	public void updateSelection() {
-		LocalPlayer player = Minecraft.getInstance().player;
 		transparentStacks.clear();
 
-		// Entity.level() replaced the public level field in 1.20.
-		//? if >=1.20 {
-		BlockHitResult trace = RaycastHelper.rayTraceRange(player.level(), player, 75);
-		//?} else {
-		/*BlockHitResult trace = RaycastHelper.rayTraceRange(player.level, player, 75);
-		*///?}
+		Aim aim = ArchitectAim.current();
+		BlockHitResult trace = RaycastHelper.rayTraceRange(Minecraft.getInstance().level, aim, 75);
 		if (trace != null && trace.getType() == Type.BLOCK) {
 
 			BlockPos hit = trace.getBlockPos();
-			makeStacksTransparent(player, hit);
+			makeStacksTransparent(aim, hit);
 
 			if (trace.getDirection()
 				.getAxis()

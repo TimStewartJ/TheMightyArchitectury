@@ -13,6 +13,7 @@ import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.ExportInteractions;
 import com.timmie.mightyarchitect.control.Schematic;
 import com.timmie.mightyarchitect.control.compose.Cuboid;
+import com.timmie.mightyarchitect.control.compose.planner.Tools;
 import com.timmie.mightyarchitect.control.design.DesignSlice.DesignSliceTrait;
 import com.timmie.mightyarchitect.control.design.DesignTheme;
 import com.timmie.mightyarchitect.control.design.DesignExporter;
@@ -27,7 +28,10 @@ import com.timmie.mightyarchitect.control.palette.PaletteStorage;
 import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
 import com.timmie.mightyarchitect.control.phase.export.PhaseEditTheme;
 import com.timmie.mightyarchitect.foundation.WrappedWorld;
+import com.timmie.mightyarchitect.foundation.aim.Aim;
+import com.timmie.mightyarchitect.foundation.aim.ArchitectAim;
 import com.timmie.mightyarchitect.foundation.utility.Mouse;
+import com.timmie.mightyarchitect.foundation.utility.RaycastHelper;
 import com.timmie.mightyarchitect.foundation.utility.RegistryAudit;
 import com.timmie.mightyarchitect.foundation.utility.ShaderManager;
 import com.timmie.mightyarchitect.foundation.utility.Shaders;
@@ -42,9 +46,14 @@ import com.timmie.mightyarchitect.networking.InstantPrintPacket;
 import com.timmie.mightyarchitect.platform.MightyPacket;
 import com.timmie.mightyarchitect.platform.PacketSender;
 import com.timmie.mightyarchitect.test.mixin.ArchitectManagerAccessor;
+import com.timmie.mightyarchitect.test.mixin.GroundPlanningToolAccessor;
+import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -57,6 +66,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -65,6 +75,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import javax.imageio.ImageIO;
@@ -83,6 +94,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.Vector;
 
 public final class ClientTestController {
@@ -100,6 +112,7 @@ public final class ClientTestController {
         VERIFY_TEXT_INPUT,
         VERIFY_SCROLL_ROUTING,
         CAPTURE_BLUEPRINT,
+        VERIFY_CAMERA_AIM,
         CAPTURE_HUD_VISIBLE,
         CAPTURE_HUD_HIDDEN,
         CAPTURE_ALIGN_BASELINE,
@@ -138,6 +151,10 @@ public final class ClientTestController {
     private static final double PROBE_REGION_MAX = 0.72;
     /** Bound on how long the blueprint post-chain may take to report active. */
     private static final int POST_CHAIN_WAIT_TICKS = 20 * 30;
+    /** Bound on how long the blueprint view may take to return after the camera entity changes. */
+    private static final int CAMERA_SHADER_WAIT_TICKS = 20 * 15;
+    /** Height of the cleared column the stand-in camera hovers in above its probe block. */
+    private static final int CAMERA_PROBE_HEIGHT = 5;
     /** Distance in front of the camera at which the probe outline is placed. */
     private static final double PROBE_DISTANCE = 8.0;
     private static final double PROBE_RADIUS = 1.5;
@@ -265,6 +282,7 @@ public final class ClientTestController {
                 case VERIFY_TEXT_INPUT -> verifyTextInput(minecraft);
                 case VERIFY_SCROLL_ROUTING -> verifyScrollRouting(minecraft);
                 case CAPTURE_BLUEPRINT -> captureBlueprint(minecraft);
+                case VERIFY_CAMERA_AIM -> verifyCameraAim(minecraft);
                 case CAPTURE_HUD_VISIBLE -> captureHudVisible(minecraft);
                 case CAPTURE_HUD_HIDDEN -> captureHudHidden(minecraft);
                 case CAPTURE_ALIGN_BASELINE -> captureAlignBaseline(minecraft);
@@ -693,7 +711,140 @@ public final class ClientTestController {
             "blueprint frame has stronger blue bias (" + round(baselineBlueBias) + " -> "
                 + round(blueprintBlueBias) + ")");
         check(Shaders.Blueprint.isActive(), "blueprint post-chain active");
+        advance(Stage.VERIFY_CAMERA_AIM);
+    }
+
+    /**
+     * The composer tools aim from the camera entity - the entity vanilla's crosshair aims from -
+     * so a build can be drafted while spectating or from a free-camera mod's floating camera.
+     * <p>
+     * A stand-in camera hovers over a probe block and looks straight down while the player looks
+     * straight up from four blocks away, so the two lines of sight cannot select the same block
+     * and every assertion tells them apart. All of it runs inside one tick and is undone before
+     * the tick ends, so no frame is ever drawn from the stand-in. The following ticks then wait
+     * for the blueprint view: before 1.21.4 vanilla's setCameraEntity closes the post effect the
+     * view lives in, which is what toggling a free-camera mod does mid-composition.
+     */
+    private static void verifyCameraAim(Minecraft minecraft) {
+        if (stageTicks == 1) {
+            aimAtProbeFromStandInCamera(minecraft);
+            return;
+        }
+        if (!Shaders.Blueprint.isActive()) {
+            if (stageTicks > CAMERA_SHADER_WAIT_TICKS)
+                throw new AssertionError("Blueprint view did not return within " + CAMERA_SHADER_WAIT_TICKS
+                    + " ticks of the camera entity changing");
+            return;
+        }
+        check(minecraft.getCameraEntity() == minecraft.player, "camera entity restored to the player");
+        check(Shaders.Blueprint.isActive(),
+            "blueprint view survives the camera entity changing (active again after " + stageTicks + " ticks)");
         advance(Stage.CAPTURE_HUD_VISIBLE);
+    }
+
+    private static void aimAtProbeFromStandInCamera(Minecraft minecraft) {
+        LocalPlayer player = minecraft.player;
+        ClientLevel level = minecraft.level;
+        BlockPos probe = player.blockPosition().offset(-4, 3, -4);
+        BlockPos expected = probe.above();
+        List<BlockPos> column = new ArrayList<>();
+        for (int i = 0; i <= CAMERA_PROBE_HEIGHT; i++)
+            column.add(probe.above(i));
+        Map<BlockPos, BlockState> before = new HashMap<>();
+        for (BlockPos pos : column)
+            before.put(pos, level.getBlockState(pos));
+        float playerXRot = player.getXRot();
+        float playerYRot = player.getYRot();
+        float playerXRotO = player.xRotO;
+        float playerYRotO = player.yRotO;
+
+        RemotePlayer camera = new RemotePlayer(level, new GameProfile(UUID.randomUUID(), "AimProbeCamera"));
+        double cameraX = probe.getX() + 0.5;
+        double cameraY = probe.getY() + CAMERA_PROBE_HEIGHT - 2.0;
+        double cameraZ = probe.getZ() + 0.5;
+        camera.setPos(cameraX, cameraY, cameraZ);
+        camera.xo = cameraX;
+        camera.yo = cameraY;
+        camera.zo = cameraZ;
+        lookAt(camera, 90.0F, 0.0F);
+
+        GroundPlanningToolAccessor room = (GroundPlanningToolAccessor) Tools.Room.getTool();
+        GroundPlanningToolAccessor cylinder = (GroundPlanningToolAccessor) Tools.Cylinder.getTool();
+        BlockPos anchor = ArchitectManager.getModel().getAnchor();
+        BlockPos expectedSelection = anchor == null ? expected : expected.subtract(anchor);
+        List<ArchitectAim.Registration> registrations = new ArrayList<>();
+        try {
+            for (BlockPos pos : column)
+                check(level.getBlockState(pos).isAir(), "camera-aim probe column is empty at " + pos);
+            level.setBlock(probe, Blocks.STONE.defaultBlockState(), 3);
+            lookAt(player, -90.0F, playerYRot);
+
+            BlockHitResult fromBody = RaycastHelper.rayTraceRange(level, Aim.fromEyes(player), 75);
+            check(fromBody == null || fromBody.getType() != HitResult.Type.BLOCK
+                    || !fromBody.getBlockPos().equals(probe),
+                "the player's own line of sight misses the probe, so the aim checks discriminate");
+            check(!expectedSelection.equals(selectionAfterUpdate(Tools.Room)),
+                "with the player as camera, the room tool does not target the probe");
+
+            minecraft.setCameraEntity(camera);
+            Aim aim = ArchitectAim.current();
+            check(aim != null && aim.source() == camera && aim.origin().equals(camera.getEyePosition(1.0F)),
+                "tools aim from the camera entity's eyes when the camera is detached");
+            check(expectedSelection.equals(selectionAfterUpdate(Tools.Room)),
+                "room tool targets the block under a detached camera (" + room.getSelectedPosition() + ")");
+            check(expectedSelection.equals(selectionAfterUpdate(Tools.Cylinder)),
+                "cylinder tool targets the block under a detached camera (" + cylinder.getSelectedPosition() + ")");
+
+            minecraft.setCameraEntity(player);
+            check(!expectedSelection.equals(selectionAfterUpdate(Tools.Room)),
+                "room tool returns to the player's line of sight with the camera reattached");
+
+            // A registered source overrides the camera entity, and one that throws is switched off
+            // without breaking the resolution the others still make.
+            Vec3 overProbe = new Vec3(cameraX, cameraY + 1.62, cameraZ);
+            registrations.add(ArchitectAim.register("mightyarchitect-test:over-probe", 0,
+                (cameraEntity, localPlayer) -> new Aim(overProbe, new Vec3(0, -1, 0), localPlayer)));
+            ArchitectAim.Registration broken = ArchitectAim.register("mightyarchitect-test:broken", 10,
+                (cameraEntity, localPlayer) -> {
+                    throw new IllegalStateException("deliberately broken aim source");
+                });
+            registrations.add(broken);
+            check(expectedSelection.equals(selectionAfterUpdate(Tools.Room)),
+                "a registered aim source steers the tools while the camera is the player");
+            check(broken.isDisabled(), "an aim source that throws is switched off instead of failing the tool");
+            for (ArchitectAim.Registration registration : registrations)
+                registration.unregister();
+            registrations.clear();
+            check(!expectedSelection.equals(selectionAfterUpdate(Tools.Room)),
+                "unregistering the source hands aiming back to the camera entity");
+        } finally {
+            for (ArchitectAim.Registration registration : registrations)
+                registration.unregister();
+            if (minecraft.getCameraEntity() != player)
+                minecraft.setCameraEntity(player);
+            player.setXRot(playerXRot);
+            player.setYRot(playerYRot);
+            player.xRotO = playerXRotO;
+            player.yRotO = playerYRotO;
+            for (BlockPos pos : column)
+                if (!level.getBlockState(pos).equals(before.get(pos)))
+                    level.setBlock(pos, before.get(pos), 3);
+            Tools.Room.getTool().init();
+            Tools.Cylinder.getTool().init();
+        }
+    }
+
+    private static BlockPos selectionAfterUpdate(Tools tool) {
+        tool.getTool().init();
+        tool.getTool().updateSelection();
+        return ((GroundPlanningToolAccessor) tool.getTool()).getSelectedPosition();
+    }
+
+    private static void lookAt(Entity entity, float xRot, float yRot) {
+        entity.setXRot(xRot);
+        entity.setYRot(yRot);
+        entity.xRotO = xRot;
+        entity.yRotO = yRot;
     }
 
     /**

@@ -2,7 +2,7 @@ package com.timmie.mightyarchitect.control.compose.planner;
 
 import com.timmie.mightyarchitect.control.compose.Room;
 import com.timmie.mightyarchitect.control.compose.Stack;
-import net.minecraft.client.player.LocalPlayer;
+import com.timmie.mightyarchitect.foundation.aim.Aim;
 import net.minecraft.core.BlockPos;
 
 public abstract class AbstractRoomFaceSelectionTool extends GroundPlanningToolBase {
@@ -16,7 +16,7 @@ public abstract class AbstractRoomFaceSelectionTool extends GroundPlanningToolBa
 	}
 
 	@Override
-	protected void makeStacksTransparent(LocalPlayer player, BlockPos hit) {}
+	protected void makeStacksTransparent(Aim aim, BlockPos hit) {}
 
 	@Override
 	public void tickToolOutlines() {}
