@@ -29,6 +29,9 @@ public class Keyboard {
 
 	public static final int G = InputConstants.KEY_G;
 
+	/** The code a key mapping carries when nothing is bound to it. */
+	public static final int UNBOUND = InputConstants.UNKNOWN.getValue();
+
 	public static boolean isKeyDown(int key) {
 		//? if >=26.3 {
 		/*return InputConstants.isKeyDown(key);

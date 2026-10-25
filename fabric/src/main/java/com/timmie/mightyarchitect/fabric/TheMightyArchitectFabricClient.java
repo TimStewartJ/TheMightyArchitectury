@@ -26,9 +26,11 @@ public class TheMightyArchitectFabricClient implements ClientModInitializer {
 		//? if >=26 {
 		KeyMappingHelper.registerKeyMapping(MightyClient.COMPOSE);
 		KeyMappingHelper.registerKeyMapping(MightyClient.TOOL_MENU);
+		KeyMappingHelper.registerKeyMapping(MightyClient.TOGGLE_BLUEPRINT);
 		//?} else {
 		/*KeyBindingHelper.registerKeyBinding(MightyClient.COMPOSE);
 		KeyBindingHelper.registerKeyBinding(MightyClient.TOOL_MENU);
+		KeyBindingHelper.registerKeyBinding(MightyClient.TOGGLE_BLUEPRINT);
 		*///?}
 
 		AllPackets.setSender(new PacketSender() {

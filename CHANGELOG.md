@@ -4,6 +4,15 @@ All notable changes to The Mighty Architectury. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One entry covers every Minecraft version
 the release ships for; version-specific notes say which versions they apply to.
 
+## [Unreleased]
+
+### Added
+
+- **The blueprint view can be turned off.** While you compose, the world is tinted blue and you
+  get night vision. Press **B** in the architect menu (**G**) to switch both off or back on. The
+  choice is remembered in `mightyarchitect/settings.json`. Controls also has a *Toggle Blueprint
+  View* key, unbound by default.
+
 ## [3.0.0] - 2026-10-23
 
 ### Changed
