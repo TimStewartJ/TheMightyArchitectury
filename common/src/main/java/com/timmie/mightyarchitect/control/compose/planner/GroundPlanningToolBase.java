@@ -7,6 +7,8 @@ import com.timmie.mightyarchitect.control.compose.GroundPlan;
 import com.timmie.mightyarchitect.control.compose.Room;
 import com.timmie.mightyarchitect.control.compose.Stack;
 import com.timmie.mightyarchitect.control.design.DesignType;
+import com.timmie.mightyarchitect.foundation.aim.Aim;
+import com.timmie.mightyarchitect.foundation.aim.ArchitectAim;
 import com.timmie.mightyarchitect.foundation.utility.RaycastHelper;
 import com.timmie.mightyarchitect.foundation.utility.outliner.Outline.OutlineParams;
 import net.minecraft.client.Minecraft;
@@ -25,14 +27,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 public abstract class GroundPlanningToolBase extends ComposerToolBase {
 
 	protected BlockPos selectedPosition;
 	protected Set<Stack> transparentStacks;
+	/**
+	 * Where the aim last met {@link #cornerLevel()}, unsnapped and in world coordinates. Kept raw
+	 * because the room tool's grid snap is applied to the selection afresh every tick.
+	 */
+	private BlockPos lastCornerOnLevel;
 
 	public void init() {
 		super.init();
 		selectedPosition = null;
+		lastCornerOnLevel = null;
 		transparentStacks = new HashSet<>();
 	}
 
@@ -43,17 +53,15 @@ public abstract class GroundPlanningToolBase extends ComposerToolBase {
 		LocalPlayer player = Minecraft.getInstance().player;
 		transparentStacks.clear();
 
-		// Entity.level() replaced the public level field in 1.20.
-		//? if >=1.20 {
-		BlockHitResult trace = RaycastHelper.rayTraceRange(player.level(), player, 75);
-		//?} else {
-		/*BlockHitResult trace = RaycastHelper.rayTraceRange(player.level, player, 75);
-		*///?}
+		Aim aim = ArchitectAim.current();
+		if (selectOnCornerLevel(aim))
+			return;
+		BlockHitResult trace = RaycastHelper.rayTraceRange(Minecraft.getInstance().level, aim, 75);
 		if (trace != null && trace.getType() == Type.BLOCK) {
 
 			var hitVec = trace.getLocation();
 			BlockPos hit = new BlockPos(Mth.floor(hitVec.x), Mth.floor(hitVec.y), Mth.floor(hitVec.z));
-			makeStacksTransparent(player, hit);
+			makeStacksTransparent(aim, hit);
 
 			//? if >=1.20 {
 			boolean replaceable = player.level().getBlockState(hit)
@@ -77,11 +85,48 @@ public abstract class GroundPlanningToolBase extends ComposerToolBase {
 
 	}
 
-	protected void makeStacksTransparent(LocalPlayer player, BlockPos hit) {
+	/**
+	 * The world height the next corner is placed on, or null to place it on whatever block the
+	 * crosshair hits. Tools drawing a shape from two corners answer with the first corner's height:
+	 * the shape is drawn flat at that height, so the second corner has to be aimed on it too.
+	 * Following the terrain instead puts the corner somewhere other than under the crosshair -
+	 * badly so from a camera high above - and lets the terrain's height leak into the shape.
+	 */
+	@Nullable
+	protected Integer cornerLevel() {
+		return null;
+	}
+
+	/**
+	 * Selects where the aim crosses {@link #cornerLevel()}, when there is one.
+	 *
+	 * @return whether the selection was made here; false leaves it to the terrain trace
+	 */
+	protected boolean selectOnCornerLevel(@Nullable Aim aim) {
+		Integer level = cornerLevel();
+		if (level == null) {
+			lastCornerOnLevel = null;
+			return false;
+		}
+		BlockPos hit = RaycastHelper.rayTraceLevel(aim, level, 75);
+		// Looking above the horizon, or past the tool's range, the aim never meets the level. The
+		// corner stays where it last was instead of vanishing until the player looks back down.
+		if (hit != null)
+			lastCornerOnLevel = hit;
+		if (lastCornerOnLevel == null) {
+			selectedPosition = null;
+			return true;
+		}
+		makeStacksTransparent(aim, lastCornerOnLevel);
+		selectedPosition = model.getAnchor() == null ? lastCornerOnLevel : lastCornerOnLevel.subtract(model.getAnchor());
+		return true;
+	}
+
+	protected void makeStacksTransparent(Aim aim, BlockPos hit) {
 		if (!model.getGroundPlan()
 			.isEmpty()) {
 			final BlockPos target = hit;
-			RaycastHelper.rayTraceUntil(player, 75, pos -> {
+			RaycastHelper.rayTraceUntil(aim, 75, pos -> {
 
 				BlockPos localPos = pos.subtract(model.getAnchor());
 				model.getGroundPlan()

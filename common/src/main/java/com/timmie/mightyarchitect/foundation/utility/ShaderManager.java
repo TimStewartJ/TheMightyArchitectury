@@ -7,7 +7,11 @@ import net.minecraft.world.effect.MobEffects;
 
 public class ShaderManager {
 
+	/** Ticks to wait before retrying an effect that did not come back on the last attempt. */
+	private static final int REAPPLY_BACKOFF_TICKS = 100;
+
 	private static Shaders activeShader = Shaders.None;
+	private static int reapplyDelay;
 
 	public static void onClientTick(Minecraft minecraft) {
 		if (Minecraft.getInstance().level == null && activeShader != Shaders.None)
@@ -16,6 +20,7 @@ public class ShaderManager {
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (player == null)
 			return;
+		reapplyIfDropped();
 		MobEffectInstance activePotionEffect = player.getEffect(MobEffects.NIGHT_VISION);
 
 		if (activeShader == Shaders.Blueprint) {
@@ -30,6 +35,27 @@ public class ShaderManager {
 
 	public static Shaders getActiveShader() {
 		return activeShader;
+	}
+
+	/**
+	 * Puts the selected effect back when something else took it away.
+	 * <p>
+	 * Before 1.21.4 the effect sits in vanilla's single post-effect slot, and
+	 * {@code Minecraft.setCameraEntity} empties that slot on every call (javap, 1.19.4-1.21.1:
+	 * {@code checkEntityPostEffect} closes {@code postEffect} first). Spectating, or toggling a
+	 * free-camera mod, would otherwise leave the composer without its blueprint view until the
+	 * phase was re-entered. A resource reload can drop it the same way. Retried immediately, then
+	 * with a back-off if it does not come back, so a shader that cannot load does not log every tick.
+	 */
+	private static void reapplyIfDropped() {
+		if (activeShader == Shaders.None || activeShader.isActive()) {
+			reapplyDelay = 0;
+			return;
+		}
+		if (--reapplyDelay > 0)
+			return;
+		activeShader.setActive(true);
+		reapplyDelay = activeShader.isActive() ? 0 : REAPPLY_BACKOFF_TICKS;
 	}
 
 	public static void setActiveShader(Shaders activeShader) {

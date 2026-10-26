@@ -12,6 +12,34 @@ the release ships for; version-specific notes say which versions they apply to.
   get night vision. Press **B** in the architect menu (**G**) to switch both off or back on. The
   choice is remembered in `mightyarchitect/settings.json`. Controls also has a *Toggle Blueprint
   View* key, unbound by default.
+- **Draft from a detached camera.** The composer tools now aim from wherever the camera is, not
+  from your character. Spectating a mob or using a free-camera mod (Freecam, Tweakeroo) lets you
+  draw rooms and towers from above or far away, in survival too. Placing blocks is unchanged:
+  printing is still checked against your character's position and permissions.
+- **Printing tells you when a build is out of range.** A server running the mod only places printed
+  blocks within 256 blocks of you. Printing a build that reaches farther now refuses and says how
+  far it reaches, instead of leaving part of it unbuilt. The build stays loaded, so you can move
+  closer and print again. The preview warns as soon as the build goes out of range.
+- **Freecam compatibility.** In Freecam's player-control and "interact from player" modes, the
+  tools aim from your character, like Freecam's own crosshair. Freecam is optional.
+- **Aim sources for other camera mods.** A camera mod can tell the tools where to aim by
+  registering an `AimSource` with `ArchitectAim.register`. A source that throws an error is
+  switched off and logged, and the tools keep working.
+
+### Fixed
+
+- **The second corner of a room or tower lands under your crosshair.** The outline is drawn at the
+  first corner's height, but the second corner used to follow the terrain under the crosshair. On
+  hills, or from a camera high above, the corner looked shifted, and the terrain's height changed
+  the shape: a lower second click moved the whole room down, and towers came out wider. The second
+  corner is now aimed on the first corner's level.
+- **You can see how high a room's outline sits.** While you draw a room or tower, lines run from
+  its corners down to the ground (dark grey), or up out of it where the ground rises through the
+  floor (red). Looking above the horizon no longer makes the second corner disappear; it stays
+  where it was.
+- **Minecraft 1.19.4 to 1.21.1: the blueprint view comes back after the camera changes.** These
+  versions drop the screen effect whenever the camera entity changes, for example when a
+  free-camera mod is toggled while composing. The mod now puts it back on the next tick.
 
 ## [3.0.0] - 2026-10-23
 

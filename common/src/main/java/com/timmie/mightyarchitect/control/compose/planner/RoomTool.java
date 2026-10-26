@@ -12,6 +12,7 @@ import com.timmie.mightyarchitect.control.design.DesignTheme;
 import com.timmie.mightyarchitect.control.design.DesignType;
 import com.timmie.mightyarchitect.control.design.ThemeStatistics;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -36,6 +37,14 @@ public class RoomTool extends GroundPlanningToolBase {
 		// Deleted using stack tool
 		if (lastAddedStack != null && lastAddedStack.floors() == 0)
 			lastAddedStack = null;
+	}
+
+	@Override
+	protected Integer cornerLevel() {
+		if (firstPosition == null)
+			return null;
+		BlockPos anchor = model.getAnchor();
+		return firstPosition.getY() + (anchor == null ? 0 : anchor.getY());
 	}
 
 	@Override
@@ -226,6 +235,7 @@ public class RoomTool extends GroundPlanningToolBase {
 
 		if (firstPosition == null)
 			return;
+		GroundPosts.draw(Minecraft.getInstance().level, selection);
 		drawTextAroundBounds(selection);
 	}
 

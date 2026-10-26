@@ -7,8 +7,10 @@
     "ArchitectManagerProbeMixin",
     "ArchitectManagerAccessor",
     "ClientHooksProbeMixin",
+    "GroundPlanningToolAccessor",
     "MightyClientProbeMixin",
-    "PhaseComposingProbeMixin"
+    "PhaseComposingProbeMixin",
+    "RoomToolAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
