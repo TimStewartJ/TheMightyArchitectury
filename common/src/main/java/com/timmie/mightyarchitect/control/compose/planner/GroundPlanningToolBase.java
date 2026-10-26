@@ -33,10 +33,16 @@ public abstract class GroundPlanningToolBase extends ComposerToolBase {
 
 	protected BlockPos selectedPosition;
 	protected Set<Stack> transparentStacks;
+	/**
+	 * Where the aim last met {@link #cornerLevel()}, unsnapped and in world coordinates. Kept raw
+	 * because the room tool's grid snap is applied to the selection afresh every tick.
+	 */
+	private BlockPos lastCornerOnLevel;
 
 	public void init() {
 		super.init();
 		selectedPosition = null;
+		lastCornerOnLevel = null;
 		transparentStacks = new HashSet<>();
 	}
 
@@ -98,15 +104,21 @@ public abstract class GroundPlanningToolBase extends ComposerToolBase {
 	 */
 	protected boolean selectOnCornerLevel(@Nullable Aim aim) {
 		Integer level = cornerLevel();
-		if (level == null)
+		if (level == null) {
+			lastCornerOnLevel = null;
 			return false;
+		}
 		BlockPos hit = RaycastHelper.rayTraceLevel(aim, level, 75);
-		if (hit == null) {
+		// Looking above the horizon, or past the tool's range, the aim never meets the level. The
+		// corner stays where it last was instead of vanishing until the player looks back down.
+		if (hit != null)
+			lastCornerOnLevel = hit;
+		if (lastCornerOnLevel == null) {
 			selectedPosition = null;
 			return true;
 		}
-		makeStacksTransparent(aim, hit);
-		selectedPosition = model.getAnchor() == null ? hit : hit.subtract(model.getAnchor());
+		makeStacksTransparent(aim, lastCornerOnLevel);
+		selectedPosition = model.getAnchor() == null ? lastCornerOnLevel : lastCornerOnLevel.subtract(model.getAnchor());
 		return true;
 	}
 

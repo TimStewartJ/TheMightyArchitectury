@@ -12,6 +12,7 @@ import com.timmie.mightyarchitect.control.design.DesignTheme;
 import com.timmie.mightyarchitect.control.design.DesignType;
 import com.timmie.mightyarchitect.control.design.ThemeStatistics;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -234,6 +235,7 @@ public class RoomTool extends GroundPlanningToolBase {
 
 		if (firstPosition == null)
 			return;
+		GroundPosts.draw(Minecraft.getInstance().level, selection);
 		drawTextAroundBounds(selection);
 	}
 

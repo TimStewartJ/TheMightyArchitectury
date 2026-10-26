@@ -147,6 +147,7 @@ public class CylinderRoomTool extends RoomTool {
 		MightyClient.outliner.chaseAABB(outlineKey, selection.toAABB())
 			.withFaceTexture(AllSpecialTextures.CHECKERED)
 			.colored(0);
+		GroundPosts.draw(Minecraft.getInstance().level, selection);
 		drawTextAroundBounds(selection);
 	}
 

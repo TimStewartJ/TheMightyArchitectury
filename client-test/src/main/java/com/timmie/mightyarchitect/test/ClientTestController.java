@@ -15,6 +15,7 @@ import com.timmie.mightyarchitect.control.ExportInteractions;
 import com.timmie.mightyarchitect.control.PrintRange;
 import com.timmie.mightyarchitect.control.Schematic;
 import com.timmie.mightyarchitect.control.compose.Cuboid;
+import com.timmie.mightyarchitect.control.compose.planner.GroundPosts;
 import com.timmie.mightyarchitect.control.compose.planner.Tools;
 import com.timmie.mightyarchitect.control.design.DesignSlice.DesignSliceTrait;
 import com.timmie.mightyarchitect.control.design.DesignTheme;
@@ -862,7 +863,23 @@ public final class ClientTestController {
                 check(level.equals(selectedBy(tool)), tool.name().toLowerCase()
                     + " tool aims its second corner on the first corner's level, not the terrain ("
                     + selectedBy(tool) + ")");
+                // Looking up, the aim never meets that level; the corner stays where it was.
+                lookAt(camera, -90.0F, 0.0F);
+                tool.getTool().updateSelection();
+                check(level.equals(selectedBy(tool)), tool.name().toLowerCase()
+                    + " tool keeps its second corner when the camera looks above the level ("
+                    + selectedBy(tool) + ")");
+                lookAt(camera, 90.0F, 0.0F);
             }
+
+            // The corner posts reach from a floor in the air down to the top of the stone, and from
+            // a floor buried in the stone up out of it.
+            BlockPos stone = probe.block();
+            int floorInAir = stone.getY() + 3;
+            check(GroundPosts.groundLevel(minecraft.level, stone.getX(), floorInAir, stone.getZ()) == stone.getY() + 1,
+                "a corner post from a floor in the air ends on the ground below");
+            check(GroundPosts.groundLevel(minecraft.level, stone.getX(), stone.getY(), stone.getZ()) == stone.getY() + 1,
+                "a corner post from a buried floor ends where the ground opens above");
 
             minecraft.setCameraEntity(player);
             check(!probe.expectedSelection().equals(selectionAfterUpdate(Tools.Room)),

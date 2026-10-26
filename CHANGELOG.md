@@ -33,6 +33,10 @@ the release ships for; version-specific notes say which versions they apply to.
   hills, or from a camera high above, the corner looked shifted, and the terrain's height changed
   the shape: a lower second click moved the whole room down, and towers came out wider. The second
   corner is now aimed on the first corner's level.
+- **You can see how high a room's outline sits.** While you draw a room or tower, lines run from
+  its corners down to the ground (dark grey), or up out of it where the ground rises through the
+  floor (red). Looking above the horizon no longer makes the second corner disappear; it stays
+  where it was.
 - **Minecraft 1.19.4 to 1.21.1: the blueprint view comes back after the camera changes.** These
   versions drop the screen effect whenever the camera entity changes, for example when a
   free-camera mod is toggled while composing. The mod now puts it back on the next tick.
