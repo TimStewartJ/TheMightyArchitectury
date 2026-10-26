@@ -6,6 +6,8 @@ import com.timmie.mightyarchitect.MightyClient;
 import com.timmie.mightyarchitect.control.Schematic;
 import com.timmie.mightyarchitect.control.palette.Palette;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
+import com.timmie.mightyarchitect.foundation.aim.Aim;
+import com.timmie.mightyarchitect.foundation.aim.ArchitectAim;
 import net.minecraft.client.multiplayer.ClientLevel;
 import com.timmie.mightyarchitect.foundation.MightyBuffers;
 //? if >=26 {
@@ -178,10 +180,11 @@ public class PhaseCreatingPalette extends PhaseBase implements IDrawBlockHighlig
 
 	@Override
 	public void tickHighlightOutlines() {
-		Vec3 from = minecraft.player.getEyePosition();
-		Vec3 to = from.add(minecraft.player.getLookAngle()
-			.normalize()
-			.scale(10));
+		Aim aim = ArchitectAim.current();
+		if (aim == null)
+			return;
+		Vec3 from = aim.origin();
+		Vec3 to = aim.at(10);
 
 		for (int i = 0; i < 16; i++) {
 			BlockPos pos = positionFromIndex(i);

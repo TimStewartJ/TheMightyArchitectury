@@ -11,6 +11,16 @@ Press **G** to get started.
 A maintained port of simibubi's original
 [The Mighty Architect](https://www.curseforge.com/minecraft/mc-mods/the-mighty-architect), with his themes and designs.
 
+## Drafting from anywhere
+
+The drafting tools aim from your camera. Spectate, or use a free-camera mod such as
+[Freecam](https://modrinth.com/mod/freecam), to lay out a building from above or far away, in
+survival too. Lines from the outline's corners show where it meets the ground. Don't like the blue
+blueprint tint? Press **B** in the menu to turn it off.
+
+Printing still happens from where you stand. A server running the mod only places blocks within
+256 blocks of you, and the mod tells you before printing if a build reaches farther.
+
 ## Versions and loaders
 
 | Minecraft | Fabric | NeoForge | Forge |

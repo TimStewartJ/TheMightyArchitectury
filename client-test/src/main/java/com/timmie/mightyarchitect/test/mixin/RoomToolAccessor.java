@@ -6,8 +6,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
- * Marks a room's first corner the way a right-click on the ground would, without depending on
- * where the test player happens to be looking.
+ * Marks a first corner without clicking, which would set the model's anchor and change what the
+ * rest of the run sees.
  */
 @Mixin(value = RoomTool.class, remap = false)
 public interface RoomToolAccessor {
@@ -16,5 +16,5 @@ public interface RoomToolAccessor {
     BlockPos getFirstPosition();
 
     @Accessor(value = "firstPosition", remap = false)
-    void setFirstPosition(BlockPos position);
+    void setFirstPosition(BlockPos firstPosition);
 }

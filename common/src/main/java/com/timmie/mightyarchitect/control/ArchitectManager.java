@@ -136,6 +136,11 @@ public class ArchitectManager {
 				reportPrintPermissionDenied();
 				return;
 			}
+			double reach = PrintRange.farthest(Minecraft.getInstance().player, getModel());
+			if (PrintRange.isOutOfReach(reach)) {
+				status(PrintRange.outOfRangeMessage(reach));
+				return;
+			}
 			for (InstantPrintPacket packet : packets)
 				AllPackets.sendToServer(packet);
 			MightyClient.renderer.setActive(false);

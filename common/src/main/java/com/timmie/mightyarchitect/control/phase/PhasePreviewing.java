@@ -5,6 +5,7 @@ import com.timmie.mightyarchitect.foundation.utility.Mouse;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.MightyClient;
+import com.timmie.mightyarchitect.control.PrintRange;
 import com.timmie.mightyarchitect.control.compose.planner.Tools;
 import com.timmie.mightyarchitect.gui.ToolSelectionScreen;
 import net.minecraft.client.KeyMapping;
@@ -30,11 +31,18 @@ import java.util.function.Consumer;
 
 public class PhasePreviewing extends PhaseBase implements IRenderGameOverlay {
 
+	/** Ticks between print-range checks; they walk every block of the build. */
+	private static final int RANGE_CHECK_INTERVAL = 20;
+
 	private Tools activeTool;
 	private ToolSelectionScreen toolSelection;
+	private int rangeCheckTicks;
+	private boolean warnedOutOfRange;
 
 	@Override
 	public void whenEntered() {
+		rangeCheckTicks = 0;
+		warnedOutOfRange = false;
 		final Consumer<Tools> callback = tool -> {
 			equipTool(tool);
 		};
@@ -115,6 +123,26 @@ public class PhasePreviewing extends PhaseBase implements IRenderGameOverlay {
 			.tickGroundPlanOutlines();
 		activeTool.getTool()
 			.tickToolOutlines();
+		checkPrintRange();
+	}
+
+	/**
+	 * Says so as soon as the build goes out of printing range, rather than only when print is
+	 * pressed - drafting from a detached camera is exactly when the player is far from it. Once per
+	 * crossing, so it does not keep overwriting the tools' own messages. Skipped while a palette
+	 * change is still being applied over several ticks, which reading the blocks would force through.
+	 */
+	private void checkPrintRange() {
+		if (++rangeCheckTicks < RANGE_CHECK_INTERVAL)
+			return;
+		rangeCheckTicks = 0;
+		if (getModel().isMaterializing() || !PrintRange.mayPrint() || !PrintRange.usesPacketRoute())
+			return;
+		double reach = PrintRange.farthest(Minecraft.getInstance().player, getModel());
+		boolean outOfReach = PrintRange.isOutOfReach(reach);
+		if (outOfReach && !warnedOutOfRange)
+			sendStatusMessage(PrintRange.outOfRangeMessage(reach));
+		warnedOutOfRange = outOfReach;
 	}
 
 	@Override

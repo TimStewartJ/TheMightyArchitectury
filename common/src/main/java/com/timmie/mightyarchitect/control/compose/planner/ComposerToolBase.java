@@ -11,6 +11,7 @@ import com.timmie.mightyarchitect.control.Schematic;
 import com.timmie.mightyarchitect.control.compose.GroundPlan;
 import com.timmie.mightyarchitect.control.compose.Room;
 import com.timmie.mightyarchitect.control.compose.Stack;
+import com.timmie.mightyarchitect.foundation.aim.ArchitectAim;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import com.timmie.mightyarchitect.foundation.utility.RaycastHelper;
 import com.timmie.mightyarchitect.foundation.utility.RaycastHelper.PredicateTraceResult;
@@ -22,7 +23,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?} else {
 /*import com.timmie.mightyarchitect.foundation.gui.GuiGraphics;
 *///?}
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -70,9 +70,7 @@ public abstract class ComposerToolBase implements IComposerTool {
 			return;
 		}
 
-		LocalPlayer player = Minecraft.getInstance().player;
-
-		PredicateTraceResult result = RaycastHelper.rayTraceUntil(player, 70, position -> {
+		PredicateTraceResult result = RaycastHelper.rayTraceUntil(ArchitectAim.current(), 70, position -> {
 			return groundPlan.getRoomAtPos(position.subtract(anchor)) != null;
 		});
 
