@@ -78,6 +78,11 @@ public final class ClientHooks {
 		ArchitectManager.onKeyTyped(keyCode, action);
 	}
 
+	/** @return true when the mod consumed the key, so vanilla must not also act on it. */
+	public static boolean keyPressedBeforeVanilla(int keyCode, int action) {
+		return ArchitectManager.onKeyBeforeVanilla(keyCode, action);
+	}
+
 	/** @return the result to report instead of vanilla's, or null to let vanilla handle it. */
 	public static InteractionResult useItemOn(LocalPlayer player, InteractionHand hand, BlockHitResult hit) {
 		return ExportInteractions.useItemOn(player, hand, hit);

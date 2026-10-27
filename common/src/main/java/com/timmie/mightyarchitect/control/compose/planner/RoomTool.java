@@ -64,6 +64,25 @@ public class RoomTool extends GroundPlanningToolBase {
 		}
 	}
 
+	/** What the first click starts, as the player would call it. */
+	protected String shapeName() {
+		return "room";
+	}
+
+	@Override
+	public String cancellableAction() {
+		return firstPosition == null ? null : "Cancel " + shapeName();
+	}
+
+	@Override
+	public boolean cancelAction() {
+		if (firstPosition == null)
+			return false;
+		firstPosition = null;
+		status("Cancelled the new " + shapeName());
+		return true;
+	}
+
 	protected String createRoom(GroundPlan groundPlan) {
 		Room room = new Room(firstPosition, selectedPosition.subtract(firstPosition));
 		room.width++;

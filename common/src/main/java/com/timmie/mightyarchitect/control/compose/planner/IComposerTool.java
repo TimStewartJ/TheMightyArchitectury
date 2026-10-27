@@ -55,6 +55,16 @@ public interface IComposerTool {
 		return false;
 	}
 
+	/** See {@code IArchitectPhase.cancellableAction}: the tool's unfinished step, or null. */
+	default String cancellableAction() {
+		return null;
+	}
+
+	/** Abandons the step {@link #cancellableAction()} names. @return whether there was one */
+	default boolean cancelAction() {
+		return false;
+	}
+
 	void tickToolOutlines();
 	void tickGroundPlanOutlines();
 

@@ -40,6 +40,7 @@ public class ToolSelectionScreen extends Screen {
 	public boolean focused;
 	private LerpedFloat yOffset;
 	protected int selection;
+	private int committedSelection;
 
 	protected int w;
 	protected int h;
@@ -306,6 +307,12 @@ public class ToolSelectionScreen extends Screen {
 		yOffset.tickChaser();
 	}
 
+	/** Closes the wheel without equipping anything, back on the tool already in hand. */
+	public void cancel() {
+		focused = false;
+		selection = committedSelection;
+	}
+
 	//? if >=26 {
 	public void renderPassive(GuiGraphicsExtractor ms, float partialTicks) {
 	//?} else {
@@ -318,6 +325,7 @@ public class ToolSelectionScreen extends Screen {
 
 	@Override
 	public void onClose() {
+		committedSelection = selection;
 		callback.accept(tools.get(selection));
 	}
 

@@ -12,6 +12,7 @@ import com.timmie.mightyarchitect.control.compose.GroundPlan;
 import com.timmie.mightyarchitect.control.palette.PaletteStorage;
 import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.timmie.mightyarchitect.foundation.compat.ServerConnect;
+import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import com.timmie.mightyarchitect.gui.PalettePickerScreen;
 import com.timmie.mightyarchitect.gui.ArchitectMenuScreen;
 import com.timmie.mightyarchitect.gui.TextInputPromptScreen;
@@ -19,6 +20,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
@@ -52,6 +54,8 @@ public final class PlayerJourneyController {
     private static boolean connecting;
     private static int ticks;
     private static int keyEvents;
+    private static int escapePresses;
+    private static int escapeCancels;
     private static int mouseButtonEvents;
     private static int scrollEvents;
     private static int lastKey = -1;
@@ -100,6 +104,14 @@ public final class PlayerJourneyController {
         keyEvents++;
         lastKey = key;
         lastKeyAction = action;
+    }
+
+    public static void recordKeyBeforeVanilla(int key, int action, boolean consumed) {
+        if (!started || key != Keyboard.ESCAPE || action != Keyboard.PRESS)
+            return;
+        escapePresses++;
+        if (consumed)
+            escapeCancels++;
     }
 
     public static void recordMouseButton(int button, int action) {
@@ -158,6 +170,8 @@ public final class PlayerJourneyController {
             state.addProperty("worldReady", worldReady);
             state.addProperty("overlayVisible", McCompat.hasOverlay(minecraft));
             state.addProperty("keyEvents", keyEvents);
+            state.addProperty("escapePresses", escapePresses);
+            state.addProperty("escapeCancels", escapeCancels);
             state.addProperty("mouseButtonEvents", mouseButtonEvents);
             state.addProperty("scrollEvents", scrollEvents);
             state.addProperty("lastKey", lastKey);
@@ -177,6 +191,8 @@ public final class PlayerJourneyController {
             state.addProperty("screen", screenName);
             String phase = ArchitectManager.getPhase().name();
             state.addProperty("phase", phase);
+            String cancellable = worldReady ? ArchitectManager.cancellableAction() : null;
+            state.addProperty("cancellableAction", cancellable == null ? "" : cancellable);
 
             if (!phase.equals(previousPhase) || !screenName.equals(previousScreen)) {
                 TheMightyArchitect.logger.info("[PLAYER-JOURNEY] State phase={} screen={}", phase,
@@ -302,6 +318,9 @@ public final class PlayerJourneyController {
             return "TextInputPromptScreen";
         if (screen instanceof ChatScreen)
             return "ChatScreen";
+        // Named here because the packaged client before 26 runs intermediary class names.
+        if (screen instanceof PauseScreen)
+            return "PauseScreen";
         return screen.getClass().getSimpleName();
     }
 

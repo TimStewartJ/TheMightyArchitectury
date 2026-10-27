@@ -13,5 +13,8 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface RoomToolAccessor {
 
     @Accessor(value = "firstPosition", remap = false)
+    BlockPos getFirstPosition();
+
+    @Accessor(value = "firstPosition", remap = false)
     void setFirstPosition(BlockPos firstPosition);
 }

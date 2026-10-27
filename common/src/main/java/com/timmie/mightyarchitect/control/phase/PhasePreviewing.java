@@ -160,6 +160,23 @@ public class PhasePreviewing extends PhaseBase implements IRenderGameOverlay {
 	public void render(PoseStack ms, MightyBuffers buffer) {}
 
 	@Override
+	public String cancellableAction() {
+		return activeTool.getTool()
+			.cancellableAction();
+	}
+
+	// See PhaseComposing: the open tool wheel is cancelled first but never advertised.
+	@Override
+	public boolean cancelAction() {
+		if (toolSelection.focused) {
+			toolSelection.cancel();
+			return true;
+		}
+		return activeTool.getTool()
+			.cancelAction();
+	}
+
+	@Override
 	public void whenExited() {
 		MightyClient.renderer.setActive(false);
 	}

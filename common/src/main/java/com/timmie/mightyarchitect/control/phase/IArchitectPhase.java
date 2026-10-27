@@ -17,5 +17,22 @@ public interface IArchitectPhase {
 	public void onClick(int button);
 	public void onKey(int key, boolean released);
 	public boolean onScroll(int amount);
+
+	/**
+	 * What pressing Esc would cancel right now, worded for the on-screen hint (for example
+	 * "Cancel room"), or {@code null} when nothing is in progress and Esc should open the pause menu.
+	 */
+	default String cancellableAction() {
+		return null;
+	}
+
+	/**
+	 * Cancels the step in progress, most recent first.
+	 *
+	 * @return whether anything was cancelled; when it was, Esc is kept from vanilla
+	 */
+	default boolean cancelAction() {
+		return false;
+	}
 	
 }

@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.timmie.mightyarchitect.AllSpecialTextures;
 import com.timmie.mightyarchitect.MightyClient;
+import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.compose.Cuboid;
 import com.timmie.mightyarchitect.control.design.DesignExporter;
 import com.timmie.mightyarchitect.control.design.DesignSlice.DesignSliceTrait;
@@ -312,6 +313,22 @@ public class PhaseEditTheme extends PhaseBase {
 		selectedDesign = null;
 		effectiveSelectedDesign = null;
 		effectiveHeight = 0;
+	}
+
+	// The exporter's first click on a Design Marker only outlines what would be exported; the
+	// second writes it. Esc backs out between the two.
+	@Override
+	public String cancellableAction() {
+		return isVisualizing() ? "Cancel export" : null;
+	}
+
+	@Override
+	public boolean cancelAction() {
+		if (!isVisualizing())
+			return false;
+		resetVisualization();
+		ArchitectManager.status("Export cancelled");
+		return true;
 	}
 
 	@Override

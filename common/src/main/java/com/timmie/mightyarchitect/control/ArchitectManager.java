@@ -337,13 +337,11 @@ public class ArchitectManager {
 	}
 
 	public static void onKeyTyped(int keyCode, int action) {
-		if (keyCode == Keyboard.ESCAPE && action == Keyboard.PRESS) {
-			if (inPhase(ArchitectPhases.Composing) || inPhase(ArchitectPhases.Previewing)) {
-				enterPhase(ArchitectPhases.Paused);
-				menu.setVisible(false);
-			}
+		// Esc is decided before vanilla sees it (onKeyBeforeVanilla). Once vanilla has it, it is the
+		// pause menu's or a screen's - it no longer pauses the architect, which used to happen even
+		// when Esc only closed the inventory.
+		if (keyCode == Keyboard.ESCAPE)
 			return;
-		}
 		if (McCompat.currentScreen(Minecraft.getInstance()) != null)
 			return;
 		if (MightyClient.COMPOSE.consumeClick()) {
@@ -369,6 +367,44 @@ public class ArchitectManager {
 		return;
 	}
 
+	// True from an Esc press the mod used until that key is released, so the repeats a held key
+	// sends cannot reach the pause menu once the cancelled action is gone.
+	private static boolean escapeClaimed;
+
+	/**
+	 * Raw key input before vanilla handles it.
+	 * <p>
+	 * Esc cancels the step in progress - a half-drawn room, a copied design, a print - and only
+	 * when there is none does vanilla get it and open the pause menu, so a second press always
+	 * reaches the menu. An open screen keeps Esc, as do loading and the world not existing yet.
+	 *
+	 * @return true when the mod consumed the key, so vanilla must not also act on it
+	 */
+	public static boolean onKeyBeforeVanilla(int keyCode, int action) {
+		if (keyCode != Keyboard.ESCAPE)
+			return false;
+		if (action == Keyboard.RELEASE) {
+			escapeClaimed = false;
+			return false;
+		}
+		if (action != Keyboard.PRESS)
+			return escapeClaimed;
+
+		escapeClaimed = false;
+		Minecraft minecraft = Minecraft.getInstance();
+		if (minecraft.level == null || minecraft.player == null || McCompat.currentScreen(minecraft) != null)
+			return false;
+		escapeClaimed = phase.getPhaseHandler()
+			.cancelAction();
+		return escapeClaimed;
+	}
+
+	/** What Esc would cancel right now, as shown in the hint beside the crosshair, or null. */
+	public static String cancellableAction() {
+		return phase.getPhaseHandler()
+			.cancellableAction();
+	}
+
 	public static void tickBlockHighlightOutlines() {
 		IArchitectPhase phaseHandler = phase.getPhaseHandler();
 		if (phaseHandler instanceof IDrawBlockHighlights)
@@ -389,6 +425,7 @@ public class ArchitectManager {
 		if (phaseHandler instanceof IRenderGameOverlay) {
 			((IRenderGameOverlay) phaseHandler).renderGameOverlay(poseStack, partialTicks);
 		}
+		drawCancelHint(poseStack);
 
 		menu.drawPassive(poseStack, partialTicks);
 		//? if <1.21.6 {
@@ -396,6 +433,26 @@ public class ArchitectManager {
 
 		// Draw world-space measurement labels submitted during the world render pass as HUD text.
 		com.timmie.mightyarchitect.foundation.utility.HudTextBuffer.render(poseStack);
+	}
+
+	/** "[ESC] Cancel room", below the tool's mode labels, while there is something to cancel. */
+	//? if >=26 {
+	private static void drawCancelHint(GuiGraphicsExtractor graphics) {
+	//?} else {
+	/*private static void drawCancelHint(GuiGraphics graphics) {
+	*///?}
+		Minecraft minecraft = Minecraft.getInstance();
+		if (McCompat.currentScreen(minecraft) != null || minecraft.player == null)
+			return;
+		String action = cancellableAction();
+		if (action == null)
+			return;
+
+		String hint = "[ESC] " + action;
+		int x = minecraft.getWindow().getGuiScaledWidth() / 2 + 25;
+		int y = minecraft.getWindow().getGuiScaledHeight() / 2 + 22;
+		McCompat.drawText(graphics, minecraft.font, hint, x + 1, y + 1, 0xFF2A2A38);
+		McCompat.drawText(graphics, minecraft.font, hint, x, y, 0xFFCCDDFF);
 	}
 
 	public static void resetSchematic() {

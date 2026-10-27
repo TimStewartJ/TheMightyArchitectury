@@ -201,7 +201,45 @@ function Aim-JourneyAt {
     } | Out-Null
 }
 
+function Test-JourneyEscape {
+    Wait-JourneyState 'the half-drawn room is offered to Esc' {
+        param($s) $s.cancellableAction -eq 'Cancel room'
+    } | Out-Null
+    $before = Read-JourneyState
+    Send-JourneyKey 'Escape'
+    Wait-JourneyState 'real Esc cancelled the half-drawn room' {
+        param($s)
+        [int]$s.escapeCancels -gt [int]$before.escapeCancels -and -not $s.cancellableAction
+    } | Out-Null
+    # The pause menu would open in the same frame; wait long enough to be sure it did not.
+    Start-Sleep -Seconds 2
+    $settled = Read-JourneyState
+    if ($settled.screen) {
+        throw "The Esc that cancelled the room also opened $($settled.screen)"
+    }
+    if ($settled.phase -ne 'Composing' -or [int]$settled.roomCount -ne 0) {
+        throw "Cancelling the room changed more than the room: phase $($settled.phase), $($settled.roomCount) rooms"
+    }
+    Add-JourneyCheck 'real Esc cancelled a half-drawn room without opening the pause menu'
+
+    $before = $settled
+    Send-JourneyKey 'Escape'
+    Wait-JourneyState 'Esc with nothing to cancel opened the pause menu' {
+        param($s)
+        $s.screen -eq 'PauseScreen' -and [int]$s.escapePresses -gt [int]$before.escapePresses -and
+            [int]$s.escapeCancels -eq [int]$before.escapeCancels
+    } | Out-Null
+    Send-JourneyKey 'Escape'
+    $resumed = Wait-JourneyState 'Esc closed the pause menu' { param($s) -not $s.screen }
+    if ($resumed.phase -ne 'Composing') {
+        throw "Opening and closing the pause menu left the architect in phase $($resumed.phase)"
+    }
+    Add-JourneyCheck 'with nothing to cancel, real Esc opened the pause menu and the composer stayed active'
+}
+
 function Start-JourneyComposition {
+    param([switch]$CheckEscape)
+
     Send-JourneyKey 'g'
     Wait-JourneyState 'architect menu opened' { param($s) $s.screen -eq 'ArchitectMenuScreen' } | Out-Null
     Send-JourneyKey '1'
@@ -217,6 +255,17 @@ function Start-JourneyComposition {
         param($s)
         [int]$s.mouseButtonEvents -gt [int]$before.mouseButtonEvents
     } | Out-Null
+
+    if ($CheckEscape) {
+        Test-JourneyEscape
+        $before = Read-JourneyState
+        Invoke-Xdotool -Arguments @('click', '3')
+        Wait-JourneyState 'first room corner marked again' {
+            param($s)
+            [int]$s.mouseButtonEvents -gt [int]$before.mouseButtonEvents -and
+                $s.cancellableAction -eq 'Cancel room'
+        } | Out-Null
+    }
 
     Aim-JourneyAt -X 4 -Z 4
     $before = Read-JourneyState
@@ -407,7 +456,7 @@ try {
     }
     Add-JourneyCheck "idle scroll changed hotbar slot $($beforeIdleScroll.selectedHotbarSlot) -> $($afterIdleScroll.selectedHotbarSlot)"
 
-    Start-JourneyComposition
+    Start-JourneyComposition -CheckEscape
     Select-JourneyPalette -WindowId $windowId
     Send-JourneyKey 'F2'
     Save-JourneyBuild

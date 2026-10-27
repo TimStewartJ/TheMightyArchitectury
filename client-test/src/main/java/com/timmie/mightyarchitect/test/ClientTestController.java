@@ -32,6 +32,7 @@ import com.timmie.mightyarchitect.control.phase.ArchitectPhases;
 import com.timmie.mightyarchitect.control.phase.export.PhaseEditTheme;
 import com.timmie.mightyarchitect.control.storage.ClientSettings;
 import com.timmie.mightyarchitect.foundation.WrappedWorld;
+import com.timmie.mightyarchitect.foundation.utility.Keyboard;
 import com.timmie.mightyarchitect.foundation.aim.Aim;
 import com.timmie.mightyarchitect.foundation.aim.ArchitectAim;
 import com.timmie.mightyarchitect.foundation.utility.Mouse;
@@ -49,10 +50,11 @@ import com.timmie.mightyarchitect.gui.widgets.ScrollInput;
 import com.timmie.mightyarchitect.networking.InstantPrintPacket;
 import com.timmie.mightyarchitect.networking.ServerBuildGuard;
 import com.timmie.mightyarchitect.platform.MightyPacket;
+import com.timmie.mightyarchitect.platform.ClientHooks;
 import com.timmie.mightyarchitect.platform.PacketSender;
 import com.timmie.mightyarchitect.test.mixin.ArchitectManagerAccessor;
-import com.timmie.mightyarchitect.test.mixin.GroundPlanningToolAccessor;
 import com.timmie.mightyarchitect.test.mixin.RoomToolAccessor;
+import com.timmie.mightyarchitect.test.mixin.GroundPlanningToolAccessor;
 import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
@@ -129,6 +131,7 @@ public final class ClientTestController {
         CAPTURE_LABEL_TEXT,
         BUILD_LARGE_SKETCH,
         VERIFY_REDRAW_BUDGET,
+        VERIFY_ESCAPE_CANCELS,
         VERIFY_RENDER,
         VERIFY_EXPORT_TOOLS,
         FINISHED
@@ -305,6 +308,7 @@ public final class ClientTestController {
                 case CAPTURE_LABEL_TEXT -> captureLabelText(minecraft);
                 case BUILD_LARGE_SKETCH -> buildLargeSketch(minecraft);
                 case VERIFY_REDRAW_BUDGET -> verifyRedrawBudget(minecraft);
+                case VERIFY_ESCAPE_CANCELS -> verifyEscapeCancels(minecraft);
                 case VERIFY_RENDER -> verifyRender(minecraft);
                 case VERIFY_EXPORT_TOOLS -> verifyExportTools(minecraft);
                 case FINISHED -> {
@@ -1330,6 +1334,71 @@ public final class ClientTestController {
         check(savedCount == LARGE_SKETCH_ENTRIES,
             "saving the build as a schematic wrote every block (" + savedCount + " of "
                 + LARGE_SKETCH_ENTRIES + ")");
+        advance(Stage.VERIFY_ESCAPE_CANCELS);
+    }
+
+    /**
+     * Esc cancels the step in progress and is otherwise vanilla's.
+     * <p>
+     * Drives {@code ClientHooks.keyPressedBeforeVanilla}, which is what the HEAD injection on
+     * {@code KeyboardHandler.keyPress} calls; a {@code true} there is what keeps vanilla from opening
+     * the pause menu. That the injection applies at all is enforced by the mixin config's
+     * {@code defaultRequire}, and the recorded journey sends a real Esc through the whole path. Runs
+     * after the last screenshot because cancelling puts status text on screen.
+     */
+    private static void verifyEscapeCancels(Minecraft minecraft) {
+        if (stageTicks < 2)
+            return;
+
+        McCompat.setScreen(minecraft, null);
+        check(ArchitectManager.inPhase(ArchitectPhases.Composing), "composer active before the Esc checks");
+
+        // What Esc did before: reaching the mod after vanilla, it paused the architect - also when
+        // all it had done was close a screen.
+        ClientHooks.keyPressed(Keyboard.ESCAPE, Keyboard.PRESS);
+        ClientHooks.keyPressed(Keyboard.ESCAPE, Keyboard.RELEASE);
+        check(ArchitectManager.inPhase(ArchitectPhases.Composing),
+            "an Esc that vanilla handles leaves the composer active instead of pausing it");
+
+        check(ArchitectManager.cancellableAction() == null, "a composer with nothing in progress offers no cancel");
+        check(!ClientHooks.keyPressedBeforeVanilla(Keyboard.ESCAPE, Keyboard.PRESS),
+            "with nothing to cancel, Esc is left to vanilla's pause menu");
+        ClientHooks.keyPressedBeforeVanilla(Keyboard.ESCAPE, Keyboard.RELEASE);
+
+        RoomToolAccessor room = (RoomToolAccessor) (Object) Tools.Room.getTool();
+        room.setFirstPosition(BlockPos.ZERO);
+        check("Cancel room".equals(ArchitectManager.cancellableAction()),
+            "a half-drawn room is offered to Esc (" + ArchitectManager.cancellableAction() + ")");
+
+        McCompat.setScreen(minecraft, new PalettePickerScreen());
+        check(!ClientHooks.keyPressedBeforeVanilla(Keyboard.ESCAPE, Keyboard.PRESS),
+            "an open screen keeps Esc");
+        ClientHooks.keyPressedBeforeVanilla(Keyboard.ESCAPE, Keyboard.RELEASE);
+        McCompat.setScreen(minecraft, null);
+        check(room.getFirstPosition() != null, "closing a screen with Esc left the half-drawn room alone");
+
+        check(ClientHooks.keyPressedBeforeVanilla(Keyboard.ESCAPE, Keyboard.PRESS),
+            "Esc was kept from vanilla while a room was half-drawn");
+        check(room.getFirstPosition() == null, "Esc cancelled the half-drawn room");
+        check(ArchitectManager.inPhase(ArchitectPhases.Composing), "cancelling the room kept the composer active");
+        check(ClientHooks.keyPressedBeforeVanilla(Keyboard.ESCAPE, Keyboard.HOLD),
+            "holding the Esc that cancelled cannot reach the pause menu");
+        check(!ClientHooks.keyPressedBeforeVanilla(Keyboard.ESCAPE, Keyboard.RELEASE),
+            "releasing Esc is left to vanilla");
+        check(!ClientHooks.keyPressedBeforeVanilla(Keyboard.ESCAPE, Keyboard.PRESS),
+            "the next Esc, with nothing left to cancel, goes to the pause menu");
+        ClientHooks.keyPressedBeforeVanilla(Keyboard.ESCAPE, Keyboard.RELEASE);
+
+        // The model holds an anchored, materialized sketch from the budget stage. Entering the phase
+        // plans the commands; cancelling in the same tick means none is ever sent.
+        ArchitectManager.enterPhase(ArchitectPhases.PrintingToMultiplayer);
+        check("Stop printing".equals(ArchitectManager.cancellableAction()), "printing is offered to Esc");
+        check(ClientHooks.keyPressedBeforeVanilla(Keyboard.ESCAPE, Keyboard.PRESS),
+            "Esc was kept from vanilla while printing");
+        ClientHooks.keyPressedBeforeVanilla(Keyboard.ESCAPE, Keyboard.RELEASE);
+        check(ArchitectManager.inPhase(ArchitectPhases.Previewing), "Esc stopped printing and returned to the preview");
+
+        ArchitectManager.compose();
         advance(Stage.VERIFY_RENDER);
     }
 
@@ -1450,6 +1519,12 @@ public final class ClientTestController {
             check(PhaseEditTheme.selectedDesign.equals(PhaseEditTheme.guideDesign(minecraft.level, anchor)),
                 "the in-world guide outlines exactly what the Design Exporter scans");
             check(sent.isEmpty(), "the Design Exporter sent nothing to the server");
+            check("Cancel export".equals(ArchitectManager.cancellableAction()),
+                "a design waiting for its confirming click is offered to Esc");
+            check(ClientHooks.keyPressedBeforeVanilla(Keyboard.ESCAPE, Keyboard.PRESS),
+                "Esc was kept from vanilla while a design waited for confirmation");
+            ClientHooks.keyPressedBeforeVanilla(Keyboard.ESCAPE, Keyboard.RELEASE);
+            check(!PhaseEditTheme.isVisualizing(), "Esc cancelled the pending export");
             PhaseEditTheme.resetVisualization();
 
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
