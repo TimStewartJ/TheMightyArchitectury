@@ -14,6 +14,7 @@ import com.timmie.mightyarchitect.control.ArchitectMenu;
 import com.timmie.mightyarchitect.control.ExportInteractions;
 import com.timmie.mightyarchitect.control.PrintRange;
 import com.timmie.mightyarchitect.control.Schematic;
+import com.timmie.mightyarchitect.control.TemplateBlockAccess;
 import com.timmie.mightyarchitect.control.compose.Cuboid;
 import com.timmie.mightyarchitect.control.compose.planner.GroundPosts;
 import com.timmie.mightyarchitect.control.compose.planner.Tools;
@@ -79,8 +80,11 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -1329,11 +1333,39 @@ public final class ClientTestController {
         // What "Save" in the menu writes. Nothing else in this suite ran it, and from 1.21.6 it threw
         // on every save (see Schematic.writeToTemplate); only the recorded journey saves a build,
         // and that runs on one older version.
-        Tag savedBlocks = model.writeToTemplate().save(new CompoundTag()).get("blocks");
+        StructureTemplate saved = model.writeToTemplate();
+        Tag savedBlocks = saved.save(new CompoundTag()).get("blocks");
         int savedCount = savedBlocks instanceof ListTag list ? list.size() : 0;
         check(savedCount == LARGE_SKETCH_ENTRIES,
             "saving the build as a schematic wrote every block (" + savedCount + " of "
                 + LARGE_SKETCH_ENTRIES + ")");
+
+        // The count alone passed on 26.3 while every entry was air: vanilla's saver scanned the real
+        // world under the sketch rather than the sketch (see TemplateBlockAccess.findBlocksIn). So
+        // each kind of block has to come back as often as it was designed.
+        TemplateBlockAccess sketch = model.getMaterializedSketch();
+        Cuboid bounds = sketch.getBounds();
+        Map<Block, Integer> designed = new HashMap<>();
+        int designedEntries = 0;
+        for (Map.Entry<BlockPos, BlockState> entry : sketch.getBlockMap().entrySet()) {
+            if (!bounds.contains(entry.getKey()))
+                continue;
+            designed.merge(entry.getValue().getBlock(), 1, Integer::sum);
+            designedEntries++;
+        }
+        designed.merge(Blocks.AIR, bounds.width * bounds.height * bounds.length - designedEntries, Integer::sum);
+        StructurePlaceSettings unchanged = new StructurePlaceSettings();
+        List<String> mismatches = new ArrayList<>();
+        designed.forEach((block, count) -> {
+            int found = saved.filterBlocks(BlockPos.ZERO, unchanged, block).size();
+            if (found != count)
+                mismatches.add(block + " saved " + found + " times, designed " + count);
+        });
+        boolean anySolid = designed.keySet().stream().anyMatch(block -> block != Blocks.AIR);
+        check(anySolid && mismatches.isEmpty(),
+            "the schematic holds the blocks that were designed, not air ("
+                + (mismatches.isEmpty() ? designed.size() + " kinds of block match" : String.join("; ", mismatches))
+                + ")");
         advance(Stage.VERIFY_ESCAPE_CANCELS);
     }
 
