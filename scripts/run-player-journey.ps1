@@ -347,6 +347,63 @@ function Save-JourneyBuild {
         throw "Saved schematic was not created: $saved"
     }
     Add-JourneyCheck 'real text entry and Enter saved a non-empty schematic file'
+    return $saved
+}
+
+function Test-JourneySavedFile {
+    # The observer reads the file back with vanilla's structure loader and compares every position
+    # of the design, block and blockstate included. An all-air file of the right size fails here.
+    $checked = Wait-JourneyState 'the observer read the saved schematic back from disk' {
+        param($s) [bool]$s.savedFileChecked
+    }
+    $file = $checked.savedFile
+    if ($file.PSObject.Properties['error']) {
+        throw "Reading the saved schematic back failed: $($file.error)"
+    }
+    if (-not [bool]$file.matches) {
+        throw ("The saved schematic does not hold the design: size matches $($file.sizeMatches), " +
+            "$($file.entries) entries for $($file.positions) positions, $($file.matching) exact. " +
+            "Samples: $(@($file.mismatchSamples) -join '; ')")
+    }
+    # Exact equality is only as strong as the design is varied: a cube of one block cannot show a
+    # lost facing or a shifted position. The journey's Medieval house has both.
+    if ([int]$file.blockKinds -lt 3 -or [int]$file.statefulBlocks -lt 1) {
+        throw ("The journey's design is too uniform to prove the save: $($file.blockKinds) block kinds, " +
+            "$($file.statefulBlocks) with a non-default state")
+    }
+    Add-JourneyCheck ("the saved file, read back from disk, holds the design exactly: $($file.positions) " +
+        "positions, $($file.nonAirBlocks) blocks of $($file.blockKinds) kinds, $($file.statefulBlocks) " +
+        'with non-default states')
+    return $file
+}
+
+function Place-JourneySavedBuild {
+    param(
+        [string]$SavedPath,
+        [string]$ServerDirectory,
+        $SavedFile
+    )
+
+    # Vanilla's /place template reads world/generated/<namespace>/<folder>/<name>.nbt. The folder is
+    # "structures" through 1.20.x and "structure" on 26.3; each version reads only its own, and it
+    # caches a miss, so the file is in place before the first lookup.
+    foreach ($folder in @('structures', 'structure')) {
+        $target = Join-Path $ServerDirectory "world/generated/minecraft/$folder"
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        Copy-Item $SavedPath (Join-Path $target 'e2e_journey.nbt') -Force
+    }
+
+    $x = [int]$SavedFile.placementX
+    $y = [int]$SavedFile.placementY
+    $z = [int]$SavedFile.placementZ
+    # The original design stood on the fixture's stone at y=3; give the copy the same ground.
+    Send-JourneyCommand "/fill $($x - 1) 3 $($z - 1) $($x + [int]$SavedFile.sizeX) 3 $($z + [int]$SavedFile.sizeZ) minecraft:stone"
+    Send-JourneyCommand "/place template minecraft:e2e_journey $x $y $z"
+    $placed = Wait-JourneyState 'vanilla /place template rebuilt the saved design' {
+        param($s) [bool]$s.placedSavedBlockTypesMatch
+    } -Seconds 60
+    Add-JourneyCheck ("vanilla /place template placed all $($placed.expectedPlacedSavedBlocks) block identities " +
+        "from the saved file ($($placed.matchingPlacedSavedBlocks) exact settled states)")
 }
 
 function Print-JourneyBuild {
@@ -459,7 +516,9 @@ try {
     Start-JourneyComposition -CheckEscape
     Select-JourneyPalette -WindowId $windowId
     Send-JourneyKey 'F2'
-    Save-JourneyBuild
+    $savedPath = Save-JourneyBuild | Select-Object -Last 1
+    $savedFile = Test-JourneySavedFile | Select-Object -Last 1
+    Place-JourneySavedBuild -SavedPath $savedPath -ServerDirectory $server.Directory -SavedFile $savedFile
 
     Start-JourneyComposition
     Send-JourneyKey 'F2'
