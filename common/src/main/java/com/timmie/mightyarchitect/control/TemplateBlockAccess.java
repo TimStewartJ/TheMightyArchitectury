@@ -14,6 +14,13 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.sounds.SoundSource;
 *///?}
 import net.minecraft.util.RandomSource;
+//? if >=26.3 {
+/*import net.minecraft.util.Continuation;
+import net.minecraft.world.level.blockscan.BlockMatcher;
+import net.minecraft.world.level.blockscan.BlockStateConsumer;
+import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
+*///?}
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.LightLayer;
@@ -153,6 +160,64 @@ public class TemplateBlockAccess extends WrappedWorld {
 	public Map<BlockPos, BlockState> getBlockMap() {
 		return blocks;
 	}
+
+	// From 26.3, StructureTemplate.fillFromWorld - what "Save" runs - no longer asks getBlockState
+	// for each position: it asks findBlocksIn, whose vanilla scan reads the chunk sections of the
+	// level this wraps directly. That bypassed the sketch and saved the real world's blocks around
+	// the origin instead, which on a client is all unloaded, so every 26.3 schematic came out air.
+	// Answering the scan from getBlockState keeps vanilla's saver, its file format and its block
+	// order (it sorts what the scan returns).
+	//? if >=26.3 {
+	/*@Override
+	public BlockMatcher findBlocksIn(BlockPos from, BlockPos to) {
+		return new BlockMatcher(this) {
+			@Override
+			public boolean atLeastMatched(int n) {
+				int[] count = {0};
+				return forEachUntil((pos, state) -> Continuation.abortIf(++count[0] >= n));
+			}
+
+			@Override
+			protected boolean anyMatched(Predicate<BlockState> predicate) {
+				return scan(from, to, predicate, (pos, state) -> Continuation.ABORT);
+			}
+
+			// NeoForge patches position filters into BlockMatcher, with this as the abstract scan;
+			// vanilla has neither. Without @Override, these two implement NeoForge's and are unused
+			// extras on Fabric. Nothing filters the sketch by position, so a filter is refused
+			// rather than silently ignored.
+			protected boolean anyMatched(Predicate<BlockState> predicate, BiPredicate<BlockState, BlockPos> atPosition) {
+				return scan(from, to, predicate, (pos, state) -> Continuation.abortIf(atPosition.test(state, pos)));
+			}
+
+			public BlockMatcher filterPosition(BiPredicate<BlockState, BlockPos> atPosition) {
+				throw new UnsupportedOperationException("The sketch cannot be scanned with a position filter");
+			}
+
+			@Override
+			public void forEach(BiConsumer<BlockPos, BlockState> consumer) {
+				forEachUntil((pos, state) -> {
+					consumer.accept(pos, state);
+					return Continuation.CONTINUE;
+				});
+			}
+
+			@Override
+			public boolean forEachUntil(BlockStateConsumer consumer) {
+				return scan(from, to, statePredicate, consumer);
+			}
+		};
+	}
+
+	private boolean scan(BlockPos from, BlockPos to, Predicate<BlockState> predicate, BlockStateConsumer consumer) {
+		for (BlockPos pos : BlockPos.betweenClosed(from, to)) {
+			BlockState state = getBlockState(pos);
+			if (predicate.test(state) && consumer.apply(pos.immutable(), state).shouldAbort())
+				return true;
+		}
+		return false;
+	}
+	*///?}
 
 	@Override
 	public Holder<Biome> getBiome(BlockPos pos) {
