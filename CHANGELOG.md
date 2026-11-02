@@ -4,7 +4,7 @@ All notable changes to The Mighty Architectury. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One entry covers every Minecraft version
 the release ships for; version-specific notes say which versions they apply to.
 
-## [Unreleased]
+## [3.2.0] - 2026-11-01
 
 ### Changed
 
