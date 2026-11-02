@@ -31,6 +31,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?}
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -242,6 +245,24 @@ public final class McCompat {
 		net.minecraft.util.Util.getPlatform().openFile(folder.toFile());
 		//?} else {
 		/*net.minecraft.Util.getPlatform().openFile(folder.toFile());
+		*///?}
+	}
+
+	// StructureBlockInfo became a record in 1.20; before that its position and state were public
+	// fields. Used by the player journey to read a saved schematic back.
+	public static BlockPos structureInfoPos(StructureTemplate.StructureBlockInfo info) {
+		//? if >=1.20 {
+		return info.pos();
+		//?} else {
+		/*return info.pos;
+		*///?}
+	}
+
+	public static BlockState structureInfoState(StructureTemplate.StructureBlockInfo info) {
+		//? if >=1.20 {
+		return info.state();
+		//?} else {
+		/*return info.state;
 		*///?}
 	}
 }

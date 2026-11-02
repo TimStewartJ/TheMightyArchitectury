@@ -1330,9 +1330,9 @@ public final class ClientTestController {
             "model generation token stable while resources were untouched (" + tokenDriftTicks
                 + " drifting ticks)");
 
-        // What "Save" in the menu writes. Nothing else in this suite ran it, and from 1.21.6 it threw
-        // on every save (see Schematic.writeToTemplate); only the recorded journey saves a build,
-        // and that runs on one older version.
+        // What "Save" in the menu writes, checked in memory on every node. The recorded player
+        // journey saves through the real menu on 1.20.2 and 26.3, reads the file back from disk and
+        // places it with vanilla's /place template.
         StructureTemplate saved = model.writeToTemplate();
         Tag savedBlocks = saved.save(new CompoundTag()).get("blocks");
         int savedCount = savedBlocks instanceof ListTag list ? list.size() : 0;

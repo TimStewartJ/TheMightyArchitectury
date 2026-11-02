@@ -8,8 +8,11 @@ import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.ArchitectManager;
 import com.timmie.mightyarchitect.control.Schematic;
 import com.timmie.mightyarchitect.control.TemplateBlockAccess;
+import com.timmie.mightyarchitect.control.compose.Cuboid;
 import com.timmie.mightyarchitect.control.compose.GroundPlan;
 import com.timmie.mightyarchitect.control.palette.PaletteStorage;
+import com.timmie.mightyarchitect.control.storage.ArchitectPaths;
+import com.timmie.mightyarchitect.control.storage.JsonStorage;
 import com.timmie.mightyarchitect.foundation.compat.McCompat;
 import com.timmie.mightyarchitect.foundation.compat.ServerConnect;
 import com.timmie.mightyarchitect.foundation.utility.Keyboard;
@@ -25,7 +28,14 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.BlockHitResult;
 
 import java.nio.charset.StandardCharsets;
@@ -34,9 +44,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Passive state observer for the externally driven player journey.
@@ -49,6 +62,14 @@ public final class PlayerJourneyController {
 
     private static final int STATE_WRITE_INTERVAL_TICKS = 2;
     private static final int CONNECT_AFTER_TICKS = 20;
+
+    /** The name the driver types into the save prompt. */
+    private static final String SAVED_NAME = "e2e_journey";
+    /**
+     * Where the driver places the saved file again with vanilla's {@code /place template}: beside
+     * the original design, clear of the printed build, and within the fixture's view distance.
+     */
+    private static final BlockPos SAVED_PLACEMENT_SHIFT = new BlockPos(0, 0, -20);
 
     private static boolean started;
     private static boolean connecting;
@@ -70,6 +91,9 @@ public final class PlayerJourneyController {
     private static Schematic capturedModel;
     private static Object capturedPrimaryPalette;
     private static Object capturedSecondaryPalette;
+    private static boolean savedFileChecked;
+    private static final JsonObject savedFile = new JsonObject();
+    private static final Map<BlockPos, BlockState> expectedPlacedSavedBlocks = new LinkedHashMap<>();
 
     private PlayerJourneyController() {
     }
@@ -92,6 +116,7 @@ public final class PlayerJourneyController {
             connect(minecraft);
         } else {
             captureExpectedPrint(minecraft);
+            checkSavedFile(minecraft);
         }
 
         if (ticks % STATE_WRITE_INTERVAL_TICKS == 0)
@@ -160,6 +185,125 @@ public final class PlayerJourneyController {
         capturedModel = model;
         capturedPrimaryPalette = model.getPrimary();
         capturedSecondaryPalette = model.getSecondary();
+    }
+
+    /**
+     * Reads the file the real Save wrote back from disk, with vanilla's structure loader, and
+     * compares it position by position with the design that was on screen.
+     * <p>
+     * The design is the captured model: Save unloads the architect, but the captured object keeps
+     * the materialized sketch it wrote from. Every position of the sketch's bounds is in the file,
+     * the unfilled ones as air, so an exact comparison covers block, blockstate and position. A
+     * file of the right size but the wrong blocks - all air, as 26.3 wrote until 3.2.1 - fails.
+     */
+    private static void checkSavedFile(Minecraft minecraft) {
+        if (savedFileChecked || capturedModel == null)
+            return;
+        Path file = ArchitectPaths.schematics().resolve(SAVED_NAME + ".nbt");
+        if (!Files.exists(file))
+            return;
+
+        savedFileChecked = true;
+        try {
+            compareSavedFile(minecraft, file);
+        } catch (Throwable throwable) {
+            savedFile.addProperty("error", throwable.toString());
+            TheMightyArchitect.logger.error("[PLAYER-JOURNEY] Unable to read back {}", file, throwable);
+        }
+    }
+
+    private static void compareSavedFile(Minecraft minecraft, Path file) {
+        TemplateBlockAccess design = capturedModel.getMaterializedSketch();
+        Cuboid bounds = design.getBounds();
+        BlockPos origin = bounds.getOrigin();
+        BlockPos size = bounds.getSize();
+        BlockState air = Blocks.AIR.defaultBlockState();
+
+        Map<BlockPos, BlockState> designed = new LinkedHashMap<>();
+        for (BlockPos local : BlockPos.betweenClosed(origin, origin.offset(size).offset(-1, -1, -1))) {
+            BlockState state = design.getBlockMap().get(local);
+            designed.put(local.immutable().subtract(origin), state == null ? air : state);
+        }
+
+        CompoundTag tag = JsonStorage.readCompressed(file)
+            .orElseThrow(() -> new IllegalStateException("the file is not readable NBT"));
+        StructureTemplate template = new StructureTemplate();
+        template.load(minecraft.level.holderLookup(Registries.BLOCK), tag);
+
+        // A template only hands its blocks out filtered by block, so ask for every kind the design
+        // has. A kind the design lacks shows up as a shortfall in the entry count instead.
+        Set<Block> kinds = new LinkedHashSet<>();
+        designed.values().forEach(state -> kinds.add(state.getBlock()));
+        StructurePlaceSettings unchanged = new StructurePlaceSettings();
+        Map<BlockPos, BlockState> saved = new HashMap<>();
+        int entries = 0;
+        for (Block block : kinds) {
+            for (StructureTemplate.StructureBlockInfo info : template.filterBlocks(BlockPos.ZERO, unchanged, block)) {
+                entries++;
+                saved.put(McCompat.structureInfoPos(info), McCompat.structureInfoState(info));
+            }
+        }
+
+        int matching = 0;
+        int nonAir = 0;
+        int stateful = 0;
+        JsonArray samples = new JsonArray();
+        for (Map.Entry<BlockPos, BlockState> expected : designed.entrySet()) {
+            BlockState state = expected.getValue();
+            if (!state.isAir()) {
+                nonAir++;
+                if (state != state.getBlock().defaultBlockState())
+                    stateful++;
+            }
+            BlockState found = saved.get(expected.getKey());
+            if (state.equals(found))
+                matching++;
+            else if (samples.size() < 8)
+                samples.add(expected.getKey() + ": designed " + state + ", saved " + found);
+        }
+        kinds.remove(Blocks.AIR);
+
+        Vec3i savedSize = template.getSize();
+        boolean sizeMatches = savedSize.getX() == size.getX() && savedSize.getY() == size.getY()
+            && savedSize.getZ() == size.getZ();
+        savedFile.addProperty("positions", designed.size());
+        savedFile.addProperty("entries", entries);
+        savedFile.addProperty("matching", matching);
+        savedFile.addProperty("sizeMatches", sizeMatches);
+        savedFile.addProperty("matches", sizeMatches && entries == designed.size() && matching == designed.size());
+        savedFile.addProperty("nonAirBlocks", nonAir);
+        savedFile.addProperty("blockKinds", kinds.size());
+        savedFile.addProperty("statefulBlocks", stateful);
+        savedFile.add("mismatchSamples", samples);
+
+        BlockPos placement = capturedModel.getAnchor().offset(origin).offset(SAVED_PLACEMENT_SHIFT);
+        designed.forEach((relative, state) -> expectedPlacedSavedBlocks.put(placement.offset(relative), state));
+        savedFile.addProperty("placementX", placement.getX());
+        savedFile.addProperty("placementY", placement.getY());
+        savedFile.addProperty("placementZ", placement.getZ());
+        savedFile.addProperty("sizeX", size.getX());
+        savedFile.addProperty("sizeY", size.getY());
+        savedFile.addProperty("sizeZ", size.getZ());
+        TheMightyArchitect.logger.info("[PLAYER-JOURNEY] Saved file read back: {}", savedFile);
+    }
+
+    /** @return {matching block identities, exact matching states}; fills up to eight mismatches */
+    private static int[] compareWorld(Minecraft minecraft, Map<BlockPos, BlockState> expectedBlocks,
+        JsonArray mismatchSamples) {
+        int matches = 0;
+        int blockMatches = 0;
+        for (Map.Entry<BlockPos, BlockState> expected : expectedBlocks.entrySet()) {
+            BlockState actual = minecraft.level.getBlockState(expected.getKey());
+            if (actual.getBlock() == expected.getValue().getBlock())
+                blockMatches++;
+            if (actual.equals(expected.getValue())) {
+                matches++;
+            } else if (mismatchSamples.size() < 8) {
+                mismatchSamples.add(expected.getKey() + ": expected " + expected.getValue()
+                    + ", found " + actual);
+            }
+        }
+        return new int[] { blockMatches, matches };
     }
 
     private static void writeState(Minecraft minecraft) {
@@ -238,20 +382,10 @@ public final class PlayerJourneyController {
                 }
                 state.addProperty("previewBlocks", previewBlocks);
 
-                int matches = 0;
-                int blockMatches = 0;
                 JsonArray mismatchSamples = new JsonArray();
-                for (Map.Entry<BlockPos, BlockState> expected : expectedPrintedBlocks.entrySet()) {
-                    BlockState actual = minecraft.level.getBlockState(expected.getKey());
-                    if (actual.getBlock() == expected.getValue().getBlock())
-                        blockMatches++;
-                    if (actual.equals(expected.getValue())) {
-                        matches++;
-                    } else if (mismatchSamples.size() < 8) {
-                        mismatchSamples.add(expected.getKey() + ": expected " + expected.getValue()
-                            + ", found " + actual);
-                    }
-                }
+                int[] printed = compareWorld(minecraft, expectedPrintedBlocks, mismatchSamples);
+                int blockMatches = printed[0];
+                int matches = printed[1];
                 state.addProperty("expectedPrintedBlocks", expectedPrintedBlocks.size());
                 state.addProperty("matchingPrintedBlockTypes", blockMatches);
                 state.addProperty("matchingPrintedBlocks", matches);
@@ -260,7 +394,18 @@ public final class PlayerJourneyController {
                 state.addProperty("printedWorldMatches",
                     !expectedPrintedBlocks.isEmpty() && matches == expectedPrintedBlocks.size());
                 state.add("printedStateMismatchSamples", mismatchSamples);
+
+                JsonArray placedSamples = new JsonArray();
+                int[] placed = compareWorld(minecraft, expectedPlacedSavedBlocks, placedSamples);
+                state.addProperty("expectedPlacedSavedBlocks", expectedPlacedSavedBlocks.size());
+                state.addProperty("matchingPlacedSavedBlockTypes", placed[0]);
+                state.addProperty("matchingPlacedSavedBlocks", placed[1]);
+                state.addProperty("placedSavedBlockTypesMatch",
+                    !expectedPlacedSavedBlocks.isEmpty() && placed[0] == expectedPlacedSavedBlocks.size());
+                state.add("placedSavedMismatchSamples", placedSamples);
             }
+            state.addProperty("savedFileChecked", savedFileChecked);
+            state.add("savedFile", savedFile.deepCopy());
 
             addPaletteTarget(state, minecraft, screen);
             writeJsonAtomically(statePath(), state);
