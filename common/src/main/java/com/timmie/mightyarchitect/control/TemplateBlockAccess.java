@@ -19,6 +19,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.blockscan.BlockMatcher;
 import net.minecraft.world.level.blockscan.BlockStateConsumer;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 *///?}
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -179,6 +180,18 @@ public class TemplateBlockAccess extends WrappedWorld {
 			@Override
 			protected boolean anyMatched(Predicate<BlockState> predicate) {
 				return scan(from, to, predicate, (pos, state) -> Continuation.ABORT);
+			}
+
+			// NeoForge patches position filters into BlockMatcher, with this as the abstract scan;
+			// vanilla has neither. Without @Override, these two implement NeoForge's and are unused
+			// extras on Fabric. Nothing filters the sketch by position, so a filter is refused
+			// rather than silently ignored.
+			protected boolean anyMatched(Predicate<BlockState> predicate, BiPredicate<BlockState, BlockPos> atPosition) {
+				return scan(from, to, predicate, (pos, state) -> Continuation.abortIf(atPosition.test(state, pos)));
+			}
+
+			public BlockMatcher filterPosition(BiPredicate<BlockState, BlockPos> atPosition) {
+				throw new UnsupportedOperationException("The sketch cannot be scanned with a position filter");
 			}
 
 			@Override
