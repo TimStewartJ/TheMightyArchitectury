@@ -4,6 +4,17 @@ All notable changes to The Mighty Architectury. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One entry covers every Minecraft version
 the release ships for; version-specific notes say which versions they apply to.
 
+## [3.2.1] - 2026-11-01
+
+### Fixed
+
+- **Saving a build on Minecraft 26.3 did not save the build.** 26.3 changed how vanilla's structure
+  saver reads blocks, and it read the world near coordinates 0, 0 instead of your design. That area
+  is usually not loaded, so the file had the right size but held only air, and printing it (for
+  example with BuildPrint) placed nothing. Every 26.3 release since 2.1.0 was affected; other
+  Minecraft versions were not. Schematics saved on 26.3 before this fix cannot be repaired:
+  compose the build again and save it.
+
 ## [3.2.0] - 2026-11-01
 
 ### Changed
