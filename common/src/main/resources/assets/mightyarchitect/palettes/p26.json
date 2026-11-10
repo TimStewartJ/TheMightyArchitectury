@@ -1,0 +1,108 @@
+{
+  "Palette": {
+    "Name": "Copper",
+    "HEAVY_PRIMARY": {
+      "Name": "minecraft:polished_andesite"
+    },
+    "HEAVY_SECONDARY": {
+      "Name": "minecraft:stone_bricks"
+    },
+    "HEAVY_WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:black_stained_glass_pane"
+    },
+    "HEAVY_POST": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:stone_brick_wall"
+    },
+    "INNER_PRIMARY": {
+      "Name": "minecraft:bricks"
+    },
+    "INNER_SECONDARY": {
+      "Name": "minecraft:calcite"
+    },
+    "INNER_DETAIL": {
+      "Name": "minecraft:smooth_quartz"
+    },
+    "WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:glass_pane"
+    },
+    "OUTER_THICK": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:stone_brick_wall"
+    },
+    "OUTER_THIN": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:dark_oak_fence"
+    },
+    "OUTER_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:smooth_stone_slab"
+    },
+    "OUTER_FLAT": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "powered": "false",
+        "facing": "south",
+        "open": "true"
+      },
+      "Name": "minecraft:dark_oak_trapdoor"
+    },
+    "ROOF_PRIMARY": {
+      "Name": "minecraft:waxed_oxidized_cut_copper"
+    },
+    "FLOOR": {
+      "Name": "minecraft:dark_oak_planks"
+    },
+    "ROOF_DETAIL": {
+      "Name": "minecraft:waxed_weathered_cut_copper"
+    },
+    "ROOF_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:waxed_oxidized_cut_copper_slab"
+    },
+    "CLEAR": {
+      "Name": "minecraft:barrier"
+    }
+  }
+}

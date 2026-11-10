@@ -1,0 +1,114 @@
+{
+  "Palette": {
+    "Name": "Mossy",
+    "HEAVY_PRIMARY": {
+      "Name": "minecraft:mossy_stone_bricks"
+    },
+    "HEAVY_SECONDARY": {
+      "Name": "minecraft:cobblestone"
+    },
+    "HEAVY_WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:black_stained_glass_pane"
+    },
+    "HEAVY_POST": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:mossy_cobblestone_wall"
+    },
+    "INNER_PRIMARY": {
+      "Name": "minecraft:oak_planks"
+    },
+    "INNER_SECONDARY": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:stripped_oak_log"
+    },
+    "INNER_DETAIL": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:dark_oak_log"
+    },
+    "WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:glass_pane"
+    },
+    "OUTER_THICK": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:mossy_stone_brick_wall"
+    },
+    "OUTER_THIN": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:oak_fence"
+    },
+    "OUTER_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:mossy_stone_brick_slab"
+    },
+    "OUTER_FLAT": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "powered": "false",
+        "facing": "south",
+        "open": "true"
+      },
+      "Name": "minecraft:oak_trapdoor"
+    },
+    "ROOF_PRIMARY": {
+      "Name": "minecraft:moss_block"
+    },
+    "FLOOR": {
+      "Name": "minecraft:spruce_planks"
+    },
+    "ROOF_DETAIL": {
+      "Name": "minecraft:mossy_cobblestone"
+    },
+    "ROOF_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:mossy_cobblestone_slab"
+    },
+    "CLEAR": {
+      "Name": "minecraft:barrier"
+    }
+  }
+}

@@ -12,6 +12,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
@@ -24,10 +25,14 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 /*import net.minecraft.world.level.block.state.properties.DirectionProperty;*///?}
 import net.minecraft.world.level.block.state.properties.Property;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class PaletteDefinition {
 
@@ -267,6 +272,39 @@ public class PaletteDefinition {
 
 		palette.put(Palette.CLEAR, Blocks.BARRIER.defaultBlockState());
 		return palette;
+	}
+
+	/**
+	 * The block ids a palette file names that this game does not have, or only has behind an
+	 * experiment (1.19.4 registers the 1.20 blocks). Decoding cannot say: it fills the slot anyway.
+	 */
+	public static List<String> missingBlocks(Dynamic<?> file, Set<String> usable) {
+		List<String> missing = new ArrayList<>();
+		file.get(PALETTE_KEY)
+			.asMapOpt()
+			.result()
+			.ifPresent(entries -> entries.forEach(entry -> {
+				if (NAME_KEY.equals(entry.getFirst()
+					.asString("")))
+					return;
+				entry.getSecond()
+					.get(NAME_KEY)
+					.asString()
+					.result()
+					.filter(id -> !usable.contains(id.indexOf(':') < 0 ? "minecraft:" + id : id))
+					.ifPresent(missing::add);
+			}));
+		return missing;
+	}
+
+	/** As strings, so the id class that was renamed in 1.21.11 is never spelled. */
+	public static Set<String> usableBlockIds() {
+		Set<String> ids = new HashSet<>();
+		for (Block block : BuiltInRegistries.BLOCK)
+			if (block.requiredFeatures()
+				.isSubsetOf(FeatureFlags.DEFAULT_FLAGS))
+				ids.add(String.valueOf(BuiltInRegistries.BLOCK.getKey(block)));
+		return ids;
 	}
 
 	/** Insertion-ordered so a rewritten palette file is a readable diff of the previous one. */

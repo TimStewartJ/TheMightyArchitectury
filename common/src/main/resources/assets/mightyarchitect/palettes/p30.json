@@ -1,0 +1,109 @@
+{
+  "Palette": {
+    "Name": "Red Palace",
+    "HEAVY_PRIMARY": {
+      "Name": "minecraft:polished_blackstone_bricks"
+    },
+    "HEAVY_SECONDARY": {
+      "Name": "minecraft:polished_blackstone"
+    },
+    "HEAVY_WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:black_stained_glass_pane"
+    },
+    "HEAVY_POST": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "shape": "straight",
+        "facing": "north"
+      },
+      "Name": "minecraft:polished_blackstone_brick_stairs"
+    },
+    "INNER_PRIMARY": {
+      "Name": "minecraft:smooth_sandstone"
+    },
+    "INNER_SECONDARY": {
+      "Name": "minecraft:cut_sandstone"
+    },
+    "INNER_DETAIL": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:stripped_dark_oak_wood"
+    },
+    "WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:glass_pane"
+    },
+    "OUTER_THICK": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:red_nether_brick_wall"
+    },
+    "OUTER_THIN": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:dark_oak_fence"
+    },
+    "OUTER_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:smooth_sandstone_slab"
+    },
+    "OUTER_FLAT": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "powered": "false",
+        "facing": "south",
+        "open": "true"
+      },
+      "Name": "minecraft:dark_oak_trapdoor"
+    },
+    "ROOF_PRIMARY": {
+      "Name": "minecraft:red_nether_bricks"
+    },
+    "FLOOR": {
+      "Name": "minecraft:dark_oak_planks"
+    },
+    "ROOF_DETAIL": {
+      "Name": "minecraft:nether_bricks"
+    },
+    "ROOF_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:red_nether_brick_slab"
+    },
+    "CLEAR": {
+      "Name": "minecraft:barrier"
+    }
+  }
+}
