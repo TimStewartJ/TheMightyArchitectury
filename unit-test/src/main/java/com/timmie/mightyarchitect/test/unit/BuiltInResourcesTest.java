@@ -1,18 +1,22 @@
 package com.timmie.mightyarchitect.test.unit;
 
+import com.mojang.serialization.Codec;
 import com.timmie.mightyarchitect.control.design.DesignLayer;
 import com.timmie.mightyarchitect.control.design.DesignTheme;
 import com.timmie.mightyarchitect.control.design.DesignType;
 import com.timmie.mightyarchitect.control.design.ThemeStorage;
 import com.timmie.mightyarchitect.control.design.partials.DesignData;
 import com.timmie.mightyarchitect.control.palette.PaletteDefinition;
+import com.timmie.mightyarchitect.control.palette.PaletteStorage;
 import com.timmie.mightyarchitect.control.storage.ArchitectResources;
 import com.timmie.mightyarchitect.control.storage.JsonStorage;
 import com.timmie.mightyarchitect.test.unit.MinecraftBootstrap.Bootstrapped;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -21,12 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The five built-in themes and twenty-one built-in palettes moved out of the jar root and under
+ * The five built-in themes and the built-in palettes moved out of the jar root and under
  * {@code assets/mightyarchitect/}, so a resource pack can override them and no other mod's jar can
  * shadow them by declaring a top-level {@code themes/} of its own.
  * <p>
  * These read the real shipped files rather than fixtures, which makes them the assertion that the
- * move landed: a stale path, a file left behind, or a codec that cannot read the shape those 695
+ * move landed: a stale path, a file left behind, or a codec that cannot read the shape those 707
  * files are actually written in all fail here rather than on somebody's title screen. There is no
  * client in this suite, so this also covers the classpath fallback the resource manager is not
  * available for.
@@ -34,6 +38,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Bootstrapped
 @DisplayName("Built-in content")
 class BuiltInResourcesTest {
+
+	/** The built-in palettes that use blocks newer than the oldest Minecraft the mod supports. */
+	private static final Set<String> NEEDS_NEWER_BLOCKS = Set.of("Cherry", "Pale Oak");
 
 	@Test
 	@DisplayName("every built-in theme loads, with its palettes")
@@ -72,17 +79,43 @@ class BuiltInResourcesTest {
 	}
 
 	@Test
-	@DisplayName("all twenty-one shipped palettes are found and read")
+	@DisplayName("all thirty-three shipped palettes are found and read")
 	void everyShippedPaletteLoads() {
 		List<String> paths = ArchitectResources.list("palettes", index -> "p" + index + ".json");
 
-		assertEquals(21, paths.size(), "the palette folder did not come across intact");
+		assertEquals(33, paths.size(), "the palette folder did not come across intact");
 		for (String path : paths) {
 			PaletteDefinition palette = JsonStorage.readBuiltIn(path, PaletteDefinition.CODEC)
 				.orElseThrow(() -> new AssertionError(path + " did not read"));
 			assertFalse(palette.getName()
 				.isEmpty(), path + " read with no name");
 		}
+	}
+
+	/** Runs on every version's classpath, so it also proves the other palettes need nothing newer. */
+	@Test
+	@DisplayName("a built-in palette is offered exactly when this game has every block it names")
+	void builtInPalettesNeedTheirBlocks() {
+		Set<String> usable = PaletteDefinition.usableBlockIds();
+		List<String> buildable = new ArrayList<>();
+		for (String path : ArchitectResources.list("palettes", index -> "p" + index + ".json")) {
+			String name = JsonStorage.readBuiltIn(path, PaletteDefinition.CODEC)
+				.orElseThrow(() -> new AssertionError(path + " did not read"))
+				.getName();
+			List<String> missing = JsonStorage.readBuiltIn(path, Codec.PASSTHROUGH)
+				.map(file -> PaletteDefinition.missingBlocks(file, usable))
+				.orElseThrow(() -> new AssertionError(path + " did not read"));
+
+			if (missing.isEmpty())
+				buildable.add(name);
+			else
+				assertTrue(NEEDS_NEWER_BLOCKS.contains(name), path + " (" + name + ") names " + missing
+					+ ", which this Minecraft version does not have. A palette that is meant to need newer"
+					+ " blocks belongs in NEEDS_NEWER_BLOCKS");
+		}
+
+		assertEquals(buildable, new PaletteStorage().builtInPaletteNames(),
+			"the picker did not offer exactly the palettes this version can build");
 	}
 
 	@Test

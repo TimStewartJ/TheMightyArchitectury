@@ -1,0 +1,111 @@
+{
+  "Palette": {
+    "Name": "Seaside",
+    "HEAVY_PRIMARY": {
+      "Name": "minecraft:sandstone"
+    },
+    "HEAVY_SECONDARY": {
+      "Name": "minecraft:smooth_sandstone"
+    },
+    "HEAVY_WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:light_blue_stained_glass_pane"
+    },
+    "HEAVY_POST": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:sandstone_wall"
+    },
+    "INNER_PRIMARY": {
+      "Name": "minecraft:calcite"
+    },
+    "INNER_SECONDARY": {
+      "Properties": {
+        "axis": "y"
+      },
+      "Name": "minecraft:stripped_birch_wood"
+    },
+    "INNER_DETAIL": {
+      "Name": "minecraft:smooth_sandstone"
+    },
+    "WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:glass_pane"
+    },
+    "OUTER_THICK": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:sandstone_wall"
+    },
+    "OUTER_THIN": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:jungle_fence"
+    },
+    "OUTER_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:smooth_sandstone_slab"
+    },
+    "OUTER_FLAT": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "powered": "false",
+        "facing": "south",
+        "open": "true"
+      },
+      "Name": "minecraft:jungle_trapdoor"
+    },
+    "ROOF_PRIMARY": {
+      "Name": "minecraft:cut_red_sandstone"
+    },
+    "FLOOR": {
+      "Name": "minecraft:jungle_planks"
+    },
+    "ROOF_DETAIL": {
+      "Name": "minecraft:smooth_red_sandstone"
+    },
+    "ROOF_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:cut_red_sandstone_slab"
+    },
+    "CLEAR": {
+      "Name": "minecraft:barrier"
+    }
+  }
+}

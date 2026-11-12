@@ -1,0 +1,106 @@
+{
+  "Palette": {
+    "Name": "Green Palace",
+    "HEAVY_PRIMARY": {
+      "Name": "minecraft:stone_bricks"
+    },
+    "HEAVY_SECONDARY": {
+      "Name": "minecraft:polished_andesite"
+    },
+    "HEAVY_WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:light_gray_stained_glass_pane"
+    },
+    "HEAVY_POST": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "shape": "straight",
+        "facing": "north"
+      },
+      "Name": "minecraft:stone_brick_stairs"
+    },
+    "INNER_PRIMARY": {
+      "Name": "minecraft:smooth_quartz"
+    },
+    "INNER_SECONDARY": {
+      "Name": "minecraft:quartz_bricks"
+    },
+    "INNER_DETAIL": {
+      "Name": "minecraft:prismarine"
+    },
+    "WINDOW": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:glass_pane"
+    },
+    "OUTER_THICK": {
+      "Properties": {
+        "east": "none",
+        "waterlogged": "false",
+        "south": "none",
+        "north": "none",
+        "west": "none",
+        "up": "true"
+      },
+      "Name": "minecraft:prismarine_wall"
+    },
+    "OUTER_THIN": {
+      "Properties": {
+        "east": "false",
+        "waterlogged": "false",
+        "south": "false",
+        "north": "false",
+        "west": "false"
+      },
+      "Name": "minecraft:dark_oak_fence"
+    },
+    "OUTER_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:smooth_quartz_slab"
+    },
+    "OUTER_FLAT": {
+      "Properties": {
+        "half": "bottom",
+        "waterlogged": "false",
+        "powered": "false",
+        "facing": "south",
+        "open": "true"
+      },
+      "Name": "minecraft:dark_oak_trapdoor"
+    },
+    "ROOF_PRIMARY": {
+      "Name": "minecraft:waxed_oxidized_cut_copper"
+    },
+    "FLOOR": {
+      "Name": "minecraft:dark_oak_planks"
+    },
+    "ROOF_DETAIL": {
+      "Name": "minecraft:waxed_weathered_cut_copper"
+    },
+    "ROOF_SLAB": {
+      "Properties": {
+        "waterlogged": "false",
+        "type": "bottom"
+      },
+      "Name": "minecraft:waxed_oxidized_cut_copper_slab"
+    },
+    "CLEAR": {
+      "Name": "minecraft:barrier"
+    }
+  }
+}

@@ -1,5 +1,9 @@
 package com.timmie.mightyarchitect.control.palette;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.Dynamic;
+import com.mojang.serialization.JsonOps;
+import com.timmie.mightyarchitect.TheMightyArchitect;
 import com.timmie.mightyarchitect.control.storage.ArchitectPaths;
 import com.timmie.mightyarchitect.control.storage.ArchitectResources;
 import com.timmie.mightyarchitect.control.storage.ArchitectStorage;
@@ -12,7 +16,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * The palettes available to the composer: the ones inside the mod, and the ones on disk.
@@ -109,9 +115,9 @@ public class PaletteStorage {
 		// Insertion-ordered: the picker renders these in list order, and a HashMap moved the
 		// buttons around between launches.
 		resourcePalettes = new LinkedHashMap<>();
+		Set<String> usable = PaletteDefinition.usableBlockIds();
 		for (String path : ArchitectResources.list(BUILT_IN_FOLDER, index -> "p" + index + ".json"))
-			JsonStorage.readBuiltIn(path, PaletteDefinition.CODEC)
-				.ifPresent(palette -> resourcePalettes.put(palette.getName(), palette));
+			readBuiltIn(path, usable).ifPresent(palette -> resourcePalettes.put(palette.getName(), palette));
 
 		palettes = new LinkedHashMap<>();
 		for (Path file : ArchitectPaths.listAcrossRoots(ArchitectPaths.PALETTES))
@@ -119,6 +125,27 @@ public class PaletteStorage {
 				// One unreadable palette file used to NPE here and abort loading all the others.
 				JsonStorage.read(file, PaletteDefinition.CODEC)
 					.ifPresent(palette -> palettes.put(palette.getName(), palette));
+	}
+
+	/**
+	 * Reads one built-in palette, or nothing when this Minecraft version lacks a block it names:
+	 * one source tree ships to every version, so the built-in set can use blocks newer than some.
+	 */
+	private static Optional<PaletteDefinition> readBuiltIn(String path, Set<String> usable) {
+		Optional<Dynamic<?>> file = JsonStorage.readBuiltIn(path, Codec.PASSTHROUGH);
+		if (!file.isPresent())
+			return Optional.empty();
+
+		List<String> missing = PaletteDefinition.missingBlocks(file.get(), usable);
+		if (!missing.isEmpty()) {
+			TheMightyArchitect.logger.info("Not offering the built-in palette {}: this Minecraft version has no {}",
+				path, missing);
+			return Optional.empty();
+		}
+
+		return JsonStorage.decode(file.get()
+			.convert(JsonOps.INSTANCE)
+			.getValue(), PaletteDefinition.CODEC, path);
 	}
 
 }
