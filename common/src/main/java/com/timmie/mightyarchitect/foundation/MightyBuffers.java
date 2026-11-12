@@ -18,4 +18,8 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 public interface MightyBuffers {
 
 	VertexConsumer getBuffer(RenderType type);
+
+	//? if >=26.2 {
+	/*void submitStatic(RenderType type, SuperRenderTypeBuffer.StaticGeometry geometry, com.mojang.blaze3d.vertex.PoseStack ms);
+	*///?}
 }

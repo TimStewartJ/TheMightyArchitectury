@@ -162,6 +162,12 @@ public class SchematicRenderer {
 	private final Set<RenderType> pendingUsedLayers = new HashSet<>(getLayerCount());
 	*///?}
 
+	// From 26.2 the preview is drawn from geometry baked once per redraw rather than re-emitted from
+	// bufferCache every frame; see finishRedraw.
+	//? if >=26.2 {
+	/*private final Map<ChunkSectionLayer, com.timmie.mightyarchitect.foundation.SuperRenderTypeBuffer.StaticGeometry> staticCache = new HashMap<>(CHUNK_SECTION_LAYERS.length);
+	*///?}
+
 	// Only ever closed as a group, never looked up by layer, so this needs no layer type - which
 	// is what keeps it to one guard instead of one per layer-type arm.
 	//? if >=1.21 {
@@ -289,6 +295,13 @@ public class SchematicRenderer {
 		*///?}
 			if (!usedBlockRenderLayers.contains(layer))
 				continue;
+			//? if >=26.2 {
+			/*com.timmie.mightyarchitect.foundation.SuperRenderTypeBuffer.StaticGeometry geometry = staticCache.get(layer);
+			if (geometry != null) {
+				buffer.submitStatic(layerToRenderType(layer), geometry, ms);
+				continue;
+			}
+			*///?}
 			SuperByteBuffer superByteBuffer = bufferCache.get(layer);
 			// A used layer always has a buffer, but a null here would take the whole frame down
 			// rather than one layer of one schematic.
@@ -454,6 +467,9 @@ public class SchematicRenderer {
 	private void finishRedraw() {
 		bufferCache.clear();
 		usedBlockRenderLayers.clear();
+		//? if >=26.2 {
+		/*staticCache.clear();
+		*///?}
 
 		// finishDrawing
 		//? if >=1.21.6 {
@@ -476,6 +492,19 @@ public class SchematicRenderer {
 			}
 			*///?}
 		}
+
+		// The preview does not move or change between redraws, so its vertices are transformed and
+		// recorded once here. Re-emitting them every frame cost ~10 ms per frame on a 166k-vertex
+		// build under Iris, where each frame also re-derives the shader's extra vertex data.
+		//? if >=26.2 {
+		/*for (Map.Entry<ChunkSectionLayer, SuperByteBuffer> entry : bufferCache.entrySet()) {
+			com.timmie.mightyarchitect.foundation.SuperRenderTypeBuffer.StaticGeometry geometry =
+				new com.timmie.mightyarchitect.foundation.SuperRenderTypeBuffer.StaticGeometry();
+			entry.getValue().renderInto(new PoseStack(), geometry);
+			staticCache.put(entry.getKey(), geometry);
+		}
+		bufferCache.clear();
+		*///?}
 
 		usedBlockRenderLayers.addAll(pendingUsedLayers);
 		clearPending();
