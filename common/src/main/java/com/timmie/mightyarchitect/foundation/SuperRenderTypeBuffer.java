@@ -89,6 +89,122 @@ public class SuperRenderTypeBuffer implements MultiBufferSource, MightyBuffers {
 		defaultBuffer.recycle();
 		lateBuffer.recycle();
 	}
+
+	// Draws geometry baked once, with the given pose applied as it is handed to vanilla. Used for
+	// the schematic preview, which does not change from frame to frame: re-transforming and
+	// re-recording every vertex each frame cost more than the rest of the frame on a large build.
+	public void submitStatic(RenderType type, StaticGeometry geometry, PoseStack ms) {
+		if (collector == null || geometry.isEmpty())
+			return;
+		collector.order(defaultBuffer.order)
+			.submitCustomGeometry(ms, type, geometry::emit);
+	}
+
+	// Vertices captured once from any VertexConsumer writer, kept in flat arrays and written out in
+	// one call per vertex. The single 11-argument addVertex is vanilla's fast path for block and
+	// entity buffers; a shader-extended buffer falls back to the individual setters.
+	public static final class StaticGeometry implements VertexConsumer {
+
+		private static final int FLOATS = 8;
+		private static final int INTS = 3;
+
+		private float[] floats = new float[FLOATS * 64];
+		private int[] ints = new int[INTS * 64];
+		private int vertexCount;
+
+		public boolean isEmpty() {
+			return vertexCount == 0;
+		}
+
+		void emit(PoseStack.Pose pose, VertexConsumer consumer) {
+			org.joml.Matrix4f matrix = pose.pose();
+			org.joml.Matrix3f normalMatrix = pose.normal();
+			org.joml.Vector3f position = new org.joml.Vector3f();
+			org.joml.Vector3f normal = new org.joml.Vector3f();
+			for (int v = 0; v < vertexCount; v++) {
+				int f = v * FLOATS;
+				int i = v * INTS;
+				matrix.transformPosition(floats[f], floats[f + 1], floats[f + 2], position);
+				normalMatrix.transform(floats[f + 5], floats[f + 6], floats[f + 7], normal);
+				consumer.addVertex(position.x, position.y, position.z, ints[i], floats[f + 3], floats[f + 4],
+					ints[i + 1], ints[i + 2], normal.x, normal.y, normal.z);
+			}
+		}
+
+		@Override
+		public VertexConsumer addVertex(float x, float y, float z) {
+			if ((vertexCount + 1) * FLOATS > floats.length) {
+				floats = java.util.Arrays.copyOf(floats, floats.length * 2);
+				ints = java.util.Arrays.copyOf(ints, ints.length * 2);
+			}
+			int f = vertexCount * FLOATS;
+			int i = vertexCount * INTS;
+			floats[f] = x;
+			floats[f + 1] = y;
+			floats[f + 2] = z;
+			ints[i] = -1;
+			ints[i + 1] = net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;
+			vertexCount++;
+			return this;
+		}
+
+		private int f() {
+			return (vertexCount - 1) * FLOATS;
+		}
+
+		private int i() {
+			return (vertexCount - 1) * INTS;
+		}
+
+		@Override
+		public VertexConsumer setColor(int red, int green, int blue, int alpha) {
+			ints[i()] = (alpha & 0xFF) << 24 | (red & 0xFF) << 16 | (green & 0xFF) << 8 | blue & 0xFF;
+			return this;
+		}
+
+		@Override
+		public VertexConsumer setColor(int color) {
+			ints[i()] = color;
+			return this;
+		}
+
+		@Override
+		public VertexConsumer setUv(float u, float v) {
+			floats[f() + 3] = u;
+			floats[f() + 4] = v;
+			return this;
+		}
+
+		@Override
+		public VertexConsumer setUv1(int u, int v) {
+			ints[i() + 1] = u & 0xFFFF | v << 16;
+			return this;
+		}
+
+		@Override
+		public VertexConsumer setUv2(int u, int v) {
+			ints[i() + 2] = u & 0xFFFF | v << 16;
+			return this;
+		}
+
+		@Override
+		public VertexConsumer setNormal(float x, float y, float z) {
+			floats[f() + 5] = x;
+			floats[f() + 6] = y;
+			floats[f() + 7] = z;
+			return this;
+		}
+
+		@Override
+		public VertexConsumer setLineWidth(float width) {
+			return this;
+		}
+
+		// 26.3 only; no @Override for the same reason as RecordedGeometry.setUv3.
+		public VertexConsumer setUv3(float u, float v) {
+			return this;
+		}
+	}
 	*///?}
 
 	public VertexConsumer getEarlyBuffer(RenderType type) {

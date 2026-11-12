@@ -8,6 +8,7 @@ import org.joml.Vector3f;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,7 +75,93 @@ class SuperByteBufferNormalsTest {
 			.anyMatch(field -> field.getName().equals("hasNormal"));
 	}
 
+	@Test
+	@DisplayName("26.2+ draws the once-baked preview exactly as rendering it every frame did")
+	void bakedPreviewMatchesDirectRendering() throws Exception {
+		Class<?> baked;
+		try {
+			baked = Class.forName("com.timmie.mightyarchitect.foundation.SuperRenderTypeBuffer$StaticGeometry");
+		} catch (ClassNotFoundException absent) {
+			baked = null;
+		}
+		assumeTrue(baked != null, "only 26.2+ bakes the preview");
+		PoseStack pose = new PoseStack();
+		pose.translate(-3.5f, 70.25f, 12.75f);
+		pose.last().pose().rotateY(0.7f);
+		pose.last().normal().rotateY(0.7f);
+		int[] data = vertexData(0x80402010, UP, EAST);
+
+		List<double[]> direct = new ArrayList<>();
+		new SuperByteBuffer(data, 8).renderInto(pose, capture(direct));
+
+		Object geometry = baked.getDeclaredConstructor().newInstance();
+		new SuperByteBuffer(data, 8).renderInto(new PoseStack(), (VertexConsumer) geometry);
+		Method emit = baked.getDeclaredMethod("emit", PoseStack.Pose.class, VertexConsumer.class);
+		emit.setAccessible(true);
+		List<double[]> replayed = new ArrayList<>();
+		emit.invoke(geometry, pose.last(), capture(replayed));
+
+		assertEquals(8, direct.size());
+		assertEquals(direct.size(), replayed.size());
+		for (int v = 0; v < direct.size(); v++)
+			for (int field = 0; field < VERTEX_FIELDS; field++)
+				assertEquals(direct.get(v)[field], replayed.get(v)[field], 0.0001f,
+					"vertex " + v + " field " + field);
+	}
+
+	// x, y, z, color (ARGB), u, v, overlay, light, normal x, y, z
+	private static final int VERTEX_FIELDS = 11;
+
+	private static VertexConsumer capture(List<double[]> vertices) {
+		return (VertexConsumer) Proxy.newProxyInstance(
+			VertexConsumer.class.getClassLoader(), new Class<?>[] { VertexConsumer.class },
+			(proxy, method, args) -> {
+				double[] current = vertices.isEmpty() ? null : vertices.get(vertices.size() - 1);
+				switch (method.getName()) {
+					case "addVertex" -> {
+						double[] vertex = new double[VERTEX_FIELDS];
+						for (int i = 0; i < args.length; i++)
+							vertex[i] = args[i] instanceof Integer integer ? integer : ((Number) args[i]).floatValue();
+						vertices.add(vertex);
+					}
+					case "setColor" -> current[3] = args.length == 1 ? ((Number) args[0]).intValue()
+						: ((((Number) args[3]).intValue() & 0xFF) << 24 | (((Number) args[0]).intValue() & 0xFF) << 16
+							| (((Number) args[1]).intValue() & 0xFF) << 8 | ((Number) args[2]).intValue() & 0xFF);
+					case "setUv" -> {
+						current[4] = ((Number) args[0]).floatValue();
+						current[5] = ((Number) args[1]).floatValue();
+					}
+					case "setOverlay" -> current[6] = ((Number) args[0]).intValue();
+					case "setLight" -> current[7] = ((Number) args[0]).intValue();
+					case "setNormal" -> {
+						current[8] = ((Number) args[0]).floatValue();
+						current[9] = ((Number) args[1]).floatValue();
+						current[10] = ((Number) args[2]).floatValue();
+					}
+					default -> {
+					}
+				}
+				return method.getReturnType() == void.class ? null : proxy;
+			});
+	}
+
 	private static List<Vector3f> render(PoseStack pose, float[][]... quads) {
+		int[] data = vertexData(-1, quads);
+
+		List<Vector3f> normals = new ArrayList<>();
+		VertexConsumer consumer = (VertexConsumer) Proxy.newProxyInstance(
+			VertexConsumer.class.getClassLoader(), new Class<?>[] { VertexConsumer.class },
+			(proxy, method, args) -> {
+				if (method.getName().equals("setNormal") || method.getName().equals("normal"))
+					normals.add(new Vector3f(((Number) args[0]).floatValue(),
+						((Number) args[1]).floatValue(), ((Number) args[2]).floatValue()));
+				return method.getReturnType() == void.class ? null : proxy;
+			});
+		new SuperByteBuffer(data, quads.length * 4).renderInto(pose, consumer);
+		return normals;
+	}
+
+	private static int[] vertexData(int color, float[][]... quads) {
 		int[] data = new int[quads.length * 4 * 8];
 		int offset = 0;
 		for (float[][] quad : quads) {
@@ -94,24 +181,13 @@ class SuperByteBufferNormalsTest {
 				data[offset] = Float.floatToRawIntBits(vertex[0]);
 				data[offset + 1] = Float.floatToRawIntBits(vertex[1]);
 				data[offset + 2] = Float.floatToRawIntBits(vertex[2]);
-				data[offset + 3] = -1;
+				data[offset + 3] = color;
 				data[offset + 6] = 0x00f000f0;
 				data[offset + 7] = packedNormal;
 				offset += 8;
 			}
 		}
-
-		List<Vector3f> normals = new ArrayList<>();
-		VertexConsumer consumer = (VertexConsumer) Proxy.newProxyInstance(
-			VertexConsumer.class.getClassLoader(), new Class<?>[] { VertexConsumer.class },
-			(proxy, method, args) -> {
-				if (method.getName().equals("setNormal") || method.getName().equals("normal"))
-					normals.add(new Vector3f(((Number) args[0]).floatValue(),
-						((Number) args[1]).floatValue(), ((Number) args[2]).floatValue()));
-				return method.getReturnType() == void.class ? null : proxy;
-			});
-		new SuperByteBuffer(data, quads.length * 4).renderInto(pose, consumer);
-		return normals;
+		return data;
 	}
 
 	private static void assertNormal(Vector3f normal, float x, float y, float z) {
