@@ -4,6 +4,16 @@ All notable changes to The Mighty Architectury. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). One entry covers every Minecraft version
 the release ships for; version-specific notes say which versions they apply to.
 
+## [3.2.2] - 2026-11-12
+
+### Fixed
+
+- **The preview of a large build no longer drags the frame rate down, most of all with shaders.**
+  The preview was rebuilt from scratch every frame; it is now prepared once each time it changes.
+  Measured on 26.3 with a 166,000-vertex preview: 77-80 FPS before and 103-177 FPS after with the
+  Bliss shader pack, and about 100 FPS before and 420-540 FPS after without shaders. The preview
+  looks the same. Minecraft 26.2 and 26.3 only; older versions draw the preview as before.
+
 ## [3.2.1] - 2026-11-01
 
 ### Fixed
